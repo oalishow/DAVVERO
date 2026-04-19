@@ -39,8 +39,8 @@ export default function PrintReportModal({ onClose }: PrintReportModalProps) {
   };
 
   return createPortal(
-    <div className="fixed inset-0 bg-slate-900/50 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-[200] overflow-y-auto">
-      <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-4 sm:p-8 w-full max-w-5xl my-auto max-h-[95vh] overflow-y-auto custom-scrollbar animated-scale-in flex flex-col">
+    <div className="fixed inset-0 bg-slate-900/50 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-[200] overflow-y-auto print:static print:p-0 print:bg-transparent">
+      <div className="bg-white dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 rounded-2xl shadow-2xl p-4 sm:p-8 w-full max-w-5xl my-auto max-h-[95vh] overflow-y-auto custom-scrollbar animated-scale-in flex flex-col print:shadow-none print:border-none print:max-h-none print:overflow-visible print:w-full print:max-w-none print:p-0">
         
         <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-200 dark:border-slate-700 sticky top-0 bg-white dark:bg-slate-800 z-30 no-print">
           <div>
@@ -69,13 +69,13 @@ export default function PrintReportModal({ onClose }: PrintReportModalProps) {
         </div>
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center p-20">
+          <div className="flex flex-col items-center justify-center p-20 no-print">
             <Loader2 className="w-8 h-8 text-sky-500 animate-spin mb-3" />
             <p className="text-sm text-slate-500 font-medium">A carregar registos para impressão...</p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
+          <div className="overflow-x-auto print:overflow-visible">
+            <table className="w-full text-left border-collapse print:text-black">
               <thead>
                 <tr className="bg-slate-50 dark:bg-slate-900/50 print:bg-slate-100">
                   <th className="p-3 border border-slate-200 dark:border-slate-700 text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400">Foto</th>

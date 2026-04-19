@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import Header from './components/Header';
 import Verifier from './components/Verifier';
 import Admin from './components/Admin';
+import Footer from './components/Footer';
 import { Moon, Sun } from 'lucide-react';
 import { loginAnon } from './lib/firebase';
 
@@ -64,6 +65,8 @@ export default function App() {
           </div>
 
           {activeTab === 'verifier' ? <Verifier /> : <Admin />}
+          
+          <Footer />
         </div>
       </div>
     </div>

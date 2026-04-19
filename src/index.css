@@ -9,6 +9,7 @@
   .animate-photo-breath { animation: photo-breath 3s infinite ease-in-out; }
   .animate-photo-breath-warning { animation: photo-breath-warning 3s infinite ease-in-out; }
   .animate-photo-breath-error { animation: photo-breath-error 3s infinite ease-in-out; }
+  .animate-pulse-slow { animation: pulse-slow 4s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
   .glass-panel {
     background: rgba(255, 255, 255, 0.75);
     backdrop-filter: blur(12px);
@@ -75,6 +76,11 @@
   50% { transform: scale(1.05); box-shadow: 0 0 25px rgba(244,63,94,0.8); }
 }
 
+@keyframes pulse-slow {
+  0%, 100% { opacity: 0.3; transform: scale(1); }
+  50% { opacity: 0.6; transform: scale(1.2); }
+}
+
 body {
   @apply bg-slate-100 dark:bg-slate-950 font-sans antialiased text-slate-800 dark:text-slate-100 transition-colors duration-300;
   background: linear-gradient(135deg, #f1f5f9 0%, #cbd5e1 100%);
@@ -86,44 +92,73 @@ body {
 
 /* Estilos de Impressão */
 @media print {
+  @page {
+    margin: 1.5cm;
+    size: auto;
+  }
+
   body {
     background: white !important;
+    color: black !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+    overflow: visible !important;
   }
+
   .no-print {
     display: none !important;
   }
+
   .print-only {
     display: block !important;
   }
-  .glass-panel {
-    box-shadow: none !important;
-    border: 1px solid #e2e8f0 !important;
-    background: white !important;
-    backdrop-filter: none !important;
-    margin: 0 !important;
+
+  /* Reset layout for print */
+  #root, body, html {
+    height: auto !important;
     width: 100% !important;
-    max-width: none !important;
-  }
-  .result-card {
-    box-shadow: none !important;
-    border: 2px solid #e2e8f0 !important;
-    margin: 0 auto !important;
-    transform: none !important;
-    animation: none !important;
-  }
-  .fixed, .absolute {
-    position: relative !important;
-  }
-  .inset-0 {
-    position: static !important;
-    background: transparent !important;
-    backdrop-filter: none !important;
+    margin: 0 !important;
     padding: 0 !important;
     display: block !important;
   }
-  .bg-slate-900\/50, .bg-black\/80 {
-    background-color: transparent !important;
+
+  /* Handle full page modals in print */
+  .fixed, .absolute {
+    position: static !important;
+    display: block !important;
+    width: 100% !important;
+    padding: 0 !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+  }
+
+  .glass-panel, .bg-white, .dark\:bg-slate-800 {
+    background: white !important;
+    box-shadow: none !important;
+    border: none !important;
+    width: 100% !important;
+    max-width: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+
+  table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    table-layout: auto !important;
+  }
+
+  th, td {
+    border: 1px solid #ddd !important;
+    padding: 8px !important;
+    word-break: break-word !important;
+  }
+
+  tr {
+    page-break-inside: avoid !important;
+  }
+
+  thead {
+    display: table-header-group !important;
   }
 }
