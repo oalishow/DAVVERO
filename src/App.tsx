@@ -2,14 +2,12 @@ import { useState, useEffect } from 'react';
 import Header from './components/Header';
 import Verifier from './components/Verifier';
 import Admin from './components/Admin';
-import StudentPortal from './components/StudentPortal';
 import Footer from './components/Footer';
-import { Moon, Sun, Shield, User, Lock } from 'lucide-react';
+import { Moon, Sun } from 'lucide-react';
 import { loginAnon } from './lib/firebase';
-import { motion, AnimatePresence } from 'motion/react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'verifier' | 'admin' | 'student'>('verifier');
+  const [activeTab, setActiveTab] = useState<'verifier' | 'admin'>('verifier');
   const [theme, setTheme] = useState<'light' | 'dark'>('light');
 
   useEffect(() => {
@@ -50,43 +48,22 @@ export default function App() {
         <div className="relative z-10 space-y-6 sm:space-y-8">
           <Header />
 
-          <div className="grid grid-cols-3 bg-slate-200/50 dark:bg-slate-900/60 rounded-xl p-1 shadow-inner border border-slate-200/50 dark:border-slate-700/50 no-print gap-1">
-            <button 
-              onClick={() => setActiveTab('student')}
-              className={`flex flex-col items-center justify-center py-2 text-[10px] font-black uppercase tracking-tighter rounded-lg transition-all duration-300 ${activeTab === 'student' ? 'bg-white dark:bg-sky-600 text-sky-600 dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
-            >
-              <User className="w-4 h-4 mb-0.5" />
-              Minha ID
-            </button>
+          <div className="flex bg-slate-200/50 dark:bg-slate-900/60 rounded-xl p-1 shadow-inner border border-slate-200/50 dark:border-slate-700/50 no-print">
             <button 
               onClick={() => setActiveTab('verifier')}
-              className={`flex flex-col items-center justify-center py-2 text-[10px] font-black uppercase tracking-tighter rounded-lg transition-all duration-300 ${activeTab === 'verifier' ? 'bg-white dark:bg-sky-600 text-sky-600 dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+              className={`w-1/2 py-2.5 text-xs sm:text-sm font-bold rounded-lg transition-all duration-300 ${activeTab === 'verifier' ? 'bg-white dark:bg-sky-600 text-sky-600 dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
             >
-              <Shield className="w-4 h-4 mb-0.5" />
-              Verificar
+              Verificar Identidade
             </button>
             <button 
               onClick={() => setActiveTab('admin')}
-              className={`flex flex-col items-center justify-center py-2 text-[10px] font-black uppercase tracking-tighter rounded-lg transition-all duration-300 ${activeTab === 'admin' ? 'bg-white dark:bg-sky-600 text-sky-600 dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
+              className={`w-1/2 py-2.5 text-xs sm:text-sm font-bold rounded-lg transition-all duration-300 ${activeTab === 'admin' ? 'bg-white dark:bg-sky-600 text-sky-600 dark:text-white shadow-sm' : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200'}`}
             >
-              <Lock className="w-4 h-4 mb-0.5" />
-              Gestão
+              Área Administrativa
             </button>
           </div>
 
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={activeTab}
-              initial={{ opacity: 0, x: activeTab === 'student' ? -20 : activeTab === 'admin' ? 20 : 0 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: activeTab === 'student' ? 20 : activeTab === 'admin' ? -20 : 0 }}
-              transition={{ duration: 0.2 }}
-            >
-              {activeTab === 'verifier' && <Verifier />}
-              {activeTab === 'admin' && <Admin />}
-              {activeTab === 'student' && <StudentPortal />}
-            </motion.div>
-          </AnimatePresence>
+          {activeTab === 'verifier' ? <Verifier /> : <Admin />}
           
           <Footer />
         </div>

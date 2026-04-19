@@ -173,14 +173,8 @@ export default function VerificationResult({ member, status, onReset }: Verifica
         </div>
 
         {member?.alphaCode && (
-          <div className="mt-4 flex flex-col items-center gap-2 bg-white p-3 rounded-2xl w-fit mx-auto border-2 border-slate-200 shadow-sm transition-transform hover:scale-105">
-            <QRCodeCanvas 
-              value={`${cleanBaseUrl}?verify=${member.alphaCode}`} 
-              size={120} 
-              level="H" 
-              includeMargin={true}
-            />
-            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{member.alphaCode}</span>
+          <div className="mt-4 flex justify-center bg-white p-2 rounded-xl w-fit mx-auto border-2 border-slate-200 shadow-sm">
+            <QRCodeCanvas value={`${cleanBaseUrl}?verify=${member.alphaCode}`} size={80} level="M" />
           </div>
         )}
       </div>

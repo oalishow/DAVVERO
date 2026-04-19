@@ -7,6 +7,7 @@ import type { Member } from '../types';
 import VerificationResult from './VerificationResult';
 import PublicRequestModal from './PublicRequestModal';
 import SuggestEditModal from './SuggestEditModal';
+import BiometricVerification from './BiometricVerification';
 
 import { motion, AnimatePresence } from 'motion/react';
 
@@ -20,6 +21,7 @@ export default function Verifier() {
 
   const [showPublicReq, setShowPublicReq] = useState(false);
   const [showSuggestEdit, setShowSuggestEdit] = useState(false);
+  const [showBiometric, setShowBiometric] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
 
   useEffect(() => {
@@ -46,26 +48,9 @@ export default function Verifier() {
     let ht5Qrcode: Html5Qrcode | null = null;
     if (isScanning) {
       ht5Qrcode = new Html5Qrcode("reader");
-      const config = {
-        fps: 20,
-        qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
-          const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-          const boxSize = Math.floor(minEdge * 0.75);
-          return { width: boxSize, height: boxSize };
-        },
-        aspectRatio: 1.0,
-        disableFlip: false,
-        // Request higher resolution for better focus on small modules
-        videoConstraints: {
-          facingMode: "environment",
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        }
-      };
-
       ht5Qrcode.start(
         { facingMode: "environment" },
-        config,
+        { fps: 10, qrbox: 250 },
         (decodedText) => {
           ht5Qrcode?.stop().catch(console.error);
           setIsScanning(false);
@@ -218,14 +203,32 @@ export default function Verifier() {
             setValidationResult(null);
             setCodeInput('');
             setSuccessMsg('');
+            setShowBiometric(false);
           }}
         />
         {validationResult.member && validationResult.status !== 'NOT_FOUND' && (
-          <div className="mt-4 w-full max-w-sm px-1 no-print">
+          <div className="mt-4 w-full max-w-sm px-1 no-print space-y-3">
+             <button 
+               onClick={() => setShowBiometric(true)} 
+               className="w-full py-4 px-4 rounded-xl text-sm font-black text-white bg-slate-900 border border-slate-700 shadow-xl shadow-slate-900/20 hover:bg-slate-800 transition-all flex items-center justify-center gap-2 group"
+             >
+                <div className="w-6 h-6 rounded-lg bg-sky-500/20 flex items-center justify-center text-sky-400 group-hover:scale-110 transition-transform">
+                   <ScanLine className="w-4 h-4" />
+                </div>
+                VALIDAÇÃO BIOMÉTRICA (IA)
+             </button>
+
              <button onClick={() => setShowSuggestEdit(true)} className="w-full py-3 px-4 rounded-xl text-sm font-bold text-slate-700 bg-white hover:bg-slate-50 border border-slate-200 shadow-sm dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-700 transition-colors">
                Sugerir Alteração / Correção
              </button>
           </div>
+        )}
+
+        {showBiometric && validationResult.member && (
+          <BiometricVerification 
+            member={validationResult.member} 
+            onClose={() => setShowBiometric(false)} 
+          />
         )}
 
         {showSuggestEdit && validationResult.member && (
@@ -271,13 +274,7 @@ export default function Verifier() {
         )}
       </div>
 
-      <div id="reader" className={`w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl border-4 border-sky-400/50 dark:border-sky-500/30 ${!isScanning && 'hidden'}`}></div>
-      
-      {isScanning && (
-        <p className="text-[10px] text-slate-500 font-medium animate-pulse">
-          Dica: Aproxime ou afaste a câmera para focar no código.
-        </p>
-      )}
+      <div id="reader" className={`w-full max-w-sm rounded-2xl overflow-hidden shadow-lg border-2 border-sky-300 dark:border-sky-500/30 ${!isScanning && 'hidden'}`}></div>
 
       <div className="relative flex items-center py-2 w-full max-w-md">
         <div className="flex-grow border-t border-slate-300 dark:border-slate-700/80"></div>
