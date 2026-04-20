@@ -5,6 +5,7 @@ import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db, appId } from '../lib/firebase';
 import type { Member } from '../types';
 import VerificationResult from './VerificationResult';
+import Modal from './Modal';
 
 const STUDENT_BOND_KEY = 'verifyId_student_identity';
 const STUDENT_BIOMETRIC_ENROLLED = 'verifyId_student_biometric';
@@ -18,6 +19,11 @@ export default function StudentPortal() {
   
   const [linkMode, setLinkMode] = useState(false);
   const [alphaCode, setAlphaCode] = useState('');
+
+  // Modal States
+  const [modalUnlinkOpen, setModalUnlinkOpen] = useState(false);
+  const [modalBiometricOpen, setModalBiometricOpen] = useState(false);
+  const [modalHelpOpen, setModalHelpOpen] = useState(false);
 
   const isBiometricSupported = !!(window.PublicKeyCredential && window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable);
 
@@ -79,12 +85,10 @@ export default function StudentPortal() {
         localStorage.setItem(STUDENT_BOND_KEY, data.alphaCode || '');
         
         if (isBiometricSupported) {
-           const wantBiometric = window.confirm("Deseja ativar biometria (Digital/Rosto) para acessar sua carteirinha mais rápido?");
-           if (wantBiometric) {
-              localStorage.setItem(STUDENT_BIOMETRIC_ENROLLED, 'true');
-           }
+           setModalBiometricOpen(true);
+        } else {
+          setIsUnlocked(true);
         }
-        setIsUnlocked(true);
         setLinkMode(false);
       } else {
         setError("Código não encontrado na base de dados.");
@@ -106,14 +110,12 @@ export default function StudentPortal() {
     }
   };
 
-  const unlink = () => {
-    if (window.confirm("Deseja remover sua identidade deste dispositivo?")) {
-      localStorage.removeItem(STUDENT_BOND_KEY);
-      localStorage.removeItem(STUDENT_BIOMETRIC_ENROLLED);
-      setBondedId(null);
-      setMember(null);
-      setIsUnlocked(false);
-    }
+  const confirmUnlink = () => {
+    localStorage.removeItem(STUDENT_BOND_KEY);
+    localStorage.removeItem(STUDENT_BIOMETRIC_ENROLLED);
+    setBondedId(null);
+    setMember(null);
+    setIsUnlocked(false);
   };
 
   if (isLoading) {
@@ -128,46 +130,107 @@ export default function StudentPortal() {
   if (bondedId && member) {
     if (!isUnlocked) {
       return (
-        <div className="flex flex-col items-center justify-center py-12 px-6 text-center space-y-8 animate-fade-in">
-           <div className="w-20 h-20 bg-sky-100 dark:bg-sky-500/10 rounded-3xl flex items-center justify-center text-sky-600 dark:text-sky-400">
-              <Fingerprint className="w-10 h-10" />
-           </div>
-           <div>
-              <h2 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">Carteirinha Bloqueada</h2>
-              <p className="text-sm text-slate-500 mt-2">Use sua biometria para visualizar seus dados de identificação.</p>
-           </div>
-           <button 
-             onClick={handleBiometricUnlock}
-             className="w-full max-w-xs py-4 bg-sky-600 hover:bg-sky-500 text-white rounded-2xl font-bold shadow-lg shadow-sky-600/20 transition-all active:scale-95 flex items-center justify-center gap-2"
-           >
-              <Fingerprint className="w-5 h-5" /> Desbloquear
-           </button>
-           <button onClick={unlink} className="text-xs text-slate-400 hover:text-rose-500 font-medium transition-colors">Remover vínculo com este dispositivo</button>
-        </div>
+        <>
+          <Modal 
+            isOpen={modalUnlinkOpen} 
+            onClose={() => setModalUnlinkOpen(false)} 
+            title="Remover Vínculo"
+            confirmLabel="Sim, Remover"
+            confirmVariant="danger"
+            onConfirm={confirmUnlink}
+          >
+            Deseja remover sua identidade institucional deste dispositivo? Você precisará do código de segurança para vincular novamente.
+          </Modal>
+
+          <div className="flex flex-col items-center justify-center py-12 px-6 text-center space-y-8 animate-fade-in">
+             <div className="w-20 h-20 bg-sky-100 dark:bg-sky-500/10 rounded-3xl flex items-center justify-center text-sky-600 dark:text-sky-400">
+                <Fingerprint className="w-10 h-10" />
+             </div>
+             <div>
+                <h2 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">Carteirinha Bloqueada</h2>
+                <p className="text-sm text-slate-500 mt-2">Use sua biometria para visualizar seus dados de identificação.</p>
+             </div>
+             <button 
+               onClick={handleBiometricUnlock}
+               className="w-full max-w-xs py-4 bg-sky-600 hover:bg-sky-500 text-white rounded-2xl font-bold shadow-lg shadow-sky-600/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+             >
+                <Fingerprint className="w-5 h-5" /> Desbloquear
+             </button>
+             <button onClick={() => setModalUnlinkOpen(true)} className="text-xs text-slate-400 hover:text-rose-500 font-medium transition-colors">Remover vínculo com este dispositivo</button>
+          </div>
+        </>
       );
     }
 
     return (
-      <div className="w-full flex flex-col items-center animate-fade-in no-print">
-         <div className="w-full flex justify-between items-center mb-6 px-2">
-            <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-1">
-               <ShieldCheck className="w-3 h-3" /> Acesso Seguro Ativo
-            </span>
-            <button onClick={unlink} className="p-2 text-slate-400 hover:text-rose-500 transition-colors" title="Sair / Desvincular">
-               <LogOut className="w-5 h-5" />
-            </button>
-         </div>
-         <VerificationResult 
-           member={member} 
-           status={member.isActive ? 'VALID' : 'INACTIVE'} 
-           onReset={() => {}} 
-         />
-      </div>
+      <>
+        <Modal 
+          isOpen={modalUnlinkOpen} 
+          onClose={() => setModalUnlinkOpen(false)} 
+          title="Sair do Portal"
+          confirmLabel="Sim, Sair"
+          confirmVariant="danger"
+          onConfirm={confirmUnlink}
+        >
+          Deseja desvincular sua carteirinha deste dispositivo? Esta ação encerrará sua sessão segura.
+        </Modal>
+
+        <div className="w-full flex flex-col items-center animate-fade-in no-print mt-10">
+           <div className="w-full flex justify-between items-center mb-6 px-2">
+              <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-1">
+                 <ShieldCheck className="w-3 h-3" /> Acesso Seguro Ativo
+              </span>
+              <button 
+                onClick={() => setModalUnlinkOpen(true)} 
+                className="p-2 text-slate-400 hover:text-rose-500 transition-colors" 
+                title="Sair / Desvincular"
+              >
+                 <LogOut className="w-5 h-5" />
+              </button>
+           </div>
+           <VerificationResult 
+             member={member} 
+             status={member.isActive ? 'VALID' : 'INACTIVE'} 
+             onReset={() => {}} 
+             isMyID={true}
+           />
+        </div>
+      </>
     );
   }
 
   return (
     <div className="flex flex-col items-center py-8 space-y-8 w-full max-w-sm mx-auto">
+       <Modal 
+         isOpen={modalHelpOpen} 
+         onClose={() => setModalHelpOpen(false)} 
+         title="Instruções de Vínculo"
+         onConfirm={() => {
+           setLinkMode(true);
+           setModalHelpOpen(false);
+         }}
+         confirmLabel="Entendi"
+       >
+         Utilize a aba <strong className="text-slate-800 dark:text-white">'Verificar Identidade'</strong> para escanear seu QR Code físico e obter seu <strong className="text-emerald-600">Código Alfanumérico</strong>, ou consulte a secretaria da faculdade.
+       </Modal>
+
+       <Modal 
+          isOpen={modalBiometricOpen} 
+          onClose={() => {
+            setIsUnlocked(true);
+            setModalBiometricOpen(false);
+          }} 
+          title="Ativar Biometria"
+          confirmLabel="Ativar Agora"
+          onConfirm={() => {
+            localStorage.setItem(STUDENT_BIOMETRIC_ENROLLED, 'true');
+            setIsUnlocked(true);
+          }}
+          confirmVariant="success"
+        >
+          Deseja ativar a proteção por biometria (Digital/Rosto) para acessar sua carteirinha de forma mais segura e rápida nas próximas vezes?
+        </Modal>
+
        <div className="text-center space-y-3">
           <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-500/20 rounded-2xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 mx-auto">
              <User className="w-8 h-8" />
@@ -181,10 +244,7 @@ export default function StudentPortal() {
        {!linkMode ? (
          <div className="w-full space-y-3">
             <button 
-              onClick={() => {
-                alert("Utilize a aba 'Verificar Identidade' para escanear seu QR Code e obter seu Código Alfanumérico, ou consulte sua secretaria.");
-                setLinkMode(true);
-              }}
+              onClick={() => setModalHelpOpen(true)}
               className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold shadow-xl shadow-slate-900/20 hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
             >
                <QrCode className="w-5 h-5" /> Vincular Carteirinha
@@ -229,3 +289,4 @@ export default function StudentPortal() {
     </div>
   );
 }
+

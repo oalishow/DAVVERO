@@ -4,10 +4,12 @@ import { X, Trash2, ShieldAlert } from 'lucide-react';
 import { collection, query, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db, appId } from '../lib/firebase';
 import type { Member } from '../types';
+import Modal from './Modal';
 
 export default function RecycleBinModal({ onClose }: { onClose: () => void }) {
   const [deletedMembers, setDeletedMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     loadDeletedMembers();
@@ -55,12 +57,20 @@ export default function RecycleBinModal({ onClose }: { onClose: () => void }) {
       setDeletedMembers(prev => prev.filter(m => m.id !== id));
     } catch (err) {
       console.error(err);
-      alert('Falha ao restaurar');
+      setErrorMessage('Falha ao restaurar');
     }
   };
 
   return createPortal(
     <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[100] overflow-y-auto">
+      <Modal 
+        isOpen={!!errorMessage} 
+        onClose={() => setErrorMessage(null)} 
+        title="Erro"
+      >
+        {errorMessage}
+      </Modal>
+
       <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-200 dark:border-rose-900/50 rounded-3xl shadow-[0_30px_60px_rgba(0,0,0,0.12)] p-6 w-full max-w-lg animated-scale-in">
         <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-100 dark:border-slate-700/60 font-bold">
           <h2 className="text-xl font-bold text-rose-600 dark:text-rose-400 flex items-center gap-2">
@@ -100,3 +110,4 @@ export default function RecycleBinModal({ onClose }: { onClose: () => void }) {
     document.body
   );
 }
+

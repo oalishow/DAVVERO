@@ -2,6 +2,9 @@ export interface Member {
   id: string;
   name: string;
   ra?: string;
+  cpf?: string;
+  rg?: string;
+  birthdate?: string;
   email?: string;
   validityDate?: string;
   alphaCode?: string;

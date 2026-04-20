@@ -3,15 +3,19 @@ import { Printer } from 'lucide-react';
 import type { Member } from '../types';
 import { QRCodeCanvas } from 'qrcode.react';
 import { URL_STORAGE_KEY, DEFAULT_PUBLIC_URL } from '../lib/constants';
+import FajopaIDCard from './FajopaIDCard';
+import Modal from './Modal';
 
 interface VerificationResultProps {
   member: Member | null;
   status: 'VALID' | 'INACTIVE' | 'EXPIRED' | 'NOT_FOUND';
   onReset: () => void;
+  isMyID?: boolean;
 }
 
-export default function VerificationResult({ member, status, onReset }: VerificationResultProps) {
+export default function VerificationResult({ member, status, onReset, isMyID = false }: VerificationResultProps) {
   const [exporting, setExporting] = useState(false);
+  const [modalResetOpen, setModalResetOpen] = useState(false);
   const now = new Date();
   const timestampStr = `${now.toLocaleDateString('pt-BR')} às ${now.toLocaleTimeString('pt-BR')}`;
   
@@ -65,13 +69,19 @@ export default function VerificationResult({ member, status, onReset }: Verifica
     setExporting(true);
     try {
       const { toPng } = await import('html-to-image');
-      const card = document.getElementById('validation-card-capture');
+      
+      let targetNodeId = 'validation-card-capture';
+      if (isMyID && status === 'VALID') {
+        targetNodeId = 'export-card-node';
+      }
+      
+      const card = document.getElementById(targetNodeId);
       if (!card) return;
 
       const isDarkMode = document.documentElement.classList.contains('dark');
       
       const url = await toPng(card, {
-        backgroundColor: isDarkMode ? '#0f172a' : '#ffffff',
+        backgroundColor: (isMyID && status === 'VALID') ? 'transparent' : (isDarkMode ? '#0f172a' : '#ffffff'),
         pixelRatio: 2,
         style: {
           // Fixes an issue where animations or transforms might clip the canvas during capture
@@ -102,8 +112,20 @@ export default function VerificationResult({ member, status, onReset }: Verifica
 
   return (
     <div className="w-full mt-6 animated-fade-in flex flex-col items-center">
+      {isMyID && status === 'VALID' && member ? (
+         <div id="validation-card-capture" className="w-full mb-4 max-w-[600px] pointer-events-auto">
+            <div className="animate-success-pop flex flex-col items-center justify-center w-full">
+               <FajopaIDCard member={member} />
+               {/* Hidden node specifically optimized for exporting without 3D perspective issues */}
+               <FajopaIDCard member={member} exportMode={true} />
+               
+               <p className="text-[10px] text-slate-500 mt-5 font-semibold uppercase tracking-widest bg-emerald-100/50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-3 py-1 rounded-full"><span className="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-1 animate-pulse"></span> Documento Estudantil Válido</p>
+               <p className="text-[10px] text-slate-400 mt-2 font-medium">Toque no cartão para girar e ver o verso.</p>
+            </div>
+         </div>
+      ) : (
       <div 
-        id="validation-card-capture"
+        id={!isMyID ? "validation-card-capture" : undefined}
         className={`result-card w-full max-w-sm ${status === 'VALID' ? 'animate-success-pop' : 'animate-error-wobble'} bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-2 p-6 sm:p-8 rounded-[2rem] text-center relative overflow-hidden shadow-[0_20px_50px_rgba(0,0,0,0.1)] print:shadow-none print:bg-white print:text-black print:border-slate-300 ${
           status === 'VALID' ? 'border-emerald-100 dark:border-emerald-500/50 shadow-emerald-500/10' : 
           status === 'INACTIVE' ? 'border-amber-100 dark:border-amber-500/50 shadow-amber-500/10' : 
@@ -184,9 +206,20 @@ export default function VerificationResult({ member, status, onReset }: Verifica
           </div>
         )}
       </div>
+      )}
 
       <div className="flex flex-col sm:flex-row gap-3 mt-5 w-full max-w-sm no-print">
-        <button onClick={onReset} className="flex-1 py-3 px-4 rounded-xl text-sm font-bold text-slate-700 bg-slate-200 hover:bg-slate-300 transition-colors">
+        <Modal 
+          isOpen={modalResetOpen} 
+          onClose={() => setModalResetOpen(false)} 
+          title="Nova Consulta"
+          confirmLabel="Sim, Iniciar"
+          onConfirm={onReset}
+        >
+          Deseja limpar os dados atuais e realizar uma nova leitura de QR Code ou consulta?
+        </Modal>
+
+        <button onClick={() => setModalResetOpen(true)} className="flex-1 py-3 px-4 rounded-xl text-sm font-bold text-slate-700 bg-slate-200 hover:bg-slate-300 transition-colors">
           Nova Consulta
         </button>
         <div className="flex gap-2 flex-1">

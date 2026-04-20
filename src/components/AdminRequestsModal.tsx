@@ -4,10 +4,16 @@ import { X, Check } from 'lucide-react';
 import { collection, query, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { db, appId } from '../lib/firebase';
 import type { Member } from '../types';
+import Modal from './Modal';
 
 export default function AdminRequestsModal({ onClose }: { onClose: () => void }) {
   const [requests, setRequests] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
+
+  // Modal State
+  const [modalRejectOpen, setModalRejectOpen] = useState(false);
+  const [selectedReject, setSelectedReject] = useState<{id: string, isEdit: boolean} | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   const fetchRequests = async () => {
     setLoading(true);
@@ -45,7 +51,7 @@ export default function AdminRequestsModal({ onClose }: { onClose: () => void })
       fetchRequests();
     } catch (err) {
       console.error(err);
-      alert('Erro ao aprovar membro.');
+      setErrorMessage('Erro ao aprovar membro.');
     }
   };
 
@@ -63,12 +69,13 @@ export default function AdminRequestsModal({ onClose }: { onClose: () => void })
       fetchRequests();
     } catch (e) {
       console.error(e);
-      alert('Erro ao aplicar pacote de atualizações.');
+      setErrorMessage('Erro ao aplicar pacote de atualizações.');
     }
   };
 
-  const handleReject = async (id: string, isEdit: boolean) => {
-    if (!confirm(isEdit ? 'Rejeitar estas alterações?' : 'Recusar cadastro submetido? (Esta ação elimina os dados)')) return;
+  const confirmReject = async () => {
+    if (!selectedReject) return;
+    const { id, isEdit } = selectedReject;
     
     try {
       const mRef = doc(db, `artifacts/${appId}/public/data/students`, id);
@@ -77,15 +84,43 @@ export default function AdminRequestsModal({ onClose }: { onClose: () => void })
       } else {
         await deleteDoc(mRef);
       }
+      setModalRejectOpen(false);
+      setSelectedReject(null);
       fetchRequests();
     } catch(e) {
       console.error(e);
-      alert('Falha ao rejeitar.');
+      setErrorMessage('Falha ao rejeitar.');
     }
+  };
+
+  const handleReject = (id: string, isEdit: boolean) => {
+    setSelectedReject({ id, isEdit });
+    setModalRejectOpen(true);
   };
 
   return createPortal(
     <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-[100] overflow-y-auto">
+      <Modal 
+        isOpen={modalRejectOpen} 
+        onClose={() => setModalRejectOpen(false)} 
+        title={selectedReject?.isEdit ? "Rejeitar Alterações" : "Recusar Cadastro"}
+        confirmLabel="Confirmar Rejeição"
+        confirmVariant="danger"
+        onConfirm={confirmReject}
+      >
+        {selectedReject?.isEdit 
+          ? "Deseja ignorar as sugestões de edição enviadas pelo aluno? Os dados atuais permanecerão inalterados." 
+          : "Deseja recusar este cadastro? Os dados enviados serão eliminados permanentemente da base de dados."}
+      </Modal>
+
+      <Modal 
+        isOpen={!!errorMessage} 
+        onClose={() => setErrorMessage(null)} 
+        title="Aviso do Sistema"
+      >
+        {errorMessage}
+      </Modal>
+
       <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-200 dark:border-slate-700/50 rounded-3xl shadow-[0_30px_60px_rgba(0,0,0,0.12)] p-6 w-full max-w-2xl animated-scale-in">
         <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-100 dark:border-slate-700/60">
           <h2 className="text-xl font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">
@@ -157,3 +192,4 @@ export default function AdminRequestsModal({ onClose }: { onClose: () => void })
     document.body
   );
 }
+

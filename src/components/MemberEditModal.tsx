@@ -7,6 +7,7 @@ import type { Member } from '../types';
 import { QRCodeCanvas } from 'qrcode.react';
 import { URL_STORAGE_KEY, DEFAULT_PUBLIC_URL } from '../lib/constants';
 import ImageCropperModal from './ImageCropperModal';
+import Modal from './Modal';
 
 interface MemberEditModalProps {
   member: Member;
@@ -17,6 +18,9 @@ interface MemberEditModalProps {
 export default function MemberEditModal({ member, onClose, onUpdate }: MemberEditModalProps) {
   const [name, setName] = useState(member.name || '');
   const [ra, setRa] = useState(member.ra || '');
+  const [cpf, setCpf] = useState(member.cpf || '');
+  const [rg, setRg] = useState(member.rg || '');
+  const [birthdate, setBirthdate] = useState(member.birthdate || '');
   const [email, setEmail] = useState(member.email || '');
   const [validity, setValidity] = useState(member.validityDate || '');
   const [isActive, setIsActive] = useState(member.isActive !== false);
@@ -28,6 +32,9 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // Modal State
+  const [modalDeleteOpen, setModalDeleteOpen] = useState(false);
   
   const availableRoles = ["ALUNO(A)", "PROFESSOR(A)", "COLABORADOR(A)", "SEMINARISTA", "PADRE", "DIÁCONO", "BISPO"];
   const qrRef = useRef<HTMLDivElement>(null);
@@ -58,7 +65,7 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
     try {
       const docRef = doc(db, `artifacts/${appId}/public/data/students`, member.id);
       await updateDoc(docRef, {
-        name, ra, email, validityDate: validity, isActive, course, roles,
+        name, ra, cpf, rg, birthdate, email, validityDate: validity, isActive, course, roles,
         photoUrl: photoUrl || null
       });
       onUpdate();
@@ -70,7 +77,6 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
   };
 
   const handleSoftDelete = async () => {
-    if (!confirm('Deseja mover este registo para a lixeira?')) return;
     setLoading(true);
     try {
       const docRef = doc(db, `artifacts/${appId}/public/data/students`, member.id);
@@ -107,6 +113,17 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
 
   return createPortal(
     <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-[100] overflow-y-auto">
+      <Modal 
+        isOpen={modalDeleteOpen} 
+        onClose={() => setModalDeleteOpen(false)} 
+        title="Mover para Lixeira"
+        confirmLabel="Sim, Mover"
+        confirmVariant="danger"
+        onConfirm={handleSoftDelete}
+      >
+        Tem certeza que deseja mover <strong>{member.name}</strong> para a lixeira? O registo ficará oculto da lista principal mas poderá ser restaurado em até 30 dias.
+      </Modal>
+
       {cropImageSrc && (
         <ImageCropperModal
           imageSrc={cropImageSrc}
@@ -148,9 +165,29 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
                   </select>
                 </div>
               </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-slate-500 mb-1 block">CPF</label>
+                  <input type="text" value={cpf} onChange={e => setCpf(e.target.value)} className="input-modern w-full rounded-lg py-2 px-3 text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-500 mb-1 block">RG</label>
+                  <input type="text" value={rg} onChange={e => setRg(e.target.value)} className="input-modern w-full rounded-lg py-2 px-3 text-sm" />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-slate-500 mb-1 block">Nascimento (DD/MM/AAAA)</label>
+                  <input type="text" value={birthdate} onChange={e => setBirthdate(e.target.value)} placeholder="01/01/2000" className="input-modern w-full rounded-lg py-2 px-3 text-sm" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-slate-500 mb-1 block">Data Validade</label>
+                  <input type="date" value={validity} onChange={e => setValidity(e.target.value)} className="input-modern w-full rounded-lg py-2 px-3 text-sm" />
+                </div>
+              </div>
               <div>
-                <label className="text-xs font-medium text-slate-500 mb-1 block">Data Validade</label>
-                <input type="date" value={validity} onChange={e => setValidity(e.target.value)} className="input-modern w-full rounded-lg py-2 px-3 text-sm" />
+                <label className="text-xs font-medium text-slate-500 mb-1 block">Curso</label>
+                <input type="text" value={course} onChange={e => setCourse(e.target.value)} className="input-modern w-full rounded-lg py-2 px-3 text-sm" />
               </div>
               <div>
                 <label className="text-xs font-medium text-slate-500 mb-1 block">Código Identificação</label>
@@ -198,7 +235,7 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
         </div>
 
         <div className="flex flex-col sm:flex-row justify-between items-center mt-6 pt-5 border-t border-slate-200 dark:border-slate-700/60 gap-4 no-print">
-          <button onClick={handleSoftDelete} disabled={loading} className="btn-modern flex items-center gap-2 text-rose-600 bg-rose-50 hover:bg-rose-600 hover:text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors w-full sm:w-auto justify-center">
+          <button onClick={() => setModalDeleteOpen(true)} disabled={loading} className="btn-modern flex items-center gap-2 text-rose-600 bg-rose-50 hover:bg-rose-600 hover:text-white px-4 py-2.5 rounded-xl text-sm font-medium transition-colors w-full sm:w-auto justify-center">
              <Trash2 className="w-4 h-4" /> Mover para Lixeira
           </button>
           <div className="flex gap-3 w-full sm:w-auto">
@@ -214,3 +251,4 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
     document.body
   );
 }
+
