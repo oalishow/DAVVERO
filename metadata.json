@@ -1,6 +1,6 @@
 {
-  "name": "Verify ID v2.8.0 - Identidade Digital",
+  "name": "Verify ID v2.9.1 - Identidade Digital",
   "description": "Sistema avançado de verificação de identidades para FAJOPA e SPSCJ com relatórios de impressão e gestão de membros.",
-  "requestFramePermissions": [],
+  "requestFramePermissions": ["camera"],
   "majorCapabilities": []
 }

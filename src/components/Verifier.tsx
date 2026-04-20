@@ -61,43 +61,63 @@ export default function Verifier() {
     // We use any here since we avoid importing the type explicitly to save bundle size, but any works
     let ht5Qrcode: any = null;
     if (isScanning) {
-        // Give a tiny delay for React to reveal the #reader div before library measures it
+        // Give more time for React to render and the DOM to settle on mobile
         const timer = setTimeout(() => {
           import('html5-qrcode').then(({ Html5Qrcode }) => {
             if (!isActive) return;
-            ht5Qrcode = new Html5Qrcode("reader", { useBarCodeDetectorIfSupported: true, verbose: false });
+            
+            // Avoid experimental BarCodeDetector which can be unstable on Safari/PWA
+            ht5Qrcode = new Html5Qrcode("reader", { verbose: false });
+            
             const config = {
                 fps: 10,
                 qrbox: { width: 250, height: 250 },
                 aspectRatio: 1.0,
-                disableFlip: false
+                disableFlip: false,
+                // Adding videoConstraints explicitly for Safari
+                videoConstraints: {
+                    facingMode: "environment"
+                }
               };
 
             ht5Qrcode.start(
                 { facingMode: "environment" },
                 config,
                 (decodedText: string) => {
-                  ht5Qrcode?.stop().catch(console.error);
-                  setIsScanning(false);
-                  
-                  let memberId = decodedText;
-                  try {
-                      const url = new URL(decodedText);
-                      memberId = url.searchParams.get('verify') || decodedText;
-                  } catch (_) {}
-        
-                  runVerification(memberId, false);
+                  ht5Qrcode?.stop().then(() => {
+                    setIsScanning(false);
+                    // Process the result
+                    let memberId = decodedText;
+                    try {
+                        const url = new URL(decodedText);
+                        memberId = url.searchParams.get('verify') || decodedText;
+                    } catch (_) {}
+                    runVerification(memberId, false);
+                  }).catch(console.error);
                 },
-                () => {}
-            ).catch(console.error);
+                () => {} // silent scan failure (it retries every frame)
+            ).catch((err: any) => {
+                console.error("Camera Error:", err);
+                // Inform user on serious failure
+                if (err?.toString().includes("NotAllowedError") || err?.toString().includes("Permission")) {
+                    alert("Por favor, permita o acesso à câmera nas configurações do seu navegador para escanear.");
+                } else {
+                    alert("Não foi possível acessar a câmera. Certifique-se de que não está sendo usada por outro app.");
+                }
+                setIsScanning(false);
+            });
           });
-        }, 300);
+        }, 500);
 
         return () => {
           isActive = false;
           clearTimeout(timer);
-          if (ht5Qrcode && ht5Qrcode.isScanning) {
-            ht5Qrcode.stop().catch(console.error);
+          if (ht5Qrcode) {
+            try {
+              if (ht5Qrcode.isScanning) {
+                ht5Qrcode.stop().catch(() => {});
+              }
+            } catch (e) {}
           }
         }
     }

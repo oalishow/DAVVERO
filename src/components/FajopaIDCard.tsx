@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { Member } from '../types';
-import { QRCodeCanvas } from 'qrcode.react';
+import { QRCodeSVG } from 'qrcode.react';
 import { URL_STORAGE_KEY, DEFAULT_PUBLIC_URL, DIRECTOR_NAME_KEY, DEFAULT_DIRECTOR_NAME } from '../lib/constants';
 
 interface FajopaIDCardProps {
@@ -63,7 +63,17 @@ export default function FajopaIDCard({ member, exportMode = false }: FajopaIDCar
   const avatarUrl = member.photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}&background=e2e8f0&color=475569`;
 
   const frontSide = (
-    <div className={`absolute w-[600px] h-[378px] backface-hidden print-card bg-gradient-to-br from-indigo-50 via-sky-50 to-cyan-100 overflow-hidden shadow-2xl shrink-0`} style={{ borderRadius: '16px', border: '1px solid rgba(0,0,0,0.1)' }}>
+    <div 
+      className={`absolute w-[600px] h-[378px] backface-hidden print-card bg-gradient-to-br from-indigo-50 via-sky-50 to-cyan-100 overflow-hidden shadow-2xl shrink-0`} 
+      style={{ 
+        borderRadius: '16px', 
+        border: '1px solid rgba(0,0,0,0.1)',
+        WebkitBackfaceVisibility: 'hidden',
+        backfaceVisibility: 'hidden',
+        transform: 'translate3d(0,0,0)',
+        WebkitTransform: 'translate3d(0,0,0)'
+      }}
+    >
       {/* Top Divider / Header Decor */}
       <div className="absolute top-0 left-0 w-full h-[18%] bg-blue-950 border-b-4 border-cyan-500 flex items-center z-20 shadow-sm">
          <h1 className="text-white font-black pl-[5%] tracking-wide" style={{ fontSize: '24px' }}>
@@ -147,7 +157,7 @@ export default function FajopaIDCard({ member, exportMode = false }: FajopaIDCar
         </div>
         
         <div className="w-[60%] aspect-square bg-white border-[2px] border-slate-800 p-1 shadow-sm mt-[6%]">
-           <QRCodeCanvas 
+           <QRCodeSVG 
             value={verificationUrl} 
             size={256}
             style={{ width: '100%', height: '100%' }}
@@ -160,7 +170,17 @@ export default function FajopaIDCard({ member, exportMode = false }: FajopaIDCar
   );
 
   const backSide = (
-    <div className={`absolute w-[600px] h-[378px] backface-hidden ${exportMode ? '' : 'rotate-y-180'} print-card bg-gradient-to-br from-indigo-50 to-sky-100 overflow-hidden shadow-2xl shrink-0`} style={{ borderRadius: '16px', border: '1px solid rgba(0,0,0,0.1)' }}>
+    <div 
+      className={`absolute w-[600px] h-[378px] backface-hidden print-card bg-gradient-to-br from-indigo-50 to-sky-100 overflow-hidden shadow-2xl shrink-0`} 
+      style={{ 
+        borderRadius: '16px', 
+        border: '1px solid rgba(0,0,0,0.1)',
+        WebkitBackfaceVisibility: 'hidden',
+        backfaceVisibility: 'hidden',
+        transform: exportMode ? 'translate3d(0,0,0)' : 'rotateY(180deg) translate3d(0,0,0)',
+        WebkitTransform: exportMode ? 'translate3d(0,0,0)' : 'rotateY(180deg) translate3d(0,0,0)'
+      }}
+    >
       {/* Top left decors */}
       <div className="absolute top-0 left-0 w-[45%] h-[35%] bg-blue-950" style={{ clipPath: 'polygon(0 0, 100% 0, 30% 100%, 0 100%)' }}></div>
       <div className="absolute top-0 left-0 w-[35%] h-[25%] bg-cyan-500" style={{ clipPath: 'polygon(0 0, 100% 0, 40% 100%, 0 100%)' }}></div>
@@ -261,10 +281,18 @@ export default function FajopaIDCard({ member, exportMode = false }: FajopaIDCar
     >
       <div style={{ transform: `scale(${scale})`, transformOrigin: 'center center' }}>
         <div className="w-[600px] h-[378px] transition-transform duration-500 max-sm:portrait:rotate-90 origin-center">
-           <div className={`relative w-full h-full transition-transform duration-700 transform-style-3d ${flipped ? 'rotate-y-180' : ''}`}>
-             {frontSide}
-             {backSide}
-           </div>
+           <div 
+          className={`relative w-full h-full transition-transform duration-700 transform-style-3d ${flipped ? 'rotate-y-180' : ''}`}
+          style={{ 
+            transformStyle: 'preserve-3d', 
+            WebkitTransformStyle: 'preserve-3d',
+            perspective: '1000px',
+            WebkitPerspective: '1000px'
+          }}
+        >
+          {frontSide}
+          {backSide}
+        </div>
         </div>
       </div>
     </div>
