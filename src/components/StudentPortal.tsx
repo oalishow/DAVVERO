@@ -38,8 +38,18 @@ export default function StudentPortal() {
   const [member, setMember] = useState<Member | null>(null);
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [biometricsAvailable, setBiometricsAvailable] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
+  useEffect(() => {
+    // Check for biometric support correctly (it returns a promise)
+    if (window.PublicKeyCredential && window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
+      window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()
+        .then(result => setBiometricsAvailable(result))
+        .catch(() => setBiometricsAvailable(false));
+    }
+  }, []);
+
   const [linkMode, setLinkMode] = useState(false);
   const [alphaCode, setAlphaCode] = useState('');
 
@@ -47,8 +57,9 @@ export default function StudentPortal() {
   const [modalUnlinkOpen, setModalUnlinkOpen] = useState(false);
   const [modalBiometricOpen, setModalBiometricOpen] = useState(false);
   const [modalHelpOpen, setModalHelpOpen] = useState(false);
+  const [modalIframeWarning, setModalIframeWarning] = useState(false);
 
-  const isBiometricSupported = !!(window.PublicKeyCredential && window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable);
+  const isIframe = window.self !== window.top;
 
   useEffect(() => {
     if (bondedId) {
@@ -118,7 +129,7 @@ export default function StudentPortal() {
         localStorage.setItem(STUDENT_BOND_KEY, data.alphaCode || '');
         setLinkMode(false);
         
-        if (isBiometricSupported) {
+        if (biometricsAvailable) {
            setModalBiometricOpen(true);
         } else {
            setIsUnlocked(true);
@@ -134,18 +145,33 @@ export default function StudentPortal() {
   };
 
   const enrollBiometric = async () => {
+    if (isIframe) {
+      setModalIframeWarning(true);
+      return;
+    }
+
     try {
+      const challenge = window.crypto.getRandomValues(new Uint8Array(32));
+      const userId = window.crypto.getRandomValues(new Uint8Array(16));
+
       const credential = await navigator.credentials.create({
         publicKey: {
-          challenge: window.crypto.getRandomValues(new Uint8Array(32)),
-          rp: { name: "Carteirinha Estudantil", id: window.location.hostname },
+          challenge,
+          rp: { name: "Carteirinha Fajopa", id: window.location.hostname },
           user: { 
-            id: window.crypto.getRandomValues(new Uint8Array(16)), 
+            id: userId, 
             name: member?.ra || "Estudante", 
             displayName: member?.name || "Estudante" 
           },
-          pubKeyCredParams: [{type: "public-key", alg: -7}, {type: "public-key", alg: -257}],
-          authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required" },
+          pubKeyCredParams: [
+            { type: "public-key", alg: -7 },   // ES256
+            { type: "public-key", alg: -257 } // RS256
+          ],
+          authenticatorSelection: { 
+            authenticatorAttachment: "platform", 
+            userVerification: "required",
+            residentKey: "preferred"
+          },
           timeout: 60000,
         }
       }) as PublicKeyCredential;
@@ -156,19 +182,28 @@ export default function StudentPortal() {
         setIsUnlocked(true);
         setModalBiometricOpen(false);
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Biometric enrollment failed", err);
-      // Fallback: Just mark enrolled and let 'unlock' be a simple tap button
-      localStorage.setItem(STUDENT_BIOMETRIC_ENROLLED, 'true');
-      setIsUnlocked(true);
-      setModalBiometricOpen(false);
+      if (err.name === 'NotAllowedError' || err.name === 'SecurityError') {
+        alert("O navegador bloqueou o acesso à biometria. Se estiver num Iframe, tente abrir em nova aba.");
+      } else {
+        // Fallback or silent failure
+        localStorage.setItem(STUDENT_BIOMETRIC_ENROLLED, 'true');
+        setIsUnlocked(true);
+        setModalBiometricOpen(false);
+      }
     }
   };
 
   const handleBiometricUnlock = async () => {
     const credId = localStorage.getItem(STUDENT_CREDENTIAL_ID);
     
-    if (isBiometricSupported && credId) {
+    if (biometricsAvailable && credId) {
+      if (isIframe) {
+        setModalIframeWarning(true);
+        return;
+      }
+
       try {
         const assertion = await navigator.credentials.get({
           publicKey: {
@@ -185,10 +220,13 @@ export default function StudentPortal() {
         if (assertion) {
           setIsUnlocked(true);
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Unlock failed", err);
-        // Error on OS authentication
-        alert("Autenticação falhou. Tente novamente.");
+        if (err.name === 'NotAllowedError') {
+           setError("Autenticação cancelada ou bloqueada.");
+        } else {
+           setError("Falha na biometria. Tente abrir em nova aba.");
+        }
       }
     } else {
       // Fallback if no webauthn configured
@@ -243,8 +281,10 @@ export default function StudentPortal() {
                onClick={handleBiometricUnlock}
                className="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-bold shadow-xl shadow-slate-900/20 transition-all active:scale-95 flex items-center justify-center gap-2"
              >
-                <Fingerprint className="w-5 h-5" /> Desbloquear Agora
+                <Fingerprint className="w-5 h-5" /> 
+                {biometricsAvailable ? 'Usar Biometria / Senha' : 'Desbloquear'}
              </button>
+             {error && <p className="text-[10px] text-rose-500 font-bold uppercase">{error}</p>}
              <button onClick={() => setModalUnlinkOpen(true)} className="text-xs text-rose-400 hover:text-rose-600 font-bold transition-colors">Desvincular Carteirinha</button>
           </div>
         </>
@@ -253,6 +293,16 @@ export default function StudentPortal() {
 
     return (
       <>
+        <Modal 
+          isOpen={modalIframeWarning} 
+          onClose={() => setModalIframeWarning(false)} 
+          title="Segurança Restrita"
+          confirmLabel="Abrir em Nova Aba"
+          onConfirm={() => window.open(window.location.href, '_blank')}
+        >
+          O sistema de biometria e senha do dispositivo por vezes é bloqueado em visualizações de iframe (como no editor). Para garantir o funcionamento, use o site em uma aba separada.
+        </Modal>
+
         <Modal 
           isOpen={modalUnlinkOpen} 
           onClose={() => setModalUnlinkOpen(false)} 
@@ -269,13 +319,22 @@ export default function StudentPortal() {
               <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-1">
                  <ShieldCheck className="w-3 h-3" /> Acesso Seguro Ativo
               </span>
-              <button 
-                onClick={() => setModalUnlinkOpen(true)} 
-                className="p-2 text-slate-400 hover:text-rose-500 transition-colors" 
-                title="Sair / Desvincular"
-              >
-                 <LogOut className="w-5 h-5" />
-              </button>
+              <div className="flex gap-1">
+                <button 
+                  onClick={() => setIsUnlocked(false)} 
+                  className="p-2 text-slate-400 hover:text-sky-500 transition-colors" 
+                  title="Bloquear Proteção"
+                >
+                   <Lock className="w-5 h-5" />
+                </button>
+                <button 
+                  onClick={() => setModalUnlinkOpen(true)} 
+                  className="p-2 text-slate-400 hover:text-rose-500 transition-colors" 
+                  title="Sair / Desvincular"
+                >
+                   <LogOut className="w-5 h-5" />
+                </button>
+              </div>
            </div>
            <VerificationResult 
              member={member} 
