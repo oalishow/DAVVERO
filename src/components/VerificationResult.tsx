@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Printer } from 'lucide-react';
 import type { Member } from '../types';
-import { QRCodeCanvas } from 'qrcode.react';
+import { QRCodeSVG } from 'qrcode.react';
 import { URL_STORAGE_KEY, DEFAULT_PUBLIC_URL } from '../lib/constants';
 import FajopaIDCard from './FajopaIDCard';
 import Modal from './Modal';
@@ -81,45 +81,42 @@ export default function VerificationResult({ member, status, onReset, isMyID = f
 
       const isDarkMode = document.documentElement.classList.contains('dark');
       
-      // Allow browser engine to render the absolute hidden node before capture
-      await new Promise(r => setTimeout(r, 500));
+      // Allow browser engine to render the container before capture
+      await new Promise(r => setTimeout(r, 1200));
 
-      const imgData = await htmlToImage.toPng(card, {
+      const captureOptions = {
         backgroundColor: (isMyID && status === 'VALID') ? 'transparent' : (isDarkMode ? '#0f172a' : '#ffffff'),
-        pixelRatio: 2,
+        pixelRatio: 3,
+        cacheBust: true,
+        skipFonts: false,
         style: {
           transform: 'none',
           animation: 'none'
         }
-      });
+      };
       
-      if (!imgData || imgData === 'data:,') {
-         throw new Error("Falha ao gerar imagem do cartão (vazia)");
-      }
-
       if (isMyID && status === 'VALID') {
+         const imgData = await htmlToImage.toPng(card, captureOptions);
+         
+         if (!imgData || imgData === 'data:,') {
+            throw new Error("Falha ao gerar imagem do cartão (vazia)");
+         }
+
          // Exporting the exact cards (front and back) to A4 PDF
          const pdf = new jsPDF({
             orientation: 'portrait',
             unit: 'mm',
             format: 'a4' // 210 x 297 mm
          });
-
-         // Assuming front and back are rendered together in export-card-node
-         // For a high quality export, we just dump the canvas, but size it properly.
-         // A standard ID card is 85.6mm x 54mm.
-         // Using native aspect ratio to prevent squishing
+         
          const pdfWidth = 210;
          const imgProps = pdf.getImageProperties(imgData);
          
-         // The container has 600px width with p-8 (32px padding on each side). 
-         // So if the physical card is 85.6mm, the actual drawing width including padding is ~95mm.
          const printWidth = 95; 
-         // Most crucial part: height must strictly follow the native image aspect ratio to avoid squeezing
          const printHeight = (imgProps.height * printWidth) / imgProps.width;
 
          const x = (pdfWidth - printWidth) / 2;
-         const y = 30; // 30mm from top
+         const y = 30;
 
          pdf.setFontSize(14);
          pdf.text('IDENTIFICAÇÃO ESTUDANTIL - FAJOPA', pdfWidth / 2, 20, { align: 'center' });
@@ -129,10 +126,16 @@ export default function VerificationResult({ member, status, onReset, isMyID = f
          const fileName = `Carteirinha_FAJOPA_${safeName.replace(/\s+/g, '_')}.pdf`;
          pdf.save(fileName);
       } else {
+         const imgData = await htmlToImage.toJpeg(card, captureOptions);
+         
+         if (!imgData || imgData === 'data:,') {
+            throw new Error("Falha ao gerar imagem (vazia)");
+         }
+
          // Just downloading regular result snapshot
          const link = document.createElement('a');
          link.href = imgData;
-         link.download = `VerifyID_${status === 'VALID' ? 'Validacao' : 'Recusa'}_${safeName.replace(/\s+/g, '_')}.png`;
+         link.download = `VerifyID_${status === 'VALID' ? 'Validacao' : 'Recusa'}_${safeName.replace(/\s+/g, '_')}.jpg`;
          document.body.appendChild(link);
          link.click();
          document.body.removeChild(link);
@@ -239,7 +242,7 @@ export default function VerificationResult({ member, status, onReset, isMyID = f
 
         {member?.alphaCode && (
           <div className="mt-4 flex flex-col items-center gap-2 bg-white p-3 rounded-2xl w-fit mx-auto border-2 border-slate-200 shadow-sm transition-transform hover:scale-105">
-            <QRCodeCanvas 
+            <QRCodeSVG 
               value={`${cleanBaseUrl}?verify=${member.alphaCode}`} 
               size={120} 
               level="H" 

@@ -61,23 +61,16 @@ export default function Verifier() {
     // We use any here since we avoid importing the type explicitly to save bundle size, but any works
     let ht5Qrcode: any = null;
     if (isScanning) {
-        import('html5-qrcode').then(({ Html5Qrcode }) => {
+        // Give a tiny delay for React to reveal the #reader div before library measures it
+        const timer = setTimeout(() => {
+          import('html5-qrcode').then(({ Html5Qrcode }) => {
             if (!isActive) return;
-            ht5Qrcode = new Html5Qrcode("reader");
+            ht5Qrcode = new Html5Qrcode("reader", { useBarCodeDetectorIfSupported: true, verbose: false });
             const config = {
-                fps: 20,
-                qrbox: (viewfinderWidth: number, viewfinderHeight: number) => {
-                  const minEdge = Math.min(viewfinderWidth, viewfinderHeight);
-                  const boxSize = Math.floor(minEdge * 0.75);
-                  return { width: boxSize, height: boxSize };
-                },
+                fps: 10,
+                qrbox: { width: 250, height: 250 },
                 aspectRatio: 1.0,
-                disableFlip: false,
-                videoConstraints: {
-                  facingMode: "environment",
-                  width: { ideal: 1280 },
-                  height: { ideal: 720 }
-                }
+                disableFlip: false
               };
 
             ht5Qrcode.start(
@@ -97,13 +90,16 @@ export default function Verifier() {
                 },
                 () => {}
             ).catch(console.error);
-        });
-    }
-    return () => {
-      isActive = false;
-      if (ht5Qrcode && ht5Qrcode.isScanning) {
-        ht5Qrcode.stop().catch(console.error);
-      }
+          });
+        }, 300);
+
+        return () => {
+          isActive = false;
+          clearTimeout(timer);
+          if (ht5Qrcode && ht5Qrcode.isScanning) {
+            ht5Qrcode.stop().catch(console.error);
+          }
+        }
     }
   }, [isScanning]);
 
@@ -290,7 +286,7 @@ export default function Verifier() {
         )}
       </div>
 
-      <div id="reader" className={`w-full max-w-sm rounded-[2rem] overflow-hidden shadow-2xl border-4 border-sky-400/50 dark:border-sky-500/30 ${!isScanning && 'hidden'}`}></div>
+      <div id="reader" className={`w-full max-w-sm rounded-xl overflow-hidden shadow-2xl border-2 border-sky-400 dark:border-sky-500/30 aspect-square bg-black ${!isScanning && 'hidden'}`}></div>
       
       {isScanning && (
         <p className="text-[10px] text-slate-500 font-medium animate-pulse">
