@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import type { Member } from '../types';
 import { QRCodeCanvas } from 'qrcode.react';
-import { URL_STORAGE_KEY, DEFAULT_PUBLIC_URL } from '../lib/constants';
+import { URL_STORAGE_KEY, DEFAULT_PUBLIC_URL, DIRECTOR_NAME_KEY, DEFAULT_DIRECTOR_NAME } from '../lib/constants';
 
 interface FajopaIDCardProps {
   member: Member;
@@ -10,6 +10,11 @@ interface FajopaIDCardProps {
 
 export default function FajopaIDCard({ member, exportMode = false }: FajopaIDCardProps) {
   const [flipped, setFlipped] = useState(false);
+  const [directorName, setDirectorName] = useState(DEFAULT_DIRECTOR_NAME);
+  
+  useEffect(() => {
+    setDirectorName(localStorage.getItem(DIRECTOR_NAME_KEY) || DEFAULT_DIRECTOR_NAME);
+  }, []);
   
   const baseUrl = localStorage.getItem(URL_STORAGE_KEY) || DEFAULT_PUBLIC_URL;
   const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
@@ -70,22 +75,35 @@ export default function FajopaIDCard({ member, exportMode = false }: FajopaIDCar
         ))}
       </div>
 
-      {/* Center Logo FAJOPA */}
-      <div className="absolute bottom-[23%] left-[35%] w-[30%] h-[40%] flex flex-col items-center justify-center opacity-95 z-10">
-         <div className="relative w-[80%] h-[55%] pointer-events-none mb-1">
-            <svg viewBox="0 0 100 100" className="w-full h-full text-blue-900/90">
-              <path fill="currentColor" d="M50 80 Q65 60 80 40 Q70 60 50 70 Q30 60 20 40 Q35 60 50 80 Z" />
-              <path fill="#0ea5e9" d="M50 70 Q35 50 15 30 Q30 45 50 60 Z" />
-              <path fill="#0ea5e9" d="M50 70 Q65 50 85 30 Q70 45 50 60 Z" />
-              <circle cx="50" cy="20" r="5" fill="currentColor"/>
-            </svg>
-         </div>
-         <div className="bg-blue-900 w-[110%] rounded flex items-center justify-center text-white font-black whitespace-nowrap shadow-sm mb-1" style={{ fontSize: 'clamp(7px, 1.5vw, 11px)', transform: 'rotate(-2deg)', padding: '2px 0' }}>
-           FIDES ET RATIO
-         </div>
-         <div className="text-blue-900/90 font-black tracking-tighter" style={{ fontSize: 'clamp(20px, 4.5vw, 32px)', lineHeight: '1' }}>
-           FAJOPA
-         </div>
+       {/* Center Logo FAJOPA */}
+      <div className="absolute bottom-[23%] left-[32.5%] w-[33%] h-[55%] flex flex-col items-center justify-center opacity-95 z-10 pointer-events-none">
+         <svg viewBox="0 0 300 300" className="w-full h-full drop-shadow-[0_2px_4px_rgba(0,0,0,0.15)]">
+            {/* Left Wing (Light Blue - layered feathers) */}
+            <path d="M140,165 C110,165 40,140 10,70 C50,110 110,140 140,145 Z" fill="#2096d3"/>
+            <path d="M140,165 C100,175 30,160 5,100 C50,140 110,155 140,155 Z" fill="#1b7db0"/>
+            <path d="M140,165 C80,185 20,185 10,135 C50,170 110,175 140,165 Z" fill="#16628c"/>
+            
+            {/* Right Wing (Dark Blue - layered feathers) */}
+            <path d="M150,165 C180,165 250,140 280,70 C240,110 180,140 150,145 Z" fill="#1d2d5b"/>
+            <path d="M150,165 C190,175 260,160 285,100 C240,140 180,155 150,155 Z" fill="#18254b"/>
+            <path d="M150,165 C210,185 270,185 280,135 C240,170 180,175 150,165 Z" fill="#121b36"/>
+
+            {/* Bird Body/Head */}
+            <path d="M145,170 Q135,130 145,90 Q155,75 160,85 Q155,85 150,95 Q145,100 145,170 Z" fill="#2096d3" />
+
+            {/* Ribbon */}
+            <path d="M25,195 Q145,175 265,195 L265,220 Q145,200 25,220 Z" fill="#1d2d5b" />
+            <path d="M25,195 L5,230 L40,217 Z" fill="#0f172a" />
+            <path d="M265,195 L285,230 L250,217 Z" fill="#0f172a" />
+
+            <path id="ribbon-curve-front" d="M35,214 Q145,194 255,214" fill="none" />
+            <text fill="white" fontFamily="Arial, Helvetica, sans-serif" fontSize="16" fontWeight="bold" textAnchor="middle" letterSpacing="1.2">
+               <textPath href="#ribbon-curve-front" startOffset="50%">FIDES ET RATIO</textPath>
+            </text>
+
+            <text x="145" y="265" fill="#1d2d5b" fontFamily="Impact, Arial Black, sans-serif" fontSize="48" fontWeight="900" textAnchor="middle" letterSpacing="1">FAJOPA</text>
+            <text x="145" y="285" fill="#333333" fontFamily="Arial, Helvetica, sans-serif" fontSize="13" fontWeight="bold" textAnchor="middle" letterSpacing="0.3">FACULDADE JOÃO PAULO II</text>
+         </svg>
       </div>
 
       {/* Right Area (Photo & QR Code) */}
@@ -119,18 +137,40 @@ export default function FajopaIDCard({ member, exportMode = false }: FajopaIDCar
 
       <div className="absolute top-[35%] w-full flex flex-col items-center z-0">
         {/* Signature Area */}
-        <div className="w-[80%] max-w-[200px] h-[50px] sm:h-[60px] border-b-[2.5px] border-slate-800 flex items-end justify-center pb-2 opacity-80 mt-2">
-           {/* Assinatura em branco conforme solicitado */}
+        <div className="w-[80%] max-w-[200px] h-[50px] sm:h-[60px] border-b-[2.5px] border-slate-800 flex items-end justify-center pb-2 mt-2">
+           {directorName && (
+             <span className="font-great-vibes text-slate-800 tracking-wider font-medium blur-[0.3px] opacity-80" style={{ fontSize: 'clamp(16px, 4vw, 24px)' }}>
+               {directorName}
+             </span>
+           )}
         </div>
         <div className="text-blue-900 font-bold mt-1" style={{ fontSize: 'clamp(10px, 2.5vw, 16px)' }}>DIRETOR GERAL DA FACULDADE</div>
         
-        <div className="mt-[3%] flex items-center justify-center gap-2 opacity-90 scale-90 sm:scale-100">
-           <div className="w-[50px] h-[50px]">
-              <svg viewBox="0 0 100 100" className="w-full h-full text-blue-900">
-                <path fill="currentColor" d="M50 80 Q65 60 80 40 Q70 60 50 70 Q30 60 20 40 Q35 60 50 80 Z" />
-                <path fill="#0ea5e9" d="M50 70 Q35 50 15 30 Q30 45 50 60 Z" />
-                <path fill="#0ea5e9" d="M50 70 Q65 50 85 30 Q70 45 50 60 Z" />
-                <circle cx="50" cy="20" r="5" fill="currentColor"/>
+        <div className="mt-[3%] flex items-center justify-center gap-2 opacity-90 scale-90 sm:scale-100 pb-1">
+           <div className="w-[60px] h-[60px]">
+              <svg viewBox="0 0 300 170" className="w-full h-full drop-shadow-md pb-2">
+                 <defs>
+                    <linearGradient id="wd2" x1="0%" y1="0%" x2="100%" y2="100%">
+                       <stop offset="0%" stopColor="#1e3a8a" />
+                       <stop offset="100%" stopColor="#0f172a" />
+                    </linearGradient>
+                    <linearGradient id="wl2" x1="0%" y1="0%" x2="100%" y2="100%">
+                       <stop offset="0%" stopColor="#0284c7" />
+                       <stop offset="100%" stopColor="#0369a1" />
+                    </linearGradient>
+                 </defs>
+
+                 {/* Left Wing (Light Blue - layered feathers) */}
+                 <path d="M140,165 C110,165 40,140 10,70 C50,110 110,140 140,145 Z" fill="url(#wl2)"/>
+                 <path d="M140,165 C100,175 30,160 5,100 C50,140 110,155 140,155 Z" fill="url(#wl2)" opacity="0.8"/>
+                 <path d="M140,165 C80,185 20,185 10,135 C50,170 110,175 140,165 Z" fill="url(#wl2)" opacity="0.6"/>
+                 
+                 {/* Right Wing (Dark Blue - layered feathers) */}
+                 <path d="M150,165 C180,165 250,140 280,70 C240,110 180,140 150,145 Z" fill="url(#wd2)"/>
+                 <path d="M150,165 C190,175 260,160 285,100 C240,140 180,155 150,155 Z" fill="url(#wd2)" opacity="0.8"/>
+                 <path d="M150,165 C210,185 270,185 280,135 C240,170 180,175 150,165 Z" fill="url(#wd2)" opacity="0.6"/>
+
+                 <path d="M145,170 Q135,130 145,90 Q155,75 160,85 Q155,85 150,95 Q145,100 145,170 Z" fill="#2096d3" />
               </svg>
            </div>
            <div className="flex flex-col text-left">
@@ -163,9 +203,11 @@ export default function FajopaIDCard({ member, exportMode = false }: FajopaIDCar
 
   if (exportMode) {
     return (
-      <div id="export-card-node" className="flex flex-col gap-10 w-[600px] items-center p-8 bg-white" style={{ position: 'absolute', top: '2000px', left: '-9999px' }}>
-        {frontSide}
-        {backSide}
+      <div style={{ position: 'absolute', width: 0, height: 0, overflow: 'hidden' }}>
+        <div id="export-card-node" className="flex flex-col gap-10 w-[600px] items-center p-8 bg-white" style={{ position: 'relative' }}>
+          {frontSide}
+          {backSide}
+        </div>
       </div>
     );
   }

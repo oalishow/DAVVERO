@@ -1,6 +1,8 @@
+@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap');
 @import "tailwindcss";
 
 @layer utilities {
+  .font-great-vibes { font-family: 'Great Vibes', cursive; }
   .perspective-1000 { perspective: 1000px; }
   .transform-style-3d { transform-style: preserve-3d; }
   .backface-hidden { backface-visibility: hidden; }

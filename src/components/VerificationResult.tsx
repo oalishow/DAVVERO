@@ -68,7 +68,7 @@ export default function VerificationResult({ member, status, onReset, isMyID = f
   const handleExport = async () => {
     setExporting(true);
     try {
-      const { default: html2canvas } = await import('html2canvas');
+      const htmlToImage = await import('html-to-image');
       const { jsPDF } = await import('jspdf');
 
       let targetNodeId = 'validation-card-capture';
@@ -80,24 +80,23 @@ export default function VerificationResult({ member, status, onReset, isMyID = f
       if (!card) return;
 
       const isDarkMode = document.documentElement.classList.contains('dark');
+      
+      // Allow browser engine to render the absolute hidden node before capture
+      await new Promise(r => setTimeout(r, 500));
 
-      const canvas = await html2canvas(card, {
-        backgroundColor: (isMyID && status === 'VALID') ? null : (isDarkMode ? '#0f172a' : '#ffffff'),
-        scale: 2,
-        useCORS: true,
-        allowTaint: false,
-        logging: false,
-        onclone: (clonedDoc) => {
-           const clonedEl = clonedDoc.getElementById(targetNodeId);
-           if (clonedEl) {
-             clonedEl.style.transform = 'none';
-             clonedEl.style.animation = 'none';
-           }
+      const imgData = await htmlToImage.toPng(card, {
+        backgroundColor: (isMyID && status === 'VALID') ? 'transparent' : (isDarkMode ? '#0f172a' : '#ffffff'),
+        pixelRatio: 2,
+        style: {
+          transform: 'none',
+          animation: 'none'
         }
       });
-
-      const imgData = canvas.toDataURL('image/png');
       
+      if (!imgData || imgData === 'data:,') {
+         throw new Error("Falha ao gerar imagem do cartão (vazia)");
+      }
+
       if (isMyID && status === 'VALID') {
          // Exporting the exact cards (front and back) to A4 PDF
          const pdf = new jsPDF({
@@ -109,19 +108,15 @@ export default function VerificationResult({ member, status, onReset, isMyID = f
          // Assuming front and back are rendered together in export-card-node
          // For a high quality export, we just dump the canvas, but size it properly.
          // A standard ID card is 85.6mm x 54mm.
-         // The canvas ratio is ~ 1.586 (or similar since we have gaps).
-         // Let's print the entire captured node centered.
+         // Using native aspect ratio to prevent squishing
          const pdfWidth = 210;
-         const pdfHeight = 297;
          const imgProps = pdf.getImageProperties(imgData);
-         const canvasRatio = imgProps.width / imgProps.height;
          
-         const printWidth = 85.6; // exact ID card width
-         // Since export-card-node has BOTH cards vertically + padding,
-         // let's scale it so the card width is 85.6mm.
-         // The dom node has width: 600px.
-         const scaleFactor = printWidth / 600;
-         const printHeight = imgProps.height * scaleFactor;
+         // The container has 600px width with p-8 (32px padding on each side). 
+         // So if the physical card is 85.6mm, the actual drawing width including padding is ~95mm.
+         const printWidth = 95; 
+         // Most crucial part: height must strictly follow the native image aspect ratio to avoid squeezing
+         const printHeight = (imgProps.height * printWidth) / imgProps.width;
 
          const x = (pdfWidth - printWidth) / 2;
          const y = 30; // 30mm from top

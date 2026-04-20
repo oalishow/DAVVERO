@@ -4,52 +4,37 @@ import { APP_VERSION } from '../lib/constants';
 
 export default function Header() {
   // Versão SVG robusta integrada para garantir que o logo apareça sempre com alta qualidade
-  const ShieldLogo = () => (
-    <div className="relative flex items-center justify-center">
-      <svg viewBox="0 0 200 200" className="w-32 h-32 sm:w-40 sm:h-40 filter drop-shadow-[0_0_20px_rgba(56,189,248,0.5)]">
-        {/* Asas de Proteção ao fundo */}
-        <path 
-          d="M30,100 Q10,70 50,60 Q70,55 90,70 Q110,55 130,60 Q170,70 150,100 Q170,130 130,140 Q110,145 90,130 Q70,145 50,140 Q10,130 30,100" 
-          fill="none" 
-          stroke="currentColor" 
-          strokeWidth="2" 
-          className="text-sky-500/30"
-        />
-        <path 
-          d="M40,100 Q20,80 60,70 Q80,65 95,80 Q110,65 130,70 Q170,80 150,100" 
-          fill="currentColor" 
-          className="text-sky-500/20"
-        />
-        
-        {/* Escudo Principal */}
-        <path 
-          d="M100,40 L160,65 C160,110 145,145 100,175 C55,145 40,110 40,65 L100,40 Z" 
-          fill="url(#shieldGradient)"
-          stroke="#38bdf8"
-          strokeWidth="2"
-        />
-        
-        {/* Marca de Verificação (Check) */}
-        <path 
-          d="M75,110 L95,130 L135,90" 
-          fill="none" 
-          stroke="white" 
-          strokeWidth="12" 
-          strokeLinecap="round" 
-          strokeLinejoin="round"
-          className="drop-shadow-sm"
-        />
-        
-        {/* Gradientes e Filtros */}
-        <defs>
-          <linearGradient id="shieldGradient" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stopColor="#0ea5e9" />
-            <stop offset="100%" stopColor="#1e3a8a" />
-          </linearGradient>
-        </defs>
-      </svg>
-      {/* Texto Estilizado dentro da composição */}
-      <div className="absolute -bottom-2 font-black text-xs tracking-[0.2em] text-white bg-sky-600 px-3 py-1 rounded-full shadow-lg">
+  const ScannerLogo = () => (
+    <div className="relative flex flex-col items-center justify-center w-32 h-32 sm:w-40 sm:h-40 bg-slate-50 dark:bg-slate-800/80 rounded-3xl shadow-[inset_0_4px_20px_rgba(0,0,0,0.05)] border-[1.5px] border-slate-200 dark:border-slate-700 overflow-hidden">
+       {/* Shield background subtle glow */}
+       <div className="absolute inset-0 bg-blue-400/5 dark:bg-blue-400/10"></div>
+       
+       <svg viewBox="0 0 100 100" className="w-[65%] h-[65%] z-10 text-blue-600 dark:text-sky-400 drop-shadow-sm">
+          {/* Shield Outline */}
+          <path d="M50,5 L90,20 C90,60 75,85 50,95 C25,85 10,60 10,20 L50,5 Z" fill="none" stroke="currentColor" strokeWidth="5.5" strokeLinejoin="round" />
+          
+          {/* Mortarboard / Academic Cap */}
+          <path d="M50,32 L82,46 L50,60 L18,46 Z" fill="currentColor" />
+          <path d="M30,52 L30,65 C40,75 60,75 70,65 L70,52 L50,60 Z" fill="currentColor" opacity="0.85" />
+          
+          {/* Tassel */}
+          <path d="M50,45 L78,55 L78,70" stroke="currentColor" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+          <circle cx="78" cy="72" r="2.5" fill="currentColor"/>
+       </svg>
+       
+       {/* Scanning line animation */}
+       <motion.div 
+         className="absolute top-0 left-0 w-full h-[3px] bg-sky-400 blur-[0.5px] opacity-80 z-20 shadow-[0_0_12px_2px_rgba(56,189,248,0.7)]"
+         animate={{ y: [-10, 170, -10] }}
+         transition={{ repeat: Infinity, duration: 3, ease: "linear" }}
+       />
+       <motion.div 
+         className="absolute top-0 left-0 w-full h-24 bg-gradient-to-b from-transparent to-sky-400/20 z-0"
+         animate={{ y: [-100, 160, -100] }}
+         transition={{ repeat: Infinity, duration: 3, ease: "linear" }}
+       />
+
+      <div className="absolute bottom-2 font-black text-[9px] tracking-[0.15em] text-blue-900 dark:text-sky-100 bg-white/80 dark:bg-slate-900/60 backdrop-blur-md px-2.5 py-0.5 rounded shadow-sm border border-white/40 dark:border-slate-600/50 z-30">
         VERIFY ID
       </div>
     </div>
@@ -84,7 +69,7 @@ export default function Header() {
           <div className="absolute inset-x-0 -inset-y-8 bg-sky-400/20 dark:bg-sky-400/30 blur-3xl rounded-full scale-125 animate-pulse-slow pointer-events-none" />
           
           <div className="relative z-10 flex items-center justify-center">
-            <ShieldLogo />
+            <ScannerLogo />
           </div>
         </motion.div>
       </div>

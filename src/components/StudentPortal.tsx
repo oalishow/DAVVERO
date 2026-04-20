@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Fingerprint, User, CreditCard, QrCode, LogOut, Loader2, ShieldCheck, Lock } from 'lucide-react';
+import { User, CreditCard, QrCode, LogOut, Loader2, ShieldCheck, Lock, KeyRound } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db, appId } from '../lib/firebase';
@@ -8,30 +8,7 @@ import VerificationResult from './VerificationResult';
 import Modal from './Modal';
 
 const STUDENT_BOND_KEY = 'verifyId_student_identity';
-const STUDENT_BIOMETRIC_ENROLLED = 'verifyId_student_biometric';
-const STUDENT_CREDENTIAL_ID = 'verifyId_student_credential_id';
-
-// Base64Url Utilities
-function bufferToBase64url(buffer: ArrayBuffer) {
-  const bytes = new Uint8Array(buffer);
-  let str = '';
-  for (const charCode of bytes) {
-    str += String.fromCharCode(charCode);
-  }
-  const base64String = btoa(str);
-  return base64String.replace(/\+/g, '-').replace(/\//g, '_').replace(/=/g, '');
-}
-
-function base64urlToBuffer(base64url: string) {
-  const padding = '='.repeat((4 - base64url.length % 4) % 4);
-  const base64 = (base64url + padding).replace(/-/g, '+').replace(/_/g, '/');
-  const rawData = atob(base64);
-  const outputArray = new Uint8Array(rawData.length);
-  for (let i = 0; i < rawData.length; ++i) {
-    outputArray[i] = rawData.charCodeAt(i);
-  }
-  return outputArray.buffer;
-}
+const STUDENT_FALLBACK_PIN = 'student_fallback_pin';
 
 export default function StudentPortal() {
   const [bondedId, setBondedId] = useState<string | null>(localStorage.getItem(STUDENT_BOND_KEY));
@@ -40,23 +17,19 @@ export default function StudentPortal() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isWebAuthnSupported = !!window.PublicKeyCredential;
-
   const [linkMode, setLinkMode] = useState(false);
   const [alphaCode, setAlphaCode] = useState('');
 
   // Modal States
   const [modalUnlinkOpen, setModalUnlinkOpen] = useState(false);
-  const [modalBiometricOpen, setModalBiometricOpen] = useState(false);
   const [modalHelpOpen, setModalHelpOpen] = useState(false);
-  const [modalIframeWarning, setModalIframeWarning] = useState(false);
+  const [modalPinReset, setModalPinReset] = useState(false);
 
   // Fallback PIN state
   const [pinMode, setPinMode] = useState<'create' | 'verify' | 'none'>('none');
   const [pinInput, setPinInput] = useState('');
   const [pinConfirm, setPinConfirm] = useState('');
-
-  const isIframe = window.self !== window.top;
+  const [resetCodeStr, setResetCodeStr] = useState('');
 
   useEffect(() => {
     if (bondedId) {
@@ -86,15 +59,7 @@ export default function StudentPortal() {
       const snapshot = await getDocs(q);
       if (!snapshot.empty) {
         setMember(snapshot.docs[0].data() as Member);
-        
-        // Auto-prompt unlocking process on load
-        if (localStorage.getItem(STUDENT_BIOMETRIC_ENROLLED) === 'true') {
-          handleBiometricUnlock();
-        } else {
-          // If not enrolled in passkeys, we do not require biometric to display for now
-          // (or require them to register)
-          setIsUnlocked(false); // Make them click the Unlock button anyway
-        }
+        setIsUnlocked(false); // Make them click the Unlock or enter PIN
       } else {
         setError("Identidade vinculada não encontrada.");
         localStorage.removeItem(STUDENT_BOND_KEY);
@@ -125,13 +90,7 @@ export default function StudentPortal() {
         setBondedId(data.alphaCode || null);
         localStorage.setItem(STUDENT_BOND_KEY, data.alphaCode || '');
         setLinkMode(false);
-        
-        if (isWebAuthnSupported && !isIframe) {
-           setModalBiometricOpen(true);
-        } else {
-           // Provide PIN fallback gracefully if biometrics impossible
-           setPinMode('create');
-        }
+        setPinMode('create');
       } else {
         setError("Código não encontrado na base de dados.");
       }
@@ -150,8 +109,7 @@ export default function StudentPortal() {
           setPinInput('');
           setError('Confirme o PIN');
         } else if (pinInput === pinConfirm) {
-          localStorage.setItem('student_fallback_pin', pinInput);
-          localStorage.setItem(STUDENT_BIOMETRIC_ENROLLED, 'false'); // using pin instead
+          localStorage.setItem(STUDENT_FALLBACK_PIN, pinInput);
           setIsUnlocked(true);
           setPinMode('none');
           setError(null);
@@ -164,7 +122,7 @@ export default function StudentPortal() {
         setError('O PIN deve ter 4 dígitos');
       }
     } else if (pinMode === 'verify') {
-      const savedPin = localStorage.getItem('student_fallback_pin');
+      const savedPin = localStorage.getItem(STUDENT_FALLBACK_PIN);
       if (pinInput === savedPin) {
         setIsUnlocked(true);
         setPinMode('none');
@@ -177,111 +135,34 @@ export default function StudentPortal() {
     }
   };
 
-  const enrollBiometric = async () => {
-    if (isIframe) {
-      setModalIframeWarning(true);
-      return;
-    }
-
-    try {
-      const challenge = window.crypto.getRandomValues(new Uint8Array(32));
-      const userId = window.crypto.getRandomValues(new Uint8Array(16));
-
-      // Do NOT specify rp.id, allow the browser to tie it to the effective origin automatically
-      const credential = await navigator.credentials.create({
-        publicKey: {
-          challenge,
-          rp: { name: "Carteirinha Fajopa" },
-          user: { 
-            id: userId, 
-            name: member?.alphaCode || "estudante", 
-            displayName: member?.name || "Estudante" 
-          },
-          pubKeyCredParams: [
-            { type: "public-key", alg: -7 },   // ES256
-            { type: "public-key", alg: -257 }, // RS256
-            { type: "public-key", alg: -39 }   // ED25519
-          ],
-          authenticatorSelection: { 
-            userVerification: "required" // Forces device unlock (biometry or phone password)
-            // Note: authenticatorAttachment removed so it doesn't fail on devices that treat their lock differently
-          },
-          timeout: 60000,
-        }
-      }) as PublicKeyCredential;
-      
-      if (credential) {
-        localStorage.setItem(STUDENT_CREDENTIAL_ID, bufferToBase64url(credential.rawId));
-        localStorage.setItem(STUDENT_BIOMETRIC_ENROLLED, 'true');
-        localStorage.removeItem('student_fallback_pin');
-        setIsUnlocked(true);
-        setModalBiometricOpen(false);
-      }
-    } catch (err: any) {
-      console.error("Biometric enrollment failed", err);
-      if (err.name === 'NotAllowedError' || err.name === 'SecurityError') {
-        alert("Acesso negado. Tente numa nova aba ou verifique o bloqueio de tela do celular.");
-      } else {
-        alert("Biometria recusada: " + err.message + ". Redirecionando para PIN de segurança.");
-      }
-      // Fallback sequence
-      setModalBiometricOpen(false);
-      setPinMode('create');
-    }
+  const handleUnlockScreen = () => {
+     const hasPin = localStorage.getItem(STUDENT_FALLBACK_PIN);
+     if (hasPin) {
+       setPinMode('verify');
+     } else {
+       setPinMode('create');
+     }
   };
 
-  const handleBiometricUnlock = async () => {
-    const isEnrolled = localStorage.getItem(STUDENT_BIOMETRIC_ENROLLED) === 'true';
-    const hasPin = localStorage.getItem('student_fallback_pin');
-    
-    if (!isEnrolled && hasPin) {
-      setPinMode('verify');
-      return;
-    }
-
-    const credId = localStorage.getItem(STUDENT_CREDENTIAL_ID);
-    
-    if (isWebAuthnSupported && credId) {
-      if (isIframe) {
-        setModalIframeWarning(true);
-        return;
-      }
-
-      try {
-        const assertion = await navigator.credentials.get({
-          publicKey: {
-            challenge: window.crypto.getRandomValues(new Uint8Array(32)),
-            allowCredentials: [{
-              type: "public-key",
-              id: base64urlToBuffer(credId)
-            }],
-            userVerification: "required",
-            timeout: 60000
-          }
-        });
-        if (assertion) {
-          setIsUnlocked(true);
-        }
-      } catch (err: any) {
-        console.error("Unlock failed", err);
-        if (err.name === 'NotAllowedError') {
-           setError("Autenticação cancelada.");
-        } else {
-           setError("Falha. " + err.message);
-        }
-        // Fallback to PIN if any exists, though WebAuthn should handle fallback to OS PIN natively.
-      }
-    } else {
-      // Fallback if no webauthn configured at all
-      setIsUnlocked(true);
-    }
+  const handlePinResetAttempt = () => {
+     if (!member || !member.alphaCode) return;
+     if (resetCodeStr.toUpperCase() === member.alphaCode.toUpperCase()) {
+         // Reset pin
+         localStorage.removeItem(STUDENT_FALLBACK_PIN);
+         setPinMode('create');
+         setPinInput('');
+         setPinConfirm('');
+         setModalPinReset(false);
+         setResetCodeStr('');
+         setError('Crie uma nova senha de 4 dígitos.');
+     } else {
+         setError('Código incorreto.');
+     }
   };
 
   const confirmUnlink = () => {
     localStorage.removeItem(STUDENT_BOND_KEY);
-    localStorage.removeItem(STUDENT_BIOMETRIC_ENROLLED);
-    localStorage.removeItem(STUDENT_CREDENTIAL_ID);
-    localStorage.removeItem('student_fallback_pin');
+    localStorage.removeItem(STUDENT_FALLBACK_PIN);
     setBondedId(null);
     setMember(null);
     setIsUnlocked(false);
@@ -304,6 +185,24 @@ export default function StudentPortal() {
         const title = pinMode === 'create' ? (!pinConfirm ? 'Criar Senha/PIN (4 dígitos)' : 'Confirme a Senha') : 'Digite sua Senha/PIN';
         return (
           <div className="flex flex-col items-center py-20 px-6 text-center space-y-6 animate-fade-in max-w-sm mx-auto h-full">
+            <Modal
+               isOpen={modalPinReset}
+               onClose={() => setModalPinReset(false)}
+               title="Esqueci minha senha"
+               confirmLabel="Redefinir Senha"
+               onConfirm={handlePinResetAttempt}
+            >
+               <p className="mb-4">Para redefinir sua senha, informe seu código de uso (presente na sua aprovação de cadastro ou verso da carteirinha em PDF):</p>
+               <input 
+                  type="text" 
+                  placeholder="Seu código de uso" 
+                  autoCapitalize="characters"
+                  value={resetCodeStr}
+                  onChange={(e) => setResetCodeStr(e.target.value.toUpperCase())}
+                  className="input-modern w-full rounded-xl py-3 px-4 text-center font-bold tracking-widest text-lg"
+               />
+            </Modal>
+
             <Lock className="w-12 h-12 text-sky-500" />
             <h2 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">{title}</h2>
             <input 
@@ -322,7 +221,12 @@ export default function StudentPortal() {
             >
               Confirmar
             </button>
-            <button onClick={() => { setPinMode('none'); setModalUnlinkOpen(true); }} className="text-xs text-slate-400 hover:text-rose-600 font-bold mt-4">Cancelar e Remover Conta</button>
+            <div className="flex flex-col gap-2 mt-4 w-full">
+               {pinMode === 'verify' && (
+                 <button onClick={() => { setModalPinReset(true); setError(null); }} className="text-xs text-slate-500 hover:text-sky-600 font-bold w-full p-2">Esqueci minha senha</button>
+               )}
+               <button onClick={() => { setPinMode('none'); setModalUnlinkOpen(true); }} className="text-xs text-rose-400 hover:text-rose-600 font-bold w-full p-2">Cancelar e Remover Conta</button>
+            </div>
           </div>
         );
       }
@@ -347,14 +251,14 @@ export default function StudentPortal() {
              </div>
              <div>
                 <h2 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">Acesso Bloqueado</h2>
-                <p className="text-sm text-slate-500 mt-2 font-medium">Use a senha ou biometria do seu aparelho para desbloquear a sua carteirinha.</p>
+                <p className="text-sm text-slate-500 mt-2 font-medium">Use sua senha para desbloquear a sua carteirinha.</p>
              </div>
              <button 
-               onClick={handleBiometricUnlock}
+               onClick={handleUnlockScreen}
                className="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-bold shadow-xl shadow-slate-900/20 transition-all active:scale-95 flex items-center justify-center gap-2"
              >
-                <Fingerprint className="w-5 h-5" /> 
-                {localStorage.getItem('student_fallback_pin') ? 'Usar PIN Criado' : (isWebAuthnSupported ? 'Usar Biometria / Senha do Celular' : 'Desbloquear')}
+                <KeyRound className="w-5 h-5" /> 
+                {localStorage.getItem(STUDENT_FALLBACK_PIN) ? 'Digitar Senha / PIN' : 'Criar Senha de Acesso'}
              </button>
              {error && <p className="text-[10px] text-rose-500 font-bold uppercase">{error}</p>}
              <button onClick={() => setModalUnlinkOpen(true)} className="text-xs text-rose-400 hover:text-rose-600 font-bold transition-colors">Desvincular Carteirinha</button>
@@ -365,16 +269,6 @@ export default function StudentPortal() {
 
     return (
       <>
-        <Modal 
-          isOpen={modalIframeWarning} 
-          onClose={() => setModalIframeWarning(false)} 
-          title="Segurança Restrita"
-          confirmLabel="Abrir em Nova Aba"
-          onConfirm={() => window.open(window.location.href, '_blank')}
-        >
-          O sistema de biometria e senha do dispositivo por vezes é bloqueado em visualizações de iframe (como no editor). Para garantir o funcionamento, use o site em uma aba separada.
-        </Modal>
-
         <Modal 
           isOpen={modalUnlinkOpen} 
           onClose={() => setModalUnlinkOpen(false)} 
@@ -429,81 +323,76 @@ export default function StudentPortal() {
            setLinkMode(true);
            setModalHelpOpen(false);
          }}
-         confirmLabel="Entendi"
        >
-         Utilize a aba <strong className="text-slate-800 dark:text-white">'Verificar Identidade'</strong> para escanear seu QR Code físico e obter seu <strong className="text-emerald-600">Código Alfanumérico</strong>, ou consulte a secretaria da faculdade.
+         Para vincular sua Identidade Institucional a este dispositivo, digite o seu código único recebido da secretaria ou leia o seu QR code validado.
        </Modal>
 
-       <Modal 
-          isOpen={modalBiometricOpen} 
-          onClose={() => {
-            setIsUnlocked(true);
-            setModalBiometricOpen(false);
-          }} 
-          title="Configurar Biometria"
-          confirmLabel="Ativar"
-          onConfirm={enrollBiometric}
-          confirmVariant="success"
-        >
-          Para proteger sua identidade de acessos indevidos, recomendamos vincular a senha ou biometria (Rosto/Digital) original deste dispositivo.
-        </Modal>
-
-       <div className="text-center space-y-3">
-          <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-500/20 rounded-2xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 mx-auto">
-             <User className="w-8 h-8" />
+      {!linkMode ? (
+        <div className="flex flex-col items-center w-full space-y-4 pt-10">
+          <div className="w-24 h-24 bg-indigo-50 dark:bg-indigo-500/10 rounded-full flex justify-center items-center mb-4">
+             <User className="w-12 h-12 text-indigo-500" />
           </div>
-          <h2 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">Minha Identidade</h2>
-          <p className="text-xs text-slate-500 leading-relaxed px-4">
-            Vincule sua carteirinha digital a este telemóvel para acessá-la instantaneamente.
+          <h2 className="text-2xl font-black text-slate-800 dark:text-white uppercase tracking-tighter text-center leading-tight">
+            Identidade Estudantil
+          </h2>
+          <p className="text-sm text-slate-500 dark:text-slate-400 text-center px-4 leading-relaxed">
+            Mantenha sua carteirinha salva de forma segura e offline no seu próprio celular.
           </p>
-       </div>
 
-       {!linkMode ? (
-         <div className="w-full space-y-3">
-            <button 
-              onClick={() => setModalHelpOpen(true)}
-              className="w-full py-4 bg-slate-900 text-white rounded-2xl font-bold shadow-xl shadow-slate-900/20 hover:bg-slate-800 transition-all flex items-center justify-center gap-2"
-            >
-               <QrCode className="w-5 h-5" /> Vincular Carteirinha
-            </button>
-         </div>
-       ) : (
-         <div className="w-full space-y-4 animated-scale-in">
-            <div className="space-y-2">
-               <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Código Alfanumérico</label>
-               <input 
-                 value={alphaCode}
-                 onChange={(e) => setAlphaCode(e.target.value.toUpperCase())}
-                 placeholder="EX: ABC-123"
-                 className="input-modern w-full py-4 text-center text-xl font-black tracking-widest rounded-2xl"
-               />
-            </div>
-            {error && <p className="text-[10px] text-rose-500 font-bold text-center uppercase tracking-tight">{error}</p>}
-            <div className="flex gap-2">
-               <button onClick={() => setLinkMode(false)} className="px-4 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-xl font-bold">Cancelar</button>
-               <button onClick={linkIdentity} className="flex-grow py-4 bg-emerald-600 text-white rounded-xl font-bold shadow-lg shadow-emerald-600/20">Vincular</button>
-            </div>
-         </div>
-       )}
+          <div className="pt-8 w-full flex flex-col gap-3">
+             <button
+               onClick={() => setLinkMode(true)}
+               className="w-full btn-modern py-4 rounded-xl text-white font-bold tracking-wide shadow-lg flex items-center justify-center gap-3 active:scale-95"
+             >
+               <CreditCard className="w-5 h-5" /> Vincular Identidade
+             </button>
+             <button
+               onClick={() => setModalHelpOpen(true)}
+               className="w-full py-4 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-bold flex items-center justify-center gap-2 active:scale-95"
+             >
+                Como funciona?
+             </button>
+          </div>
+        </div>
+      ) : (
+        <AnimatePresence>
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }} 
+            animate={{ opacity: 1, y: 0 }} 
+            className="w-full flex flex-col items-center bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 p-6 rounded-3xl shadow-2xl"
+          >
+            <QrCode className="w-12 h-12 text-slate-400 mb-6" />
+            <h3 className="text-lg font-black uppercase tracking-tight text-slate-800 dark:text-white mb-2">Código de Uso</h3>
+            <p className="text-xs text-slate-500 text-center mb-6">Digite o seu código alfanumérico para carregar seus dados no dispositivo.</p>
+            
+            <input
+              type="text"
+              autoCapitalize="characters"
+              placeholder="Ex: XXXX-YYYY"
+              value={alphaCode}
+              onChange={(e) => setAlphaCode(e.target.value.toUpperCase())}
+              className="text-center text-xl tracking-widest font-bold w-full py-4 px-6 rounded-xl bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 outline-none text-slate-900 dark:text-white uppercase focus:border-sky-500 transition-colors"
+            />
+            
+            {error && <p className="text-xs font-bold text-rose-500 uppercase mt-4 mb-2">{error}</p>}
 
-       <div className="bg-slate-50 dark:bg-slate-900/40 p-5 rounded-2xl border border-dotted border-slate-300 dark:border-slate-700">
-          <p className="text-[9px] text-slate-400 uppercase tracking-widest font-black mb-3">Como funciona?</p>
-          <ul className="space-y-2">
-             <li className="flex gap-2 text-[10px] text-slate-500 font-medium">
-                <div className="w-4 h-4 bg-sky-100 dark:bg-sky-500/20 rounded-full flex items-center justify-center shrink-0 text-sky-600 dark:text-sky-400">1</div>
-                Vincule seu código oficial a este navegador.
-             </li>
-             <li className="flex gap-2 text-[10px] text-slate-500 font-medium">
-                <div className="w-4 h-4 bg-sky-100 dark:bg-sky-500/20 rounded-full flex items-center justify-center shrink-0 text-sky-600 dark:text-sky-400">2</div>
-                Ative o bloqueio por senha ou biometria.
-             </li>
-             <li className="flex gap-2 text-[10px] text-slate-500 font-medium">
-                <div className="w-4 h-4 bg-sky-100 dark:bg-sky-500/20 rounded-full flex items-center justify-center shrink-0 text-sky-600 dark:text-sky-400">3</div>
-                Pronto! A carteirinha será ocultada automaticamente ao fechar.
-             </li>
-          </ul>
-       </div>
+            <div className="flex gap-3 w-full mt-6">
+              <button
+                onClick={() => setLinkMode(false)}
+                className="flex-1 py-3 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
+              >
+                Voltar
+              </button>
+              <button
+                onClick={linkIdentity}
+                className="flex-1 py-3 text-sm font-bold text-white bg-sky-600 hover:bg-sky-500 rounded-xl shadow-lg transition-colors"
+              >
+                Buscar
+              </button>
+            </div>
+          </motion.div>
+        </AnimatePresence>
+      )}
     </div>
   );
 }
-

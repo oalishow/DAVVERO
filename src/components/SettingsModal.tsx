@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Save, ShieldAlert, Mail, Link } from 'lucide-react';
-import { PASSWORD_STORAGE_KEY, URL_STORAGE_KEY, EMAIL_SETTINGS_KEY, DEFAULT_ADMIN_PASSWORD, DEFAULT_PUBLIC_URL } from '../lib/constants';
+import { X, Save, ShieldAlert, Mail, Link, UserCircle } from 'lucide-react';
+import { PASSWORD_STORAGE_KEY, URL_STORAGE_KEY, EMAIL_SETTINGS_KEY, DEFAULT_ADMIN_PASSWORD, DEFAULT_PUBLIC_URL, DIRECTOR_NAME_KEY, DEFAULT_DIRECTOR_NAME } from '../lib/constants';
 
 export default function SettingsModal({ onClose }: { onClose: () => void }) {
   const [url, setUrl] = useState('');
+  const [directorName, setDirectorName] = useState('');
   const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   
@@ -12,14 +13,15 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
 
   useEffect(() => {
     setUrl(localStorage.getItem(URL_STORAGE_KEY) || DEFAULT_PUBLIC_URL);
+    setDirectorName(localStorage.getItem(DIRECTOR_NAME_KEY) || DEFAULT_DIRECTOR_NAME);
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = 'unset'; };
   }, []);
 
-  const handleSaveUrl = () => {
-    if (!url) return;
-    localStorage.setItem(URL_STORAGE_KEY, url);
-    showStatus('URL base atualizada com sucesso!', 'success');
+  const handleSaveGeneral = () => {
+    if (url) localStorage.setItem(URL_STORAGE_KEY, url);
+    localStorage.setItem(DIRECTOR_NAME_KEY, directorName);
+    showStatus('Configurações gerais atualizadas com sucesso!', 'success');
   };
 
   const handleSavePassword = () => {
@@ -61,10 +63,22 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
         <div className="space-y-6">
           <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
             <h3 className="text-sm font-semibold flex items-center gap-2 mb-3 text-slate-800 dark:text-slate-200">
-              <Link className="w-4 h-4" /> URL de Acesso Público
+              <Link className="w-4 h-4" /> Configurações Gerais
             </h3>
-            <input type="text" value={url} onChange={e=>setUrl(e.target.value)} className="input-modern w-full rounded-xl py-2 px-3 text-sm mb-3" />
-            <button onClick={handleSaveUrl} className="btn-modern w-full py-2 bg-slate-700 hover:bg-sky-600 text-white rounded-lg text-sm font-medium">Atualizar URL</button>
+            <div className="space-y-3">
+               <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">URL de Acesso</label>
+                  <input type="text" value={url} onChange={e=>setUrl(e.target.value)} className="input-modern w-full rounded-xl py-2 px-3 text-sm" placeholder="Ex: https://verify-id.app" />
+               </div>
+               <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">Nome do Diretor Geral (Verso da Carteirinha)</label>
+                  <div className="relative">
+                     <UserCircle className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                     <input type="text" value={directorName} onChange={e=>setDirectorName(e.target.value.toUpperCase())} className="input-modern w-full rounded-xl py-2 pl-9 pr-3 text-sm font-semibold" placeholder="Ex: PROF. DR. FULANO DE TAL" />
+                  </div>
+               </div>
+               <button onClick={handleSaveGeneral} className="btn-modern w-full py-2 bg-slate-700 hover:bg-sky-600 text-white rounded-lg text-sm font-medium mt-2">Salvar Configurações</button>
+            </div>
           </div>
 
           <div className="bg-rose-50 dark:bg-rose-900/10 p-4 rounded-xl border border-rose-200 dark:border-rose-500/20">
