@@ -171,7 +171,7 @@ export default function FajopaIDCard({ member, exportMode = false }: FajopaIDCar
   }
 
   return (
-    <div className="perspective-1000 w-full max-w-[600px] aspect-[1.586/1] mx-auto cursor-pointer focus:outline-none no-print" onClick={() => setFlipped(!flipped)}>
+    <div className="perspective-1000 w-full max-w-[600px] aspect-[1.586/1] mx-auto cursor-pointer focus:outline-none no-print max-sm:portrait:rotate-90 max-sm:portrait:scale-[1.3] max-sm:portrait:my-24 sm:portrait:rotate-0 sm:portrait:scale-100 sm:portrait:my-0 transition-transform origin-center" onClick={() => setFlipped(!flipped)}>
       <div className={`relative w-full h-full transition-transform duration-700 transform-style-3d ${flipped ? 'rotate-y-180' : ''}`}>
         {frontSide}
         {backSide}

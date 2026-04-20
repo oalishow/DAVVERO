@@ -63,6 +63,10 @@ export default function AdminRequestsModal({ onClose }: { onClose: () => void })
       if (pc.ra) updatePayload.ra = pc.ra;
       if (pc.roles) updatePayload.roles = pc.roles;
       if (pc.course) updatePayload.course = pc.course;
+      if (pc.cpf !== undefined) updatePayload.cpf = pc.cpf;
+      if (pc.rg !== undefined) updatePayload.rg = pc.rg;
+      if (pc.birthdate !== undefined) updatePayload.birthdate = pc.birthdate;
+      if (pc.email !== undefined) updatePayload.email = pc.email;
       if (pc.photoUrl) updatePayload.photoUrl = pc.photoUrl;
 
       await updateDoc(doc(db, `artifacts/${appId}/public/data/students`, member.id), updatePayload);
@@ -173,6 +177,10 @@ export default function AdminRequestsModal({ onClose }: { onClose: () => void })
                       <div className="bg-white dark:bg-slate-800/80 p-3 rounded-lg text-xs space-y-2 border border-slate-200 dark:border-slate-700">
                           {pc.name && <p><span className="text-slate-500">Novo Nome:</span> <span className="text-amber-600 dark:text-amber-300 font-medium">{pc.name}</span></p>}
                           {pc.ra && <p><span className="text-slate-500">Novo RA:</span> <span className="text-amber-600 dark:text-amber-300 font-medium">{pc.ra}</span></p>}
+                          {pc.cpf && <p><span className="text-slate-500">Novo CPF:</span> <span className="text-amber-600 dark:text-amber-300 font-medium">{pc.cpf}</span></p>}
+                          {pc.rg && <p><span className="text-slate-500">Novo RG:</span> <span className="text-amber-600 dark:text-amber-300 font-medium">{pc.rg}</span></p>}
+                          {pc.birthdate && <p><span className="text-slate-500">Nova Data Nasc.:</span> <span className="text-amber-600 dark:text-amber-300 font-medium">{pc.birthdate}</span></p>}
+                          {pc.email && <p><span className="text-slate-500">Novo E-mail:</span> <span className="text-amber-600 dark:text-amber-300 font-medium">{pc.email}</span></p>}
                           {pc.roles && <p><span className="text-slate-500">Novo Vínculo:</span> <span className="text-amber-600 dark:text-amber-300 font-medium">{pc.roles.join(', ')}</span></p>}
                           {pc.course && <p><span className="text-slate-500">Novo Curso:</span> <span className="text-amber-600 dark:text-amber-300 font-medium">{pc.course}</span></p>}
                           {pc.photoUrl && <div className="flex items-center gap-2 mt-1"><span className="text-slate-500">Nova Foto:</span> <img src={pc.photoUrl} className="w-8 h-8 rounded border border-amber-300 object-cover" /></div>}

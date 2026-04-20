@@ -18,6 +18,10 @@ export default function SuggestEditModal({ member, onClose, onSubmitSuccess }: S
   const [ra, setRa] = useState(member.ra || '');
   const [roles, setRoles] = useState<string[]>(member.roles || []);
   const [course, setCourse] = useState(member.course || '');
+  const [cpf, setCpf] = useState(member.cpf || '');
+  const [rg, setRg] = useState(member.rg || '');
+  const [birthdate, setBirthdate] = useState(member.birthdate || '');
+  const [email, setEmail] = useState(member.email || '');
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
@@ -45,8 +49,12 @@ export default function SuggestEditModal({ member, onClose, onSubmitSuccess }: S
     const nameMatch = (name || '').trim() === (member.name || '').trim();
     const raMatch = (ra || '').trim() === (member.ra || '').trim();
     const courseMatch = (course || '') === (member.course || '');
+    const cpfMatch = (cpf || '').trim() === (member.cpf || '').trim();
+    const rgMatch = (rg || '').trim() === (member.rg || '').trim();
+    const birthdateMatch = (birthdate || '').trim() === (member.birthdate || '').trim();
+    const emailMatch = (email || '').trim() === (member.email || '').trim();
 
-    if (nameMatch && raMatch && courseMatch && !rolesChanged && !photoBase64) {
+    if (nameMatch && raMatch && courseMatch && cpfMatch && rgMatch && birthdateMatch && emailMatch && !rolesChanged && !photoBase64) {
       setError('Altere pelo menos um dado antes de enviar.');
       return;
     }
@@ -59,6 +67,10 @@ export default function SuggestEditModal({ member, onClose, onSubmitSuccess }: S
       if (!nameMatch) pendingChanges.name = name.trim();
       if (!raMatch) pendingChanges.ra = ra.trim();
       if (!courseMatch) pendingChanges.course = course;
+      if (!cpfMatch) pendingChanges.cpf = cpf.trim();
+      if (!rgMatch) pendingChanges.rg = rg.trim();
+      if (!birthdateMatch) pendingChanges.birthdate = birthdate.trim();
+      if (!emailMatch) pendingChanges.email = email.trim();
       if (rolesChanged) pendingChanges.roles = roles;
       if (photoBase64) pendingChanges.photoUrl = photoBase64;
 
@@ -107,9 +119,32 @@ export default function SuggestEditModal({ member, onClose, onSubmitSuccess }: S
               <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Novo Nome</label>
               <input type="text" value={name} onChange={e => setName(e.target.value)} className="input-modern w-full rounded-xl py-3 px-4 text-sm" />
           </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+              <div>
+                  <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Novo RG</label>
+                  <input type="text" value={rg} onChange={e => setRg(e.target.value)} className="input-modern w-full rounded-xl py-3 px-4 text-sm" />
+              </div>
+              <div>
+                  <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Novo CPF</label>
+                  <input type="text" value={cpf} onChange={e => setCpf(e.target.value)} className="input-modern w-full rounded-xl py-3 px-4 text-sm" />
+              </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+              <div>
+                  <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Nova Data Nasc. (DD/MM/AAAA)</label>
+                  <input type="text" placeholder="01/01/2000" value={birthdate} onChange={e => setBirthdate(e.target.value)} className="input-modern w-full rounded-xl py-3 px-4 text-sm" />
+              </div>
+              <div>
+                  <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Novo RA</label>
+                  <input type="text" value={ra} onChange={e => setRa(e.target.value)} className="input-modern w-full rounded-xl py-3 px-4 text-sm" />
+              </div>
+          </div>
+
           <div>
-              <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Novo RA</label>
-              <input type="text" value={ra} onChange={e => setRa(e.target.value)} className="input-modern w-full rounded-xl py-3 px-4 text-sm" />
+              <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Novo E-mail</label>
+              <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="input-modern w-full rounded-xl py-3 px-4 text-sm" />
           </div>
           
           <div className="pt-1 border-t border-slate-200 dark:border-slate-700/50 mt-1">

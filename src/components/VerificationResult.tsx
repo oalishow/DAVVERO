@@ -68,8 +68,9 @@ export default function VerificationResult({ member, status, onReset, isMyID = f
   const handleExport = async () => {
     setExporting(true);
     try {
-      const { toPng } = await import('html-to-image');
-      
+      const { default: html2canvas } = await import('html2canvas');
+      const { jsPDF } = await import('jspdf');
+
       let targetNodeId = 'validation-card-capture';
       if (isMyID && status === 'VALID') {
         targetNodeId = 'export-card-node';
@@ -79,28 +80,71 @@ export default function VerificationResult({ member, status, onReset, isMyID = f
       if (!card) return;
 
       const isDarkMode = document.documentElement.classList.contains('dark');
-      
-      const url = await toPng(card, {
-        backgroundColor: (isMyID && status === 'VALID') ? 'transparent' : (isDarkMode ? '#0f172a' : '#ffffff'),
-        pixelRatio: 2,
-        style: {
-          // Fixes an issue where animations or transforms might clip the canvas during capture
-          transform: 'none',
-          animation: 'none'
+
+      const canvas = await html2canvas(card, {
+        backgroundColor: (isMyID && status === 'VALID') ? null : (isDarkMode ? '#0f172a' : '#ffffff'),
+        scale: 2,
+        useCORS: true,
+        allowTaint: false,
+        logging: false,
+        onclone: (clonedDoc) => {
+           const clonedEl = clonedDoc.getElementById(targetNodeId);
+           if (clonedEl) {
+             clonedEl.style.transform = 'none';
+             clonedEl.style.animation = 'none';
+           }
         }
       });
 
-      const prefix = status === 'VALID' ? 'Validacao' : 'Recusa';
-      const fileName = `VerifyID_${prefix}_${safeName.replace(/\s+/g, '_')}.png`;
+      const imgData = canvas.toDataURL('image/png');
       
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = fileName;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      if (isMyID && status === 'VALID') {
+         // Exporting the exact cards (front and back) to A4 PDF
+         const pdf = new jsPDF({
+            orientation: 'portrait',
+            unit: 'mm',
+            format: 'a4' // 210 x 297 mm
+         });
+
+         // Assuming front and back are rendered together in export-card-node
+         // For a high quality export, we just dump the canvas, but size it properly.
+         // A standard ID card is 85.6mm x 54mm.
+         // The canvas ratio is ~ 1.586 (or similar since we have gaps).
+         // Let's print the entire captured node centered.
+         const pdfWidth = 210;
+         const pdfHeight = 297;
+         const imgProps = pdf.getImageProperties(imgData);
+         const canvasRatio = imgProps.width / imgProps.height;
+         
+         const printWidth = 85.6; // exact ID card width
+         // Since export-card-node has BOTH cards vertically + padding,
+         // let's scale it so the card width is 85.6mm.
+         // The dom node has width: 600px.
+         const scaleFactor = printWidth / 600;
+         const printHeight = imgProps.height * scaleFactor;
+
+         const x = (pdfWidth - printWidth) / 2;
+         const y = 30; // 30mm from top
+
+         pdf.setFontSize(14);
+         pdf.text('IDENTIFICAÇÃO ESTUDANTIL - FAJOPA', pdfWidth / 2, 20, { align: 'center' });
+         
+         pdf.addImage(imgData, 'PNG', x, y, printWidth, printHeight);
+         
+         const fileName = `Carteirinha_FAJOPA_${safeName.replace(/\s+/g, '_')}.pdf`;
+         pdf.save(fileName);
+      } else {
+         // Just downloading regular result snapshot
+         const link = document.createElement('a');
+         link.href = imgData;
+         link.download = `VerifyID_${status === 'VALID' ? 'Validacao' : 'Recusa'}_${safeName.replace(/\s+/g, '_')}.png`;
+         document.body.appendChild(link);
+         link.click();
+         document.body.removeChild(link);
+      }
     } catch(err) {
       console.error('Export erro:', err);
+      alert('Falha ao gerar o PDF. Verifique sua conexão e tente novamente.');
     } finally {
       setExporting(false);
     }
@@ -226,11 +270,11 @@ export default function VerificationResult({ member, status, onReset, isMyID = f
           <button onClick={handlePrint} className="p-3 rounded-xl bg-slate-800 text-white hover:bg-slate-700 transition-colors" title="Imprimir">
             <Printer className="w-5 h-5" />
           </button>
-          <button onClick={handleExport} disabled={exporting} className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold text-white transition-colors ${
+          <button onClick={handleExport} disabled={exporting} className={`flex-1 flex justify-center items-center py-3 px-4 rounded-xl text-sm font-bold text-white transition-colors ${
             status === 'VALID' ? 'bg-emerald-600 hover:bg-emerald-500' : 
             status === 'INACTIVE' ? 'bg-amber-600 hover:bg-amber-500' : 'bg-rose-600 hover:bg-rose-500'
           }`}>
-            {exporting ? 'A exportar...' : 'Baixar Imagem'}
+            {exporting ? 'A exportar...' : (isMyID && status === 'VALID' ? 'Baixar PDF da Carteirinha' : 'Baixar Imagem')}
           </button>
         </div>
       </div>
