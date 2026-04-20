@@ -5,7 +5,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db, appId } from '../lib/firebase';
 import type { Member } from '../types';
 import { QRCodeCanvas } from 'qrcode.react';
-import { URL_STORAGE_KEY, DEFAULT_PUBLIC_URL } from '../lib/constants';
+import { URL_STORAGE_KEY, DEFAULT_PUBLIC_URL, CUSTOM_ROLES_KEY, CUSTOM_COURSES_KEY } from '../lib/constants';
 import ImageCropperModal from './ImageCropperModal';
 import Modal from './Modal';
 
@@ -27,7 +27,35 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
   const [course, setCourse] = useState(member.course || '');
   const [roles, setRoles] = useState<string[]>(member.roles || []);
   const [newRole, setNewRole] = useState('');
-  const [customRoles, setCustomRoles] = useState<string[]>([]);
+  const [customRoles, setCustomRoles] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(CUSTOM_ROLES_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const [newCourse, setNewCourse] = useState('');
+  const [customCourses, setCustomCourses] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(CUSTOM_COURSES_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  
+  const baseCourses = ["FILOSOFIA", "FILOSOFIA EAD", "TEOLOGIA", "TEOLOGIA EAD"];
+  const availableCourses = [...baseCourses, ...customCourses];
+
+  useEffect(() => {
+    localStorage.setItem(CUSTOM_ROLES_KEY, JSON.stringify(customRoles));
+  }, [customRoles]);
+
+  useEffect(() => {
+    localStorage.setItem(CUSTOM_COURSES_KEY, JSON.stringify(customCourses));
+  }, [customCourses]);
+
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -48,6 +76,15 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
       setCustomRoles(prev => [...prev, formatted]);
       setRoles(prev => [...prev, formatted]);
       setNewRole('');
+    }
+  };
+
+  const handleAddCourse = () => {
+    if (newCourse.trim() && !availableCourses.includes(newCourse.trim().toUpperCase())) {
+      const formatted = newCourse.trim().toUpperCase();
+      setCustomCourses(prev => [...prev, formatted]);
+      setCourse(formatted);
+      setNewCourse('');
     }
   };
 
@@ -195,13 +232,28 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
               </div>
               <div className="pt-2 border-t border-slate-200 dark:border-slate-700/50 mt-1">
                 <label className="text-xs font-medium text-slate-500 mb-1 block">Curso Académico *</label>
-                <select value={course} onChange={e => setCourse(e.target.value)} className="input-modern w-full rounded-lg py-2 px-3 text-sm">
-                  <option value="">Selecione o Curso</option>
-                  <option value="FILOSOFIA">FILOSOFIA</option>
-                  <option value="FILOSOFIA EAD">FILOSOFIA EAD</option>
-                  <option value="TEOLOGIA">TEOLOGIA</option>
-                  <option value="TEOLOGIA EAD">TEOLOGIA EAD</option>
-                </select>
+                <div className="flex gap-2">
+                  <select value={course} onChange={e => setCourse(e.target.value)} className="input-modern flex-1 rounded-lg py-1.5 px-3 text-sm">
+                    <option value="">Selecione o Curso</option>
+                    {availableCourses.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                  <input 
+                    type="text" 
+                    value={newCourse} 
+                    onChange={e => setNewCourse(e.target.value)} 
+                    placeholder="Novo" 
+                    className="input-modern w-24 rounded-lg py-1.5 px-3 text-xs"
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCourse())}
+                  />
+                  <button 
+                    onClick={handleAddCourse}
+                    className="px-3 py-1.5 bg-slate-800 dark:bg-slate-700 text-white rounded-lg text-xs font-bold hover:bg-slate-700 transition-colors"
+                  >
+                    +
+                  </button>
+                </div>
               </div>
               <div className="pt-2">
                 <label className="text-xs font-medium text-slate-500 mb-1 block">Código Identificação</label>

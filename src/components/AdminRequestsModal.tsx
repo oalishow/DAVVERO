@@ -157,7 +157,12 @@ export default function AdminRequestsModal({ onClose }: { onClose: () => void })
                         <div>
                             <p className="font-bold text-sm text-slate-800 dark:text-slate-200">{req.name} {req.ra && <span className="text-xs font-normal text-slate-500 border border-slate-300 px-1 rounded ml-1">RA: {req.ra}</span>}</p>
                             <p className="text-xs text-slate-500 dark:text-slate-400">{req.roles?.join(', ')} • {req.course || 'S/ Curso'}</p>
-                            {req.email && <p className="text-[10px] text-sky-600 dark:text-sky-400 mt-0.5">{req.email}</p>}
+                            <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1">
+                              {req.cpf && <p className="text-[10px] text-slate-500 font-medium">CPF: {req.cpf}</p>}
+                              {req.rg && <p className="text-[10px] text-slate-500 font-medium">RG: {req.rg}</p>}
+                              {req.birthdate && <p className="text-[10px] text-slate-500 font-medium">Nasc: {req.birthdate}</p>}
+                            </div>
+                            {req.email && <p className="text-[10px] text-sky-600 dark:text-sky-400 mt-1">{req.email}</p>}
                         </div>
                     </div>
                     <div className="flex gap-2 mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">

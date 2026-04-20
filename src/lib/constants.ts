@@ -7,4 +7,6 @@ export const RESTORE_POINT_KEY = 'verifyId_restore_point';
 export const EMAIL_SETTINGS_KEY = 'verifyId_email_settings';
 export const DIRECTOR_NAME_KEY = 'verifyId_director_name';
 export const DEFAULT_DIRECTOR_NAME = '';
-export const APP_VERSION = '2.9.1';
+export const CUSTOM_ROLES_KEY = 'verifyId_custom_roles';
+export const CUSTOM_COURSES_KEY = 'verifyId_custom_courses';
+export const APP_VERSION = '3.0.0';

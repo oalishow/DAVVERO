@@ -13,6 +13,7 @@ export default function FajopaIDCard({ member, exportMode = false }: FajopaIDCar
   const [directorName, setDirectorName] = useState(DEFAULT_DIRECTOR_NAME);
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
+  const processedAt = member.createdAt ? new Date(member.createdAt).toLocaleString('pt-BR') : 'N/D';
   
   useEffect(() => {
     setDirectorName(localStorage.getItem(DIRECTOR_NAME_KEY) || DEFAULT_DIRECTOR_NAME);
@@ -244,6 +245,12 @@ export default function FajopaIDCard({ member, exportMode = false }: FajopaIDCar
         <div className="mt-[3%] w-[85%] text-center text-blue-900 font-bold leading-tight" style={{ fontSize: '12px' }}>
           Documento padronizado nacionalmente conforme a lei 12.933/2013.<br/>Válido em todo território nacional até o findar da validade.
         </div>
+      </div>
+
+      <div className="absolute top-[2%] right-[4%] opacity-50 text-[6.5px] text-right font-bold text-blue-950 pointer-events-none leading-tight select-none">
+         carteirinhafajopa.netlify.app<br/>
+         ©2025 - Alison Fernando Rodrigues dos Santos - Verify ID<br/>
+         Processado em: {processedAt}
       </div>
 
       {/* Bottom Footer decors */}

@@ -8,14 +8,26 @@ interface ChangelogModalProps {
 export default function ChangelogModal({ onClose }: ChangelogModalProps) {
   const versions = [
     {
+      version: 'v3.0.0',
+      title: 'A Maior Integração até Agora',
+      changes: [
+        'Sincronização de Tema: O sistema agora segue automaticamente as definições do seu telemóvel (Claro/Escuro).',
+        'Tags Personalizadas: Liberdade para criar novos Vínculos Institucionais e Cursos diretamente no cadastro.',
+        'Memória Persistente: Novas tags e cursos são salvos automaticamente para uso em futuros cadastros.',
+        'Dashboard Interativo: Status do painel agora são atalhos clicáveis para facilitar a gestão.',
+        'Contador de Alertas: Novo badge de solicitações com indicador numérico e animação de atenção.',
+        'Correções iOS/Safari: Otimização total do scanner QR e animações de carta para iPhones.'
+      ],
+      current: true
+    },
+    {
       version: 'v2.8.0',
       title: 'Relatórios & Impressão',
       changes: [
         'Novo sistema de relatórios em modo tabela para impressão profissional.',
         'Otimização de layout para economia de tinta e papel.',
         'Ajustes finos na gestão de membros e exportação inteligente.'
-      ],
-      current: true
+      ]
     },
     {
       version: 'v2.5.1',

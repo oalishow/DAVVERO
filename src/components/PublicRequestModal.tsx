@@ -4,6 +4,7 @@ import { X, Save, ShieldCheck, Image as ImageIcon } from 'lucide-react';
 import { collection, addDoc } from 'firebase/firestore';
 import { db, appId } from '../lib/firebase';
 import type { Member } from '../types';
+import { CUSTOM_ROLES_KEY, CUSTOM_COURSES_KEY } from '../lib/constants';
 import ImageCropperModal from './ImageCropperModal';
 
 interface PublicRequestModalProps {
@@ -20,8 +21,35 @@ export default function PublicRequestModal({ onClose, onSubmitSuccess }: PublicR
   const [birthdate, setBirthdate] = useState('');
   const [roles, setRoles] = useState<string[]>([]);
   const [newRole, setNewRole] = useState('');
-  const [customRoles, setCustomRoles] = useState<string[]>([]);
+  const [customRoles, setCustomRoles] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(CUSTOM_ROLES_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const [course, setCourse] = useState('');
+  const [newCourse, setNewCourse] = useState('');
+  const [customCourses, setCustomCourses] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(CUSTOM_COURSES_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  useEffect(() => {
+    localStorage.setItem(CUSTOM_COURSES_KEY, JSON.stringify(customCourses));
+  }, [customCourses]);
+
+  const baseCourses = ["FILOSOFIA", "FILOSOFIA EAD", "TEOLOGIA", "TEOLOGIA EAD"];
+  const availableCourses = [...baseCourses, ...customCourses];
+
+  useEffect(() => {
+    localStorage.setItem(CUSTOM_ROLES_KEY, JSON.stringify(customRoles));
+  }, [customRoles]);
   
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
@@ -44,6 +72,15 @@ export default function PublicRequestModal({ onClose, onSubmitSuccess }: PublicR
       setCustomRoles(prev => [...prev, formatted]);
       setRoles(prev => [...prev, formatted]);
       setNewRole('');
+    }
+  };
+
+  const handleAddCourse = () => {
+    if (newCourse.trim() && !availableCourses.includes(newCourse.trim().toUpperCase())) {
+      const formatted = newCourse.trim().toUpperCase();
+      setCustomCourses(prev => [...prev, formatted]);
+      setCourse(formatted);
+      setNewCourse('');
     }
   };
 
@@ -184,13 +221,30 @@ export default function PublicRequestModal({ onClose, onSubmitSuccess }: PublicR
 
           <div>
               <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1 mt-2">Curso Académico</label>
-              <select value={course} onChange={e => setCourse(e.target.value)} className="input-modern w-full rounded-xl py-3 px-4 text-sm">
-                  <option value="">Nenhum / Não aplicável</option>
-                  <option value="FILOSOFIA">FILOSOFIA</option>
-                  <option value="FILOSOFIA EAD">FILOSOFIA EAD</option>
-                  <option value="TEOLOGIA">TEOLOGIA</option>
-                  <option value="TEOLOGIA EAD">TEOLOGIA EAD</option>
-              </select>
+              <div className="flex gap-2">
+                <select value={course} onChange={e => setCourse(e.target.value)} className="input-modern flex-1 rounded-xl py-3 px-4 text-sm">
+                    <option value="">Nenhum / Não aplicável</option>
+                    {availableCourses.map(c => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                </select>
+                <div className="flex gap-1.5">
+                  <input 
+                    type="text" 
+                    value={newCourse} 
+                    onChange={e => setNewCourse(e.target.value)} 
+                    placeholder="Novo" 
+                    className="input-modern w-20 rounded-xl py-3 px-3 text-[10px]"
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCourse())}
+                  />
+                  <button 
+                    onClick={handleAddCourse}
+                    className="px-3 py-3 bg-slate-800 dark:bg-slate-700 text-white rounded-xl text-xs font-bold hover:bg-slate-700 transition-colors"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
           </div>
           <div>
               <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2 mt-2">Fotografia Pessoal (Rosto)</label>

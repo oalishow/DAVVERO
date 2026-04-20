@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Settings, UserPlus, Database, Trash2, Bell, Printer, Loader2, Users, UserCheck, UserX, Clock, Image as ImageIcon } from 'lucide-react';
-import { collection, addDoc, query, getDocs } from 'firebase/firestore';
+import { doc, updateDoc, collection, addDoc, query, getDocs } from 'firebase/firestore';
 import { db, appId } from '../lib/firebase';
 import type { Member } from '../types';
+import { CUSTOM_ROLES_KEY, CUSTOM_COURSES_KEY } from '../lib/constants';
 import MemberList from './MemberList';
 import SettingsModal from './SettingsModal';
 import RecycleBinModal from './RecycleBinModal';
@@ -34,9 +35,36 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
 
   const [stats, setStats] = useState({ totalActive: 0, totalInactive: 0, totalPending: 0, totalTrash: 0 });
   const [newRole, setNewRole] = useState('');
-  const [customRoles, setCustomRoles] = useState<string[]>([]);
+  const [customRoles, setCustomRoles] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(CUSTOM_ROLES_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
   const baseRoles = ["ALUNO(A)", "PROFESSOR(A)", "COLABORADOR(A)", "SEMINARISTA", "PADRE", "DIÁCONO", "BISPO"];
   const availableRoles = [...baseRoles, ...customRoles];
+
+  const [newCourse, setNewCourse] = useState('');
+  const [customCourses, setCustomCourses] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(CUSTOM_COURSES_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const baseCourses = ["FILOSOFIA", "FILOSOFIA EAD", "TEOLOGIA", "TEOLOGIA EAD"];
+  const availableCourses = [...baseCourses, ...customCourses];
+
+  useEffect(() => {
+    localStorage.setItem(CUSTOM_ROLES_KEY, JSON.stringify(customRoles));
+  }, [customRoles]);
+
+  useEffect(() => {
+    localStorage.setItem(CUSTOM_COURSES_KEY, JSON.stringify(customCourses));
+  }, [customCourses]);
 
   const toggleRole = (role: string) => {
     setRoles(prev => prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]);
@@ -48,6 +76,15 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
       setCustomRoles(prev => [...prev, formatted]);
       setRoles(prev => [...prev, formatted]);
       setNewRole('');
+    }
+  };
+
+  const handleAddCourse = () => {
+    if (newCourse.trim() && !availableCourses.includes(newCourse.trim().toUpperCase())) {
+      const formatted = newCourse.trim().toUpperCase();
+      setCustomCourses(prev => [...prev, formatted]);
+      setCourse(formatted);
+      setNewCourse('');
     }
   };
 
@@ -258,13 +295,30 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
 
           <div className="md:col-span-2 border-t border-slate-200 dark:border-slate-700/50 pt-3 mt-1">
             <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Curso Académico *</label>
-            <select value={course} onChange={e => setCourse(e.target.value)} className="input-modern w-full rounded-xl py-2.5 px-3 text-sm">
-              <option value="">Selecione o Curso</option>
-              <option value="FILOSOFIA">FILOSOFIA</option>
-              <option value="FILOSOFIA EAD">FILOSOFIA EAD</option>
-              <option value="TEOLOGIA">TEOLOGIA</option>
-              <option value="TEOLOGIA EAD">TEOLOGIA EAD</option>
-            </select>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <select value={course} onChange={e => setCourse(e.target.value)} className="input-modern flex-1 rounded-xl py-2.5 px-3 text-sm">
+                <option value="">Selecione o Curso</option>
+                {availableCourses.map(c => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+              <div className="flex gap-2 flex-1">
+                <input 
+                  type="text" 
+                  value={newCourse} 
+                  onChange={e => setNewCourse(e.target.value)} 
+                  placeholder="Novo Curso" 
+                  className="input-modern flex-1 rounded-xl py-2 px-3 text-xs"
+                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCourse())}
+                />
+                <button 
+                  onClick={handleAddCourse}
+                  className="px-4 py-2 bg-slate-800 dark:bg-slate-700 text-white rounded-xl text-xs font-bold hover:bg-slate-700 transition-colors whitespace-nowrap"
+                >
+                  Add Curso
+                </button>
+              </div>
+            </div>
           </div>
 
           <div className="md:col-span-2 border-t border-slate-200 dark:border-slate-700/50 pt-3 mt-1">

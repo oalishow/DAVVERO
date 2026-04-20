@@ -3,6 +3,7 @@ import { collection, query, getDocs } from 'firebase/firestore';
 import { Search, Filter } from 'lucide-react';
 import { db, appId } from '../lib/firebase';
 import type { Member } from '../types';
+import { CUSTOM_ROLES_KEY } from '../lib/constants';
 import MemberEditModal from './MemberEditModal';
 
 export default function MemberList() {
@@ -14,7 +15,17 @@ export default function MemberList() {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('');
 
-  const availableRoles = ["ALUNO(A)", "PROFESSOR(A)", "COLABORADOR(A)", "SEMINARISTA", "PADRE", "DIÁCONO", "BISPO"];
+  const [customRoles, setCustomRoles] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem(CUSTOM_ROLES_KEY);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const baseRoles = ["ALUNO(A)", "PROFESSOR(A)", "COLABORADOR(A)", "SEMINARISTA", "PADRE", "DIÁCONO", "BISPO"];
+  const availableRoles = [...baseRoles, ...customRoles];
 
   useEffect(() => {
     loadMembers();
