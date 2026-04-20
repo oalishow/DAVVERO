@@ -9,7 +9,12 @@ import SuggestEditModal from './SuggestEditModal';
 
 import { motion, AnimatePresence } from 'motion/react';
 
-export default function Verifier() {
+interface VerifierProps {
+  externalCode?: string | null;
+  onExternalVerified?: () => void;
+}
+
+export default function Verifier({ externalCode, onExternalVerified }: VerifierProps) {
   const [isScanning, setIsScanning] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [codeInput, setCodeInput] = useState('');
@@ -22,6 +27,13 @@ export default function Verifier() {
   const [successMsg, setSuccessMsg] = useState('');
   const [cacheLoaded, setCacheLoaded] = useState(false);
   const [initialVerifyChecked, setInitialVerifyChecked] = useState(false);
+
+  useEffect(() => {
+    if (cacheLoaded && externalCode) {
+      runVerification(externalCode, false);
+      if (onExternalVerified) onExternalVerified();
+    }
+  }, [cacheLoaded, externalCode]);
 
   useEffect(() => {
     // Populate cache for "offline fallback" strategy

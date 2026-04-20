@@ -12,6 +12,17 @@ const StudentPortal = lazy(() => import('./components/StudentPortal'));
 
 export default function App() {
   const [activeTab, setActiveTab] = useState<'verifier' | 'admin' | 'student'>('verifier');
+  const [targetVerifyCode, setTargetVerifyCode] = useState<string | null>(null);
+
+  const handleGlobalVerify = (code: string) => {
+    setTargetVerifyCode(code);
+    setActiveTab('verifier');
+  };
+
+  useEffect(() => {
+    // Expose global trigger for deep components
+    (window as any).triggerVerification = handleGlobalVerify;
+  }, []);
 
   useEffect(() => {
     // Determine initial theme based strictly on system preference
@@ -88,7 +99,12 @@ export default function App() {
             >
               <ErrorBoundary>
                 <Suspense fallback={<div className="flex justify-center p-10"><Loader2 className="animate-spin text-sky-500 w-8 h-8" /></div>}>
-                  {activeTab === 'verifier' && <Verifier />}
+                  {activeTab === 'verifier' && (
+                    <Verifier 
+                      externalCode={targetVerifyCode} 
+                      onExternalVerified={() => setTargetVerifyCode(null)} 
+                    />
+                  )}
                   {activeTab === 'admin' && <Admin />}
                   {activeTab === 'student' && <StudentPortal />}
                 </Suspense>
