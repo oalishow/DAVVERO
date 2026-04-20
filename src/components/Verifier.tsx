@@ -20,6 +20,8 @@ export default function Verifier() {
   const [showPublicReq, setShowPublicReq] = useState(false);
   const [showSuggestEdit, setShowSuggestEdit] = useState(false);
   const [successMsg, setSuccessMsg] = useState('');
+  const [cacheLoaded, setCacheLoaded] = useState(false);
+  const [initialVerifyChecked, setInitialVerifyChecked] = useState(false);
 
   useEffect(() => {
     // Populate cache for "offline fallback" strategy
@@ -31,10 +33,23 @@ export default function Verifier() {
         setMembersCache(members);
       } catch(e) {
         console.error("Cache load error", e);
+      } finally {
+        setCacheLoaded(true);
       }
     };
     loadCache();
   }, []);
+
+  useEffect(() => {
+    if (cacheLoaded && !initialVerifyChecked) {
+      const params = new URLSearchParams(window.location.search);
+      const verifyCode = params.get('verify');
+      if (verifyCode) {
+        runVerification(verifyCode, false);
+      }
+      setInitialVerifyChecked(true);
+    }
+  }, [cacheLoaded, initialVerifyChecked, membersCache]);
 
   const startScanner = async () => {
     setIsScanning(true);
