@@ -8,14 +8,18 @@ export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   useEffect(() => {
+    const isMasterLogged = localStorage.getItem('adminMasterLogged') === 'true';
+    if (isMasterLogged) {
+      setIsAuthenticated(true);
+      // Wait for auth to settle but don't force logout
+      const unsub = onAuthStateChanged(auth, () => {});
+      return () => unsub();
+    }
+
     const unsub = onAuthStateChanged(auth, (user) => {
-      // Se tiver usuário e ele NÃO for anônimo, ou se tiver logado via senha mestre (que não ativa o auth.currentUser do firebase neste caso, mas vamos manter a lógica atual)
-      // Na verdade, a senha mestre é puramente local.
-      // O usuário solicitou login por e-mail.
       if (user && !user.isAnonymous) {
         setIsAuthenticated(true);
       } else if (isAuthenticated === null) {
-        // Se ainda não decidimos, mantemos falso por padrão para mostrar o login
         setIsAuthenticated(false);
       }
     });

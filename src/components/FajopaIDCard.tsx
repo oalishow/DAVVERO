@@ -276,21 +276,21 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
         </>
       )}
       
-      <div className={`absolute top-[8%] w-[86%] left-[7%] text-center text-blue-950 font-bold leading-tight ${cardBackImage ? 'bg-white/70 shadow-sm' : 'bg-white/95 border-[2px] border-slate-200 shadow-md'} backdrop-blur-sm rounded-xl p-2 z-10`} style={{ fontSize: '13px' }}>
+      <div className={`absolute top-[20%] w-[86%] left-[7%] text-center text-blue-950 font-bold leading-tight ${cardBackImage ? 'bg-white/70 shadow-sm' : 'bg-white/95 border-[2px] border-slate-200 shadow-md'} backdrop-blur-sm rounded-xl p-2 z-10 flex flex-col justify-center`} style={{ fontSize: '13px', minHeight: '60px' }}>
         Este cartão é pessoal e intransferível, sendo o usuário responsável pela utilização. Em caso de perda, avise imediatamente a secretaria da faculdade.
       </div>
 
-      <div className="absolute top-[35%] w-full flex flex-col items-center z-0">
+      <div className="absolute top-[40%] w-full flex flex-col items-center z-0">
         {/* Signature Area */}
         {visibleFields.signature && (
-          <div className="w-[80%] max-w-[200px] h-[50px] sm:h-[60px] border-b-[2.5px] border-slate-800 flex items-center justify-center pb-2 mt-2">
+          <div className="w-[80%] max-w-[200px] h-[40px] sm:h-[50px] border-b-[2.5px] border-slate-800 flex items-center justify-center pb-1 mt-1">
              {instSignature && (
                <img 
                  src={instSignature} 
                  alt="Assinatura Diretor" 
                  className="w-auto object-contain" 
                  style={{ 
-                   height: `${(signatureScale / 100) * 120}%`,
+                   height: `${(signatureScale / 100) * 110}%`,
                    marginBottom: `-${(signatureScale / 100) * 10}%` 
                  }} 
                />
@@ -301,22 +301,22 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
         {visibleFields.director && (
           directorName ? (
              <div className="flex flex-col items-center mt-1 leading-none">
-               <div className="text-slate-800 font-bold uppercase tracking-tight text-[14px] leading-none mb-0.5">{directorName}</div>
-               <div className="text-blue-900 font-bold text-[11px] leading-none">DIRETOR GERAL DA FACULDADE</div>
+               <div className="text-slate-800 font-bold uppercase tracking-tight text-[12px] leading-none mb-0.5">{directorName}</div>
+               <div className="text-blue-900 font-bold text-[10px] leading-none">DIRETOR GERAL DA FACULDADE</div>
              </div>
           ) : (
-             <div className="text-blue-900 font-bold mt-2 text-[11px]">DIRETOR GERAL DA FACULDADE</div>
+             <div className="text-blue-900 font-bold mt-1 text-[10px]">DIRETOR GERAL DA FACULDADE</div>
           )
         )}
         
         {visibleFields.logo && (
           <div 
-            className="mt-[4%] flex items-center justify-center gap-2 opacity-90 pb-1"
+            className="mt-[1%] flex items-center justify-center gap-2 opacity-90 pb-1"
             style={{
               transform: `translate(${backLogoConfig.x}px, ${backLogoConfig.y}px) scale(${backLogoConfig.scale / 100})`,
             }}
           >
-             <div className="w-[60px] h-[60px]">
+             <div className="w-[50px] h-[50px]">
                 {displayLogoBack ? (
                    <img 
                       src={displayLogoBack} 
@@ -357,7 +357,7 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
              </div>
              <div className="flex flex-col text-left">
                 <div className="flex items-center gap-1">
-                  <span className="text-blue-900 font-black tracking-tighter" style={{ fontSize: '26px', lineHeight: '1' }}>{cardBackText || (instName === 'Vero ID' ? 'A vero ID' : instName)}</span>
+                  <span className="text-blue-900 font-black tracking-tighter" style={{ fontSize: '22px', lineHeight: '1' }}>{cardBackText || (instName === 'Vero ID' ? 'A vero ID' : instName)}</span>
                 </div>
                 {instName === 'FAJOPA' && (
                   <div className="bg-blue-900 text-white rounded font-bold px-1 py-0.5 text-center mt-0.5 whitespace-nowrap shadow-sm" style={{ fontSize: '8px' }}>
@@ -371,12 +371,12 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
           </div>
         )}
         
-        <div className="mt-[3%] w-[85%] text-center text-blue-900 font-bold leading-tight whitespace-pre-line" style={{ fontSize: '12px' }}>
+        <div className="mt-[1%] w-[85%] text-center text-blue-900 font-bold leading-tight whitespace-pre-line" style={{ fontSize: '11px' }}>
           {displayDescription}
         </div>
       </div>
 
-      <div className="absolute top-[2%] right-[4%] opacity-80 text-[8px] text-right font-bold text-blue-950 pointer-events-none leading-relaxed select-none">
+      <div className="absolute top-[2%] right-[4%] opacity-80 text-[7px] text-right font-bold text-blue-950 pointer-events-none leading-relaxed select-none z-20">
          ©2025 - Alison Fernando Rodrigues dos Santos - {cardFrontText || 'A vero ID'}<br/>
          Emitido em: {emittedAt} • Gerado digitalmente: {generatedAt}
       </div>

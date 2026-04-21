@@ -115,6 +115,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
   }, [showList, showBin, showRequests, settings.version]);
 
   const handleLogoutAdmin = async () => {
+    localStorage.removeItem('adminMasterLogged');
     await signOut(auth);
     onLogout();
   };

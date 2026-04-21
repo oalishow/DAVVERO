@@ -18,6 +18,7 @@ export default function App() {
   const { settings } = useSettings();
   const [activeTab, setActiveTab] = useState<'verifier' | 'admin' | 'student'>('verifier');
   const [targetVerifyCode, setTargetVerifyCode] = useState<string | null>(null);
+  const [adminForceViewCode, setAdminForceViewCode] = useState<string | null>(null);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [updateStatus, setUpdateStatus] = useState<'idle' | 'success'>('idle');
 
@@ -35,6 +36,11 @@ export default function App() {
   const handleGlobalVerify = (code: string) => {
     setTargetVerifyCode(code);
     setActiveTab('verifier');
+  };
+
+  const handleAdminForceView = (code: string) => {
+    setAdminForceViewCode(code);
+    setActiveTab('student');
   };
 
   const handleUpdateClick = () => {
@@ -60,6 +66,7 @@ export default function App() {
   useEffect(() => {
     // Expose global trigger for deep components
     (window as any).triggerVerification = handleGlobalVerify;
+    (window as any).triggerAdminForceView = handleAdminForceView;
   }, []);
 
   useEffect(() => {
@@ -209,7 +216,12 @@ export default function App() {
                     />
                   )}
                   {activeTab === 'admin' && <Admin />}
-                  {activeTab === 'student' && <StudentPortal />}
+                  {activeTab === 'student' && (
+                    <StudentPortal 
+                      overrideCode={adminForceViewCode} 
+                      onOverrideConsumed={() => setAdminForceViewCode(null)} 
+                    />
+                  )}
                 </Suspense>
               </ErrorBoundary>
             </motion.div>

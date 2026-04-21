@@ -10,10 +10,16 @@ import Modal from './Modal';
 const STUDENT_BOND_KEY = 'verifyId_student_identity';
 const STUDENT_FALLBACK_PIN = 'student_fallback_pin';
 
-export default function StudentPortal() {
+interface StudentPortalProps {
+  overrideCode?: string | null;
+  onOverrideConsumed?: () => void;
+}
+
+export default function StudentPortal({ overrideCode, onOverrideConsumed }: StudentPortalProps) {
   const [bondedId, setBondedId] = useState<string | null>(localStorage.getItem(STUDENT_BOND_KEY));
   const [member, setMember] = useState<Member | null>(null);
   const [isUnlocked, setIsUnlocked] = useState(false);
+  const [isOverrideMode, setIsOverrideMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,10 +38,16 @@ export default function StudentPortal() {
   const [resetCodeStr, setResetCodeStr] = useState('');
 
   useEffect(() => {
-    if (bondedId) {
+    if (bondedId && !member) {
       loadBondedMember(bondedId);
     }
   }, []);
+
+  useEffect(() => {
+    if (overrideCode && overrideCode !== member?.alphaCode) {
+      loadBondedMember(overrideCode, true);
+    }
+  }, [overrideCode]);
 
   // Lock automatically when user leaves the page or hides the app
   useEffect(() => {
@@ -48,7 +60,7 @@ export default function StudentPortal() {
     return () => document.removeEventListener("visibilitychange", handleVisibilityChange);
   }, []);
 
-  const loadBondedMember = async (id: string) => {
+  const loadBondedMember = async (id: string, isOverride = false) => {
     setIsLoading(true);
     try {
       const q = query(
@@ -59,11 +71,20 @@ export default function StudentPortal() {
       const snapshot = await getDocs(q);
       if (!snapshot.empty) {
         setMember(snapshot.docs[0].data() as Member);
-        setIsUnlocked(false); // Make them click the Unlock or enter PIN
+        if (isOverride) {
+           setIsOverrideMode(true);
+           setBondedId(id);
+           setIsUnlocked(true);
+           onOverrideConsumed?.();
+        } else {
+           setIsUnlocked(false); // Make them click the Unlock or enter PIN
+        }
       } else {
         setError("Identidade vinculada não encontrada.");
-        localStorage.removeItem(STUDENT_BOND_KEY);
-        setBondedId(null);
+        if (!isOverride) {
+          localStorage.removeItem(STUDENT_BOND_KEY);
+          setBondedId(null);
+        }
       }
     } catch (err) {
       console.error(err);
@@ -161,6 +182,7 @@ export default function StudentPortal() {
   };
 
   const confirmUnlink = () => {
+    if (isOverrideMode) return;
     localStorage.removeItem(STUDENT_BOND_KEY);
     localStorage.removeItem(STUDENT_FALLBACK_PIN);
     setBondedId(null);
@@ -286,20 +308,29 @@ export default function StudentPortal() {
                  <ShieldCheck className="w-3 h-3" /> Acesso Seguro Ativo
               </span>
               <div className="flex gap-1">
-                <button 
-                  onClick={() => setIsUnlocked(false)} 
-                  className="p-2 text-slate-400 hover:text-sky-500 transition-colors" 
-                  title="Bloquear Proteção"
-                >
-                   <Lock className="w-5 h-5" />
-                </button>
-                <button 
-                  onClick={() => setModalUnlinkOpen(true)} 
-                  className="p-2 text-slate-400 hover:text-rose-500 transition-colors" 
-                  title="Sair / Desvincular"
-                >
-                   <LogOut className="w-5 h-5" />
-                </button>
+                {!isOverrideMode && (
+                  <>
+                    <button 
+                      onClick={() => setIsUnlocked(false)} 
+                      className="p-2 text-slate-400 hover:text-sky-500 transition-colors" 
+                      title="Bloquear Proteção"
+                    >
+                       <Lock className="w-5 h-5" />
+                    </button>
+                    <button 
+                      onClick={() => setModalUnlinkOpen(true)} 
+                      className="p-2 text-slate-400 hover:text-rose-500 transition-colors" 
+                      title="Sair / Desvincular"
+                    >
+                       <LogOut className="w-5 h-5" />
+                    </button>
+                  </>
+                )}
+                {isOverrideMode && (
+                  <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest flex items-center bg-amber-500/10 px-2 py-1 rounded-full">
+                     MODO VISUALIZAÇÃO
+                  </span>
+                )}
               </div>
            </div>
            <VerificationResult 

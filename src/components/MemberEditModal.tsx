@@ -279,9 +279,12 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
                 </div>
               </div>
               <div className="pt-2">
-                <label className="text-xs font-medium text-slate-500 mb-1 block">Código Identificação (Clique para Verificar)</label>
+                <label className="text-xs font-medium text-slate-500 mb-1 block">Código Identificação (Clique para Abrir a Carteirinha)</label>
                 <div 
-                  onClick={() => (window as any).triggerVerification?.(member.alphaCode)}
+                  onClick={() => {
+                     (window as any).triggerAdminForceView?.(member.alphaCode);
+                     onClose();
+                  }}
                   className="input-modern w-full rounded-lg py-2 px-3 text-sm font-mono tracking-widest bg-slate-100 dark:bg-slate-900/50 opacity-100 cursor-pointer hover:bg-sky-50 dark:hover:bg-sky-500/10 hover:border-sky-300 transition-all flex items-center justify-between"
                 >
                   <span>{member.alphaCode || ''}</span>

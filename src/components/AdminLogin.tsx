@@ -20,6 +20,7 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
   const handlePasswordLogin = () => {
     const storedPassword = localStorage.getItem(PASSWORD_STORAGE_KEY) || DEFAULT_ADMIN_PASSWORD;
     if (password === storedPassword) {
+      localStorage.setItem('adminMasterLogged', 'true');
       onLogin();
     } else {
       setError('Palavra-passe incorreta.');
