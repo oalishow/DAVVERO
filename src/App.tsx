@@ -1,11 +1,10 @@
 import { useState, useEffect, lazy, Suspense } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
-import { Moon, Sun, Shield, User, Lock, Loader2, Sparkles, RefreshCw, X } from 'lucide-react';
+import { Moon, Sun, Shield, User, Lock, Loader2 } from 'lucide-react';
 import { loginAnon } from './lib/firebase';
 import { motion, AnimatePresence } from 'motion/react';
 import ErrorBoundary from './components/ErrorBoundary';
-import { APP_VERSION, CHANGELOG } from './lib/constants';
 
 const Verifier = lazy(() => import('./components/Verifier'));
 const Admin = lazy(() => import('./components/Admin'));
@@ -14,7 +13,6 @@ const StudentPortal = lazy(() => import('./components/StudentPortal'));
 export default function App() {
   const [activeTab, setActiveTab] = useState<'verifier' | 'admin' | 'student'>('verifier');
   const [targetVerifyCode, setTargetVerifyCode] = useState<string | null>(null);
-  const [showUpdateModal, setShowUpdateModal] = useState(false);
 
   const handleGlobalVerify = (code: string) => {
     setTargetVerifyCode(code);
@@ -54,13 +52,6 @@ export default function App() {
     // Liberações Iniciais (Firebase login anonimo necessário para acessar dados base)
     loginAnon();
 
-    // Update check
-    const storedVersion = localStorage.getItem('app_version');
-    if (storedVersion && storedVersion !== APP_VERSION) {
-      setShowUpdateModal(true);
-    }
-    localStorage.setItem('app_version', APP_VERSION);
-
     return () => systemPrefersDark.removeEventListener('change', themeListener);
   }, []);
 
@@ -70,54 +61,6 @@ export default function App() {
         {/* Glows Decorativos de Fundo */}
         <div className="absolute -top-32 -left-32 w-64 h-64 bg-sky-300 dark:bg-sky-600 rounded-full mix-blend-multiply dark:mix-blend-screen blur-[90px] opacity-30 pointer-events-none print:hidden" />
         <div className="absolute -bottom-32 -right-32 w-64 h-64 bg-emerald-300 dark:bg-emerald-600 rounded-full mix-blend-multiply dark:mix-blend-screen blur-[90px] opacity-30 pointer-events-none print:hidden" />
-
-        <AnimatePresence>
-          {showUpdateModal && (
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md no-print"
-            >
-              <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[2rem] shadow-2xl p-6 border border-sky-100 dark:border-sky-500/20 text-center relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-4">
-                  <button onClick={() => setShowUpdateModal(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
-                    <X className="w-4 h-4 text-slate-400" />
-                  </button>
-                </div>
-                
-                <div className="w-16 h-16 bg-sky-100 dark:bg-sky-500/20 text-sky-600 rounded-2xl flex items-center justify-center mx-auto mb-4 animate-pulse">
-                  <Sparkles className="w-8 h-8" />
-                </div>
-                
-                <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Novidades Chegaram!</h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 uppercase tracking-widest font-black">Versão {APP_VERSION}</p>
-                
-                <div className="text-left space-y-2 mb-8">
-                  {CHANGELOG.map((item, i) => (
-                    <div key={i} className="flex gap-2 items-start group">
-                      <div className="w-1 h-1 rounded-full bg-sky-500 mt-1.5 shrink-0 group-hover:scale-150 transition-transform" />
-                      <span className="text-[11px] leading-tight text-slate-600 dark:text-slate-300 font-medium">{item}</span>
-                    </div>
-                  ))}
-                </div>
-
-                <button 
-                  onClick={() => {
-                    localStorage.setItem('app_version', APP_VERSION);
-                    window.location.reload();
-                  }}
-                  className="w-full py-3 bg-sky-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-sky-500/30 flex items-center justify-center gap-2 hover:bg-sky-500 transition-all active:scale-95"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  Atualizar Agora
-                </button>
-                
-                <p className="text-[9px] text-slate-400 mt-4 font-bold uppercase tracking-tighter">O sistema foi modificado para melhor atendê-lo.</p>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         <div className="relative z-10 space-y-6 sm:space-y-8 print:space-y-4">
           <Header />
