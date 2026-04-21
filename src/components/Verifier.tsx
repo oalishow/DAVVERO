@@ -99,16 +99,27 @@ export default function Verifier({ externalCode, onExternalVerified }: VerifierP
                 { facingMode: "environment" },
                 config,
                 (decodedText: string) => {
-                  ht5Qrcode?.stop().then(() => {
-                    setIsScanning(false);
-                    // Process the result
-                    let memberId = decodedText;
-                    try {
-                        const url = new URL(decodedText);
-                        memberId = url.searchParams.get('verify') || decodedText;
-                    } catch (_) {}
-                    runVerification(memberId, false, decodedText);
-                  }).catch(console.error);
+                  // Process the result immediately for responsiveness
+                  let memberId = decodedText;
+                  try {
+                      // More robust URL parameter extraction
+                      if (decodedText.includes('verify=')) {
+                        const parts = decodedText.split('verify=');
+                        if (parts.length > 1) {
+                            memberId = parts[1].split('&')[0].split('#')[0];
+                        }
+                      } else if (decodedText.startsWith('http')) {
+                          const url = new URL(decodedText);
+                          memberId = url.searchParams.get('verify') || decodedText;
+                      }
+                  } catch (_) {}
+
+                  // Immediately stop UI feedback and trigger verification
+                  setIsScanning(false);
+                  runVerification(memberId, false, decodedText);
+
+                  // Stop camera as cleanup
+                  ht5Qrcode?.stop().catch(() => {});
                 },
                 () => {} // silent scan failure (it retries every frame)
             ).catch((err: any) => {
@@ -146,6 +157,7 @@ export default function Verifier({ externalCode, onExternalVerified }: VerifierP
   const runVerification = (idOrCode: string, isAlphaCode: boolean, rawScannedText?: string) => {
     setIsProcessing(true);
     
+    // Using a shorter delay for better responsiveness
     setTimeout(() => {
       const targetId = idOrCode.toUpperCase().trim();
       const rawTextUpper = (rawScannedText || idOrCode).toUpperCase().trim();
@@ -159,14 +171,23 @@ export default function Verifier({ externalCode, onExternalVerified }: VerifierP
         let legacyExtractedId = legacyUpper;
         if (m.legacyQrCode) {
            try {
-               const lUrl = new URL(m.legacyQrCode);
-               const v = lUrl.searchParams.get('verify');
-               if (v) legacyExtractedId = v.toUpperCase().trim();
+               // More robust URL parameter extraction for legacy base
+               if (m.legacyQrCode.includes('verify=')) {
+                   const parts = m.legacyQrCode.split('verify=');
+                   if (parts.length > 1) {
+                       legacyExtractedId = parts[1].split('&')[0].split('#')[0].toUpperCase().trim();
+                   }
+               } else if (m.legacyQrCode.startsWith('http')) {
+                   const lUrl = new URL(m.legacyQrCode);
+                   const v = lUrl.searchParams.get('verify');
+                   if (v) legacyExtractedId = v.toUpperCase().trim();
+               }
            } catch(_) {}
         }
         
         if (isAlphaCode) return alphaUpper === targetId || raUpper === targetId;
 
+        // Multi-level matching strategy
         return (
           m.id === targetId || 
           m.legacyId === targetId || 
@@ -174,9 +195,10 @@ export default function Verifier({ externalCode, onExternalVerified }: VerifierP
           raUpper === targetId ||
           (legacyExtractedId && legacyExtractedId === targetId) ||
           (legacyUpper && rawTextUpper === legacyUpper) ||
-          (legacyUpper && legacyUpper.includes(rawTextUpper)) ||
+          (legacyUpper && legacyUpper.includes(targetId)) ||
           (legacyUpper && rawTextUpper.includes(legacyUpper)) ||
-          (legacyUpper && targetId.length > 5 && legacyUpper.includes(targetId))
+          (targetId.length > 4 && legacyUpper && legacyUpper.includes(targetId)) ||
+          (rawTextUpper.length > 4 && legacyUpper && rawTextUpper.includes(legacyUpper))
         );
       });
 
@@ -201,7 +223,7 @@ export default function Verifier({ externalCode, onExternalVerified }: VerifierP
       const isValid = new Date(foundMember.validityDate + 'T23:59:59') >= new Date();
       setValidationResult({ member: foundMember, status: isValid ? 'VALID' : 'EXPIRED' });
       setIsProcessing(false);
-    }, 1500); // 1.5s delay
+    }, 600); // Reduced delay from 1500 to 600ms
   };
 
   if (isProcessing) {
