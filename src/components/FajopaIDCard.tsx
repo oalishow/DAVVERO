@@ -1,7 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { Member } from '../types';
 import { QRCodeSVG } from 'qrcode.react';
-import { URL_STORAGE_KEY, DEFAULT_PUBLIC_URL, DIRECTOR_NAME_KEY, DEFAULT_DIRECTOR_NAME } from '../lib/constants';
+import { 
+  URL_STORAGE_KEY, 
+  DEFAULT_PUBLIC_URL, 
+  DIRECTOR_NAME_KEY, 
+  DEFAULT_DIRECTOR_NAME,
+  INSTITUTION_LOGO_KEY,
+  INSTITUTION_NAME_KEY,
+  INSTITUTION_COLOR_KEY,
+  DIRECTOR_SIGNATURE_KEY
+} from '../lib/constants';
 
 interface FajopaIDCardProps {
   member: Member;
@@ -11,12 +20,21 @@ interface FajopaIDCardProps {
 export default function FajopaIDCard({ member, exportMode = false }: FajopaIDCardProps) {
   const [flipped, setFlipped] = useState(false);
   const [directorName, setDirectorName] = useState(DEFAULT_DIRECTOR_NAME);
+  const [instLogo, setInstLogo] = useState<string | null>(null);
+  const [instSignature, setInstSignature] = useState<string | null>(null);
+  const [instName, setInstName] = useState('FAJOPA');
+  const [instColor, setInstColor] = useState('#0ea5e9');
+  
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const processedAt = member.createdAt ? new Date(member.createdAt).toLocaleString('pt-BR') : 'N/D';
   
   useEffect(() => {
     setDirectorName(localStorage.getItem(DIRECTOR_NAME_KEY) || DEFAULT_DIRECTOR_NAME);
+    setInstLogo(localStorage.getItem(INSTITUTION_LOGO_KEY));
+    setInstSignature(localStorage.getItem(DIRECTOR_SIGNATURE_KEY));
+    setInstName(localStorage.getItem(INSTITUTION_NAME_KEY) || 'FAJOPA');
+    setInstColor(localStorage.getItem(INSTITUTION_COLOR_KEY) || '#0ea5e9');
   }, []);
 
   useEffect(() => {
@@ -76,19 +94,31 @@ export default function FajopaIDCard({ member, exportMode = false }: FajopaIDCar
       }}
     >
       {/* Top Divider / Header Decor */}
-      <div className="absolute top-0 left-0 w-full h-[18%] bg-blue-950 border-b-4 border-cyan-500 flex items-center z-20 shadow-sm">
+      <div 
+        className="absolute top-0 left-0 w-full h-[18%] border-b-4 flex items-center z-20 shadow-sm"
+        style={{ 
+          backgroundColor: '#0c1222', // Very dark for contrast
+          borderBottomColor: instColor 
+        }}
+      >
          <h1 className="text-white font-black pl-[5%] tracking-wide" style={{ fontSize: '24px' }}>
            IDENTIFICAÇÃO ESTUDANTIL
          </h1>
       </div>
 
       {/* Bottom Footer block */}
-      <div className="absolute bottom-0 left-0 w-[60%] h-[30%] bg-blue-950" style={{ clipPath: 'polygon(0 40%, 100% 100%, 0 100%)', zIndex: 0 }}></div>
-      <div className="absolute bottom-0 left-0 w-[55%] h-[20%] bg-blue-900" style={{ clipPath: 'polygon(0 40%, 100% 100%, 0 100%)', zIndex: 1 }}></div>
+      <div className="absolute bottom-0 left-0 w-[60%] h-[30%]" style={{ backgroundColor: '#0c1222', clipPath: 'polygon(0 40%, 100% 100%, 0 100%)', zIndex: 0 }}></div>
+      <div className="absolute bottom-0 left-0 w-[55%] h-[20%]" style={{ backgroundColor: '#0f172a', clipPath: 'polygon(0 40%, 100% 100%, 0 100%)', zIndex: 1 }}></div>
 
-      <div className="absolute bottom-0 left-[20%] right-[32%] h-[17%] bg-blue-900 flex items-center justify-center z-2" style={{ clipPath: 'polygon(5% 0, 100% 0, 100% 100%, 0 100%)' }}>
+      <div 
+        className="absolute bottom-0 left-[20%] right-[32%] h-[17%] flex items-center justify-center z-2" 
+        style={{ 
+          backgroundColor: '#0f172a',
+          clipPath: 'polygon(5% 0, 100% 0, 100% 100%, 0 100%)' 
+        }}
+      >
          <span className="text-white font-bold tracking-widest uppercase pl-4" style={{ fontSize: '10px' }}>
-           FACULDADE JOÃO PAULO II
+           {instName === 'FAJOPA' ? 'FACULDADE JOÃO PAULO II' : instName}
          </span>
       </div>
 
@@ -122,33 +152,46 @@ export default function FajopaIDCard({ member, exportMode = false }: FajopaIDCar
 
        {/* Center Logo FAJOPA */}
       <div className="absolute bottom-[23%] left-[36%] w-[28%] h-[50%] flex flex-col items-center justify-center opacity-95 z-10 pointer-events-none">
-         <svg viewBox="0 0 300 300" className="w-full h-full drop-shadow-[0_2px_4px_rgba(0,0,0,0.15)]">
-            {/* Left Wing (Light Blue - layered feathers) */}
-            <path d="M140,165 C110,165 40,140 10,70 C50,110 110,140 140,145 Z" fill="#2096d3"/>
-            <path d="M140,165 C100,175 30,160 5,100 C50,140 110,155 140,155 Z" fill="#1b7db0"/>
-            <path d="M140,165 C80,185 20,185 10,135 C50,170 110,175 140,165 Z" fill="#16628c"/>
-            
-            {/* Right Wing (Dark Blue - layered feathers) */}
-            <path d="M150,165 C180,165 250,140 280,70 C240,110 180,140 150,145 Z" fill="#1d2d5b"/>
-            <path d="M150,165 C190,175 260,160 285,100 C240,140 180,155 150,155 Z" fill="#18254b"/>
-            <path d="M150,165 C210,185 270,185 280,135 C240,170 180,175 150,165 Z" fill="#121b36"/>
+         {instLogo ? (
+            <img 
+              src={instLogo} 
+              alt="Logo Inst" 
+              className="w-[85%] h-[85%] object-contain" 
+              style={{ filter: 'drop-shadow(0 0 2px white) drop-shadow(0 0 1px white)' }}
+            />
+         ) : (
+            <svg 
+              viewBox="0 0 300 300" 
+              className="w-full h-full"
+              style={{ filter: 'drop-shadow(0 0 2px white) drop-shadow(0 0 1px white)' }}
+            >
+               {/* Left Wing (Light Blue - layered feathers) */}
+               <path d="M140,165 C110,165 40,140 10,70 C50,110 110,140 140,145 Z" fill="#2096d3"/>
+               <path d="M140,165 C100,175 30,160 5,100 C50,140 110,155 140,155 Z" fill="#1b7db0"/>
+               <path d="M140,165 C80,185 20,185 10,135 C50,170 110,175 140,165 Z" fill="#16628c"/>
+               
+               {/* Right Wing (Dark Blue - layered feathers) */}
+               <path d="M150,165 C180,165 250,140 280,70 C240,110 180,140 150,145 Z" fill="#1d2d5b"/>
+               <path d="M150,165 C190,175 260,160 285,100 C240,140 180,155 150,155 Z" fill="#18254b"/>
+               <path d="M150,165 C210,185 270,185 280,135 C240,170 180,175 150,165 Z" fill="#121b36"/>
 
-            {/* Bird Body/Head */}
-            <path d="M145,170 Q135,130 145,90 Q155,75 160,85 Q155,85 150,95 Q145,100 145,170 Z" fill="#2096d3" />
+               {/* Bird Body/Head */}
+               <path d="M145,170 Q135,130 145,90 Q155,75 160,85 Q155,85 150,95 Q145,100 145,170 Z" fill="#2096d3" />
 
-            {/* Ribbon */}
-            <path d="M25,195 Q145,175 265,195 L265,220 Q145,200 25,220 Z" fill="#1d2d5b" />
-            <path d="M25,195 L5,230 L40,217 Z" fill="#0f172a" />
-            <path d="M265,195 L285,230 L250,217 Z" fill="#0f172a" />
+               {/* Ribbon */}
+               <path d="M25,195 Q145,175 265,195 L265,220 Q145,200 25,220 Z" fill="#1d2d5b" />
+               <path d="M25,195 L5,230 L40,217 Z" fill="#0f172a" />
+               <path d="M265,195 L285,230 L250,217 Z" fill="#0f172a" />
 
-            <path id="ribbon-curve-front" d="M35,214 Q145,194 255,214" fill="none" />
-            <text fill="white" fontFamily="Arial, Helvetica, sans-serif" fontSize="14" fontWeight="bold" textAnchor="middle" letterSpacing="1.2">
-               <textPath href="#ribbon-curve-front" startOffset="50%">FIDES ET RATIO</textPath>
-            </text>
+               <path id="ribbon-curve-front-dynamic" d="M35,214 Q145,194 255,214" fill="none" />
+               <text fill="white" fontFamily="Arial, Helvetica, sans-serif" fontSize="14" fontWeight="bold" textAnchor="middle" letterSpacing="1.2">
+                  <textPath href="#ribbon-curve-front-dynamic" startOffset="50%">FIDES ET RATIO</textPath>
+               </text>
 
-            <text x="145" y="265" fill="#1d2d5b" fontFamily="Impact, Arial Black, sans-serif" fontSize="48" fontWeight="900" textAnchor="middle" letterSpacing="1">FAJOPA</text>
-            <text x="145" y="285" fill="#333333" fontFamily="Arial, Helvetica, sans-serif" fontSize="13" fontWeight="bold" textAnchor="middle" letterSpacing="0.3">FACULDADE JOÃO PAULO II</text>
-         </svg>
+               <text x="145" y="265" fill="#1d2d5b" fontFamily="Impact, Arial Black, sans-serif" fontSize="48" fontWeight="900" textAnchor="middle" letterSpacing="1">FAJOPA</text>
+               <text x="145" y="285" fill="#333333" fontFamily="Arial, Helvetica, sans-serif" fontSize="13" fontWeight="bold" textAnchor="middle" letterSpacing="0.3">FACULDADE JOÃO PAULO II</text>
+            </svg>
+         )}
       </div>
 
       {/* Right Area (Photo & QR Code) */}
@@ -192,7 +235,10 @@ export default function FajopaIDCard({ member, exportMode = false }: FajopaIDCar
 
       <div className="absolute top-[35%] w-full flex flex-col items-center z-0">
         {/* Signature Area */}
-        <div className="w-[80%] max-w-[200px] h-[50px] sm:h-[60px] border-b-[2.5px] border-slate-800 flex items-end justify-center pb-2 mt-2">
+        <div className="w-[80%] max-w-[200px] h-[50px] sm:h-[60px] border-b-[2.5px] border-slate-800 flex items-center justify-center pb-2 mt-2">
+           {instSignature && (
+             <img src={instSignature} alt="Assinatura Diretor" className="h-[120%] w-auto object-contain mb-[-10%]" />
+           )}
         </div>
         
         {directorName ? (
@@ -206,39 +252,54 @@ export default function FajopaIDCard({ member, exportMode = false }: FajopaIDCar
         
         <div className="mt-[4%] flex items-center justify-center gap-2 opacity-90 pb-1">
            <div className="w-[60px] h-[60px]">
-              <svg viewBox="0 0 300 170" className="w-full h-full drop-shadow-md pb-2">
-                 <defs>
-                    <linearGradient id="wd2" x1="0%" y1="0%" x2="100%" y2="100%">
-                       <stop offset="0%" stopColor="#1e3a8a" />
-                       <stop offset="100%" stopColor="#0f172a" />
-                    </linearGradient>
-                    <linearGradient id="wl2" x1="0%" y1="0%" x2="100%" y2="100%">
-                       <stop offset="0%" stopColor="#0284c7" />
-                       <stop offset="100%" stopColor="#0369a1" />
-                    </linearGradient>
-                 </defs>
+              {instLogo ? (
+                 <img 
+                    src={instLogo} 
+                    alt="Logo" 
+                    className="w-full h-full object-contain" 
+                    style={{ filter: 'drop-shadow(0 0 2px white) drop-shadow(0 0 1px white)' }}
+                 />
+              ) : (
+                 <svg 
+                    viewBox="0 0 300 170" 
+                    className="w-full h-full pb-2"
+                    style={{ filter: 'drop-shadow(0 0 2px white) drop-shadow(0 0 1px white)' }}
+                 >
+                    <defs>
+                       <linearGradient id="wd2" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#1e3a8a" />
+                          <stop offset="100%" stopColor="#0f172a" />
+                       </linearGradient>
+                       <linearGradient id="wl2" x1="0%" y1="0%" x2="100%" y2="100%">
+                          <stop offset="0%" stopColor="#0284c7" />
+                          <stop offset="100%" stopColor="#0369a1" />
+                       </linearGradient>
+                    </defs>
 
-                 {/* Left Wing (Light Blue - layered feathers) */}
-                 <path d="M140,165 C110,165 40,140 10,70 C50,110 110,140 140,145 Z" fill="url(#wl2)"/>
-                 <path d="M140,165 C100,175 30,160 5,100 C50,140 110,155 140,155 Z" fill="url(#wl2)" opacity="0.8"/>
-                 <path d="M140,165 C80,185 20,185 10,135 C50,170 110,175 140,165 Z" fill="url(#wl2)" opacity="0.6"/>
-                 
-                 {/* Right Wing (Dark Blue - layered feathers) */}
-                 <path d="M150,165 C180,165 250,140 280,70 C240,110 180,140 150,145 Z" fill="url(#wd2)"/>
-                 <path d="M150,165 C190,175 260,160 285,100 C240,140 180,155 150,155 Z" fill="url(#wd2)" opacity="0.8"/>
-                 <path d="M150,165 C210,185 270,185 280,135 C240,170 180,175 150,165 Z" fill="url(#wd2)" opacity="0.6"/>
+                    {/* Left Wing (Light Blue - layered feathers) */}
+                    <path d="M140,165 C110,165 40,140 10,70 C50,110 110,140 140,145 Z" fill="url(#wl2)"/>
+                    <path d="M140,165 C100,175 30,160 5,100 C50,140 110,155 140,155 Z" fill="url(#wl2)" opacity="0.8"/>
+                    <path d="M140,165 C80,185 20,185 10,135 C50,170 110,175 140,165 Z" fill="url(#wl2)" opacity="0.6"/>
+                    
+                    {/* Right Wing (Dark Blue - layered feathers) */}
+                    <path d="M150,165 C180,165 250,140 280,70 C240,110 180,140 150,145 Z" fill="url(#wd2)"/>
+                    <path d="M150,165 C190,175 260,160 285,100 C240,140 180,155 150,155 Z" fill="url(#wd2)" opacity="0.8"/>
+                    <path d="M150,165 C210,185 270,185 280,135 C240,170 180,175 150,165 Z" fill="url(#wd2)" opacity="0.6"/>
 
-                 <path d="M145,170 Q135,130 145,90 Q155,75 160,85 Q155,85 150,95 Q145,100 145,170 Z" fill="#2096d3" />
-              </svg>
+                    <path d="M145,170 Q135,130 145,90 Q155,75 160,85 Q155,85 150,95 Q145,100 145,170 Z" fill="#2096d3" />
+                 </svg>
+              )}
            </div>
            <div className="flex flex-col text-left">
               <div className="flex items-center gap-1">
-                <span className="text-blue-900 font-black tracking-tighter" style={{ fontSize: '26px', lineHeight: '1' }}>FAJOPA</span>
+                <span className="text-blue-900 font-black tracking-tighter" style={{ fontSize: '26px', lineHeight: '1' }}>{instName}</span>
               </div>
-              <div className="bg-blue-900 text-white rounded font-bold px-1 py-0.5 text-center mt-0.5 whitespace-nowrap shadow-sm" style={{ fontSize: '8px' }}>
-                 FIDES ET RATIO
-              </div>
-              <span className="text-blue-800 font-bold tracking-tight mt-1 leading-none" style={{ fontSize: '10px' }}>FACULDADE JOÃO PAULO II</span>
+              {instName === 'FAJOPA' && (
+                <div className="bg-blue-900 text-white rounded font-bold px-1 py-0.5 text-center mt-0.5 whitespace-nowrap shadow-sm" style={{ fontSize: '8px' }}>
+                   FIDES ET RATIO
+                </div>
+              )}
+              <span className="text-blue-800 font-bold tracking-tight mt-1 leading-none" style={{ fontSize: '10px' }}>{instName === 'FAJOPA' ? 'FACULDADE JOÃO PAULO II' : instName}</span>
            </div>
         </div>
         
