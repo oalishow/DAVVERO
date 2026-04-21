@@ -20,7 +20,16 @@ export default function SuggestEditModal({ member, onClose, onSubmitSuccess }: S
   const [course, setCourse] = useState(member.course || '');
   const [cpf, setCpf] = useState(member.cpf || '');
   const [rg, setRg] = useState(member.rg || '');
-  const [birthdate, setBirthdate] = useState(member.birthdate || '');
+  const [birthdate, setBirthdate] = useState(() => {
+    let bd = member.birthdate || '';
+    if (bd.includes('/')) {
+      const parts = bd.split('/');
+      if (parts.length === 3) {
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+      }
+    }
+    return bd;
+  });
   const [email, setEmail] = useState(member.email || '');
   const [photo, setPhoto] = useState<File | null>(null);
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);
@@ -133,8 +142,8 @@ export default function SuggestEditModal({ member, onClose, onSubmitSuccess }: S
 
           <div className="grid grid-cols-2 gap-4">
               <div>
-                  <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Nova Data Nasc. (DD/MM/AAAA)</label>
-                  <input type="text" placeholder="01/01/2000" value={birthdate} onChange={e => setBirthdate(e.target.value)} className="input-modern w-full rounded-xl py-3 px-4 text-sm" />
+                  <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Nova Data Nasc.</label>
+                  <input type="date" value={birthdate} onChange={e => setBirthdate(e.target.value)} className="input-modern w-full rounded-xl py-3 px-4 text-sm uppercase" />
               </div>
               <div>
                   <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Novo RA</label>

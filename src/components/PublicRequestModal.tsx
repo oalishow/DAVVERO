@@ -185,7 +185,7 @@ export default function PublicRequestModal({ onClose, onSubmitSuccess }: PublicR
           </div>
           <div>
               <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Data de Nascimento *</label>
-              <input type="text" value={birthdate} onChange={e => setBirthdate(e.target.value)} placeholder="DD/MM/AAAA" className="input-modern w-full rounded-xl py-3 px-4 text-sm" />
+              <input type="date" value={birthdate} onChange={e => setBirthdate(e.target.value)} className="input-modern w-full rounded-xl py-3 px-4 text-sm uppercase" />
           </div>
           
           <div className="pt-1 border-t border-slate-200 dark:border-slate-700/50 mt-1">

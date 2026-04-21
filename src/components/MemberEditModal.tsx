@@ -20,9 +20,19 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
   const [ra, setRa] = useState(member.ra || '');
   const [cpf, setCpf] = useState(member.cpf || '');
   const [rg, setRg] = useState(member.rg || '');
-  const [birthdate, setBirthdate] = useState(member.birthdate || '');
+  const [birthdate, setBirthdate] = useState(() => {
+    let bd = member.birthdate || '';
+    if (bd.includes('/')) {
+      const parts = bd.split('/');
+      if (parts.length === 3) {
+        return `${parts[2]}-${parts[1]}-${parts[0]}`;
+      }
+    }
+    return bd;
+  });
   const [email, setEmail] = useState(member.email || '');
   const [validity, setValidity] = useState(member.validityDate || '');
+  const [legacyQrCode, setLegacyQrCode] = useState(member.legacyQrCode || '');
   const [isActive, setIsActive] = useState(member.isActive !== false);
   const [course, setCourse] = useState(member.course || '');
   const [roles, setRoles] = useState<string[]>(member.roles || []);
@@ -111,6 +121,7 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
       const docRef = doc(db, `artifacts/${appId}/public/data/students`, member.id);
       await updateDoc(docRef, {
         name, ra, cpf, rg, birthdate, email, validityDate: validity, isActive, course, roles,
+        legacyQrCode,
         photoUrl: photoUrl || null
       });
       onUpdate();
@@ -222,13 +233,25 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-medium text-slate-500 mb-1 block">Nascimento (DD/MM/AAAA)</label>
-                  <input type="text" value={birthdate} onChange={e => setBirthdate(e.target.value)} placeholder="01/01/2000" className="input-modern w-full rounded-lg py-2 px-3 text-sm" />
+                  <label className="text-xs font-medium text-slate-500 mb-1 block">Data de Nascimento</label>
+                  <input type="date" value={birthdate} onChange={e => setBirthdate(e.target.value)} className="input-modern w-full rounded-lg py-2 px-3 text-sm" />
                 </div>
                 <div>
                   <label className="text-xs font-medium text-slate-500 mb-1 block">Data Validade</label>
                   <input type="date" value={validity} onChange={e => setValidity(e.target.value)} className="input-modern w-full rounded-lg py-2 px-3 text-sm" />
                 </div>
+              </div>
+              <div>
+                 <label className="text-xs font-medium text-slate-500 mb-1 block">
+                   Vínculo QR Antigo <span className="font-normal opacity-60">(Opcional) - Restaura impressões velhas</span>
+                 </label>
+                 <input 
+                   type="text" 
+                   value={legacyQrCode} 
+                   onChange={e => setLegacyQrCode(e.target.value)} 
+                   placeholder="Aperte o Scanner e leia o QR velho, depois cole o texto todo aqui." 
+                   className="input-modern w-full rounded-lg py-2 px-3 text-sm" 
+                 />
               </div>
               <div className="pt-2 border-t border-slate-200 dark:border-slate-700/50 mt-1">
                 <label className="text-xs font-medium text-slate-500 mb-1 block">Curso Académico *</label>

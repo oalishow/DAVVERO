@@ -16,5 +16,6 @@ export interface Member {
   createdAt?: string;
   deletedAt?: string | null;
   legacyId?: string;
+  legacyQrCode?: string;
   pendingChanges?: any;
 }

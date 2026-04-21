@@ -267,7 +267,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
           </div>
           <div>
             <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Data de Nascimento *</label>
-            <input type="text" value={birthdate} onChange={e => setBirthdate(e.target.value)} placeholder="DD/MM/AAAA" className="input-modern w-full rounded-xl py-2.5 px-3 text-sm" />
+            <input type="date" value={birthdate} onChange={e => setBirthdate(e.target.value)} className="input-modern w-full rounded-xl py-2.5 px-3 text-sm uppercase" />
           </div>
           <div>
             <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">Data de Validade *</label>

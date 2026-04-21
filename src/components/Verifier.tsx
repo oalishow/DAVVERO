@@ -57,7 +57,7 @@ export default function Verifier({ externalCode, onExternalVerified }: VerifierP
       const params = new URLSearchParams(window.location.search);
       const verifyCode = params.get('verify');
       if (verifyCode) {
-        runVerification(verifyCode, false);
+        runVerification(verifyCode, false, window.location.href);
       }
       setInitialVerifyChecked(true);
     }
@@ -104,7 +104,7 @@ export default function Verifier({ externalCode, onExternalVerified }: VerifierP
                         const url = new URL(decodedText);
                         memberId = url.searchParams.get('verify') || decodedText;
                     } catch (_) {}
-                    runVerification(memberId, false);
+                    runVerification(memberId, false, decodedText);
                   }).catch(console.error);
                 },
                 () => {} // silent scan failure (it retries every frame)
@@ -140,20 +140,29 @@ export default function Verifier({ externalCode, onExternalVerified }: VerifierP
     runVerification(codeInput.toUpperCase(), true);
   };
 
-  const runVerification = (idOrCode: string, isAlphaCode: boolean) => {
+  const runVerification = (idOrCode: string, isAlphaCode: boolean, rawScannedText?: string) => {
     setIsProcessing(true);
     
-    // Simulate network/processing delay for visual feedback
     setTimeout(() => {
       const targetId = idOrCode.toUpperCase();
+      const rawTextUpper = (rawScannedText || idOrCode).toUpperCase();
       
       const foundMember = membersCache.find(m => {
         if (m.deletedAt || m.isApproved === false) return false;
         const alphaUpper = m.alphaCode?.toUpperCase();
         const raUpper = m.ra?.toUpperCase();
+        const legacyUpper = m.legacyQrCode?.toUpperCase();
         
         if (isAlphaCode) return alphaUpper === targetId || raUpper === targetId;
-        return m.id === targetId || m.legacyId === targetId || alphaUpper === targetId || raUpper === targetId;
+
+        return (
+          m.id === targetId || 
+          m.legacyId === targetId || 
+          alphaUpper === targetId || 
+          raUpper === targetId ||
+          (legacyUpper && rawTextUpper === legacyUpper) ||
+          (legacyUpper && legacyUpper.includes(rawTextUpper))
+        );
       });
 
       if (!foundMember) {
