@@ -1,21 +1,24 @@
 import { motion } from 'motion/react';
 import { ShieldCheck } from 'lucide-react';
-import { APP_VERSION, INSTITUTION_LOGO_KEY, INSTITUTION_NAME_KEY, INSTITUTION_COLOR_KEY } from '../lib/constants';
+import { APP_VERSION, INSTITUTION_LOGO_KEY, INSTITUTION_NAME_KEY, INSTITUTION_COLOR_KEY, INSTITUTION_DESCRIPTION_KEY } from '../lib/constants';
 import { useEffect, useState } from 'react';
 
 export default function Header() {
   const [instLogo, setInstLogo] = useState<string | null>(null);
   const [instName, setInstName] = useState('Vero ID');
   const [instColor, setInstColor] = useState('#0ea5e9');
+  const [instDescription, setInstDescription] = useState('SISTEMA DE VERIFICAÇÃO DE IDENTIDADE');
 
   useEffect(() => {
     const savedLogo = localStorage.getItem(INSTITUTION_LOGO_KEY);
     const savedName = localStorage.getItem(INSTITUTION_NAME_KEY);
     const savedColor = localStorage.getItem(INSTITUTION_COLOR_KEY);
+    const savedDesc = localStorage.getItem(INSTITUTION_DESCRIPTION_KEY);
     
     if (savedLogo) setInstLogo(savedLogo);
     if (savedName) setInstName(savedName);
     if (savedColor) setInstColor(savedColor);
+    if (savedDesc) setInstDescription(savedDesc);
   }, []);
 
   // Versão SVG robusta integrada para garantir que o logo apareça sempre com alta qualidade
@@ -113,15 +116,15 @@ export default function Header() {
         </motion.div>
       </div>
       <h1 
-        className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text animated-slide-in-up tracking-tight mb-2 print:text-2xl"
+        className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text animated-slide-in-up tracking-tight mb-1 print:text-2xl"
         style={{ 
           backgroundImage: `linear-gradient(to right, ${instColor}, #14b8a6, #10b981)`,
         }}
       >
         {instName}
       </h1>
-      <p className="text-slate-500 dark:text-slate-400 font-light text-xs sm:text-sm md:text-base animated-fade-in">
-        Verificador de Identidade • {instName}
+      <p className="text-slate-500 dark:text-slate-400 font-bold text-[10px] sm:text-xs tracking-[0.2em] animated-fade-in uppercase">
+        {instDescription}
       </p>
     </div>
   );
