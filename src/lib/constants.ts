@@ -19,7 +19,6 @@ export const CARD_FRONT_TEXT_KEY = 'veroId_card_front_text';
 export const CARD_BACK_TEXT_KEY = 'veroId_card_back_text';
 export const CARD_VISIBLE_FIELDS_KEY = 'veroId_card_visible_fields';
 export const CARD_BACK_IMAGE_KEY = 'veroId_card_back_image';
-export const CARD_SIGNATURE_CONFIG_KEY = 'veroId_card_signature_config';
 export const INSTITUTION_DESCRIPTION_KEY = 'veroId_institution_description';
 export const CARD_DESCRIPTION_KEY = 'veroId_card_description';
 export const CUSTOM_ROLES_KEY = 'verifyId_custom_roles';

@@ -23,8 +23,7 @@ import {
   CARD_VISIBLE_FIELDS_KEY,
   CARD_BACK_IMAGE_KEY,
   INSTITUTION_DESCRIPTION_KEY,
-  CARD_DESCRIPTION_KEY,
-  CARD_SIGNATURE_CONFIG_KEY
+  CARD_DESCRIPTION_KEY
 } from '../lib/constants';
 
 interface LogoConfig {
@@ -66,7 +65,6 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
   const [backLogoConfig, setBackLogoConfig] = useState<LogoConfig>(DEFAULT_CONFIG);
 
   const [instSignature, setInstSignature] = useState<string | null>(null);
-  const [signatureScale, setSignatureScale] = useState(100);
   const [instDescription, setInstDescription] = useState('');
   const [cardDescription, setCardDescription] = useState('');
   const [visibleFields, setVisibleFields] = useState<Record<string, boolean>>({
@@ -117,7 +115,6 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
 
     setCardBackImage(localStorage.getItem(CARD_BACK_IMAGE_KEY));
     setInstSignature(localStorage.getItem(DIRECTOR_SIGNATURE_KEY));
-    setSignatureScale(Number(localStorage.getItem(CARD_SIGNATURE_CONFIG_KEY) || '100'));
     setInstDescription(localStorage.getItem(INSTITUTION_DESCRIPTION_KEY) || 'SISTEMA DE VERIFICAÇÃO DE IDENTIDADE');
     setCardDescription(localStorage.getItem(CARD_DESCRIPTION_KEY) || '');
 
@@ -144,7 +141,6 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
     
     localStorage.setItem(CARD_FRONT_LOGO_CONFIG_KEY, JSON.stringify(frontLogoConfig));
     localStorage.setItem(CARD_BACK_LOGO_CONFIG_KEY, JSON.stringify(backLogoConfig));
-    localStorage.setItem(CARD_SIGNATURE_CONFIG_KEY, signatureScale.toString());
 
     if (instLogo) localStorage.setItem(INSTITUTION_LOGO_KEY, instLogo);
     else localStorage.removeItem(INSTITUTION_LOGO_KEY);
@@ -319,7 +315,6 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                   backLogoConfig,
                   cardBackImage,
                   cardDescription,
-                  signatureScale,
                   instSignature,
                   instName,
                   instColor,
@@ -694,23 +689,6 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                   )}
                   <input type="file" ref={signatureInputRef} onChange={(e) => handleFileUpload(e, setInstSignature, 300)} accept="image/png" className="hidden" />
                   <p className="text-[8px] text-slate-400 mt-1">Fundo transparente recomendado</p>
-
-                  {instSignature && (
-                    <div className="mt-4 w-full px-2">
-                       <label className="block text-[8px] font-bold text-slate-400 uppercase mb-1">Aumentar/Diminuir Assinatura (%)</label>
-                       <div className="flex items-center gap-2">
-                         <input 
-                           type="range" 
-                           min="50" 
-                           max="300" 
-                           value={signatureScale} 
-                           onChange={e=>setSignatureScale(Number(e.target.value))} 
-                           className="flex-1 accent-sky-500 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer" 
-                         />
-                         <span className="text-[10px] font-mono font-bold text-slate-500 w-8">{signatureScale}%</span>
-                       </div>
-                    </div>
-                  )}
                </div>
             </div>
           </div>

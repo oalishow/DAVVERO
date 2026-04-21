@@ -18,8 +18,7 @@ import {
   CARD_BACK_TEXT_KEY,
   CARD_VISIBLE_FIELDS_KEY,
   CARD_BACK_IMAGE_KEY,
-  CARD_DESCRIPTION_KEY,
-  CARD_SIGNATURE_CONFIG_KEY
+  CARD_DESCRIPTION_KEY
 } from '../lib/constants';
 
 interface FajopaIDCardProps {
@@ -37,7 +36,6 @@ interface FajopaIDCardProps {
     backLogoConfig?: { x: number; y: number; scale: number };
     cardBackImage?: string | null;
     cardDescription?: string;
-    signatureScale?: number;
     instSignature?: string | null;
     instName?: string;
     instColor?: string;
@@ -60,7 +58,6 @@ export default function FajopaIDCard({ member, exportMode = false, settings }: F
 
   const [localCardBackImage, setLocalCardBackImage] = useState<string | null>(null);
   const [localCardDescription, setLocalCardDescription] = useState('');
-  const [localSignatureScale, setLocalSignatureScale] = useState(100);
   const [localInstSignature, setLocalInstSignature] = useState<string | null>(null);
   const [localInstName, setLocalInstName] = useState('FAJOPA');
   const [localInstColor, setLocalInstColor] = useState('#0ea5e9');
@@ -101,7 +98,6 @@ export default function FajopaIDCard({ member, exportMode = false, settings }: F
 
     setLocalCardBackImage(localStorage.getItem(CARD_BACK_IMAGE_KEY));
     setLocalCardDescription(localStorage.getItem(CARD_DESCRIPTION_KEY) || '');
-    setLocalSignatureScale(Number(localStorage.getItem(CARD_SIGNATURE_CONFIG_KEY) || '100'));
     setLocalInstSignature(localStorage.getItem(DIRECTOR_SIGNATURE_KEY));
     setLocalInstName(localStorage.getItem(INSTITUTION_NAME_KEY) || 'FAJOPA');
     setLocalInstColor(localStorage.getItem(INSTITUTION_COLOR_KEY) || '#0ea5e9');
@@ -124,7 +120,6 @@ export default function FajopaIDCard({ member, exportMode = false, settings }: F
   const backLogoConfig = settings?.backLogoConfig ?? localBackLogoConfig;
   const cardBackImage = settings?.cardBackImage ?? localCardBackImage;
   const cardDescription = settings?.cardDescription ?? localCardDescription;
-  const signatureScale = settings?.signatureScale ?? localSignatureScale;
   const instSignature = settings?.instSignature ?? localInstSignature;
   const instName = settings?.instName ?? localInstName;
   const instColor = settings?.instColor ?? localInstColor;
@@ -353,15 +348,7 @@ export default function FajopaIDCard({ member, exportMode = false, settings }: F
         {visibleFields.signature && (
           <div className="w-[80%] max-w-[200px] h-[50px] sm:h-[60px] border-b-[2.5px] border-slate-800 flex items-center justify-center pb-2 mt-2">
              {instSignature && (
-               <img 
-                 src={instSignature} 
-                 alt="Assinatura Diretor" 
-                 className="w-auto object-contain" 
-                 style={{ 
-                   height: `${(signatureScale / 100) * 120}%`,
-                   marginBottom: `-${(signatureScale / 100) * 10}%` 
-                 }} 
-               />
+               <img src={instSignature} alt="Assinatura Diretor" className="h-[120%] w-auto object-contain mb-[-10%]" />
              )}
           </div>
         )}
