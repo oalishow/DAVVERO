@@ -18,18 +18,42 @@ export default function App() {
   const [activeTab, setActiveTab] = useState<'verifier' | 'admin' | 'student'>('verifier');
   const [targetVerifyCode, setTargetVerifyCode] = useState<string | null>(null);
   const [showUpdateModal, setShowUpdateModal] = useState(false);
+  const [updateStatus, setUpdateStatus] = useState<'idle' | 'success'>('idle');
 
   useEffect(() => {
     // Monitorar atualizações via nuvem
     if (settings?.version && settings.version !== APP_VERSION) {
-      // Se a versão na nuvem for diferente da local ou se houver um update disponível no Cache
-      setShowUpdateModal(true);
+      // Verificar se essa versão específica da nuvem já foi ignorada ou aplicada nesta sessão
+      const lastSeenCloudVersion = localStorage.getItem('last_seen_cloud_version');
+      if (lastSeenCloudVersion !== settings.version) {
+        setShowUpdateModal(true);
+      }
     }
   }, [settings?.version]);
 
   const handleGlobalVerify = (code: string) => {
     setTargetVerifyCode(code);
     setActiveTab('verifier');
+  };
+
+  const handleUpdateClick = () => {
+    setUpdateStatus('success');
+    if (settings?.version) {
+      localStorage.setItem('last_seen_cloud_version', settings.version);
+    }
+    localStorage.setItem('app_version', APP_VERSION);
+    
+    // Pequeno delay para mostrar que foi aplicado
+    setTimeout(() => {
+      window.location.reload();
+    }, 2000);
+  };
+
+  const handleCloseUpdate = () => {
+    if (settings?.version) {
+      localStorage.setItem('last_seen_cloud_version', settings.version);
+    }
+    setShowUpdateModal(false);
   };
 
   useEffect(() => {
@@ -93,7 +117,7 @@ export default function App() {
             >
               <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-[2rem] shadow-2xl p-6 border border-sky-100 dark:border-sky-500/20 text-center relative overflow-hidden">
                 <div className="absolute top-0 right-0 p-4">
-                  <button onClick={() => setShowUpdateModal(false)} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
+                  <button onClick={handleCloseUpdate} className="p-1 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
                     <X className="w-4 h-4 text-slate-400" />
                   </button>
                 </div>
@@ -102,28 +126,36 @@ export default function App() {
                   <Sparkles className="w-8 h-8" />
                 </div>
                 
-                <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Novidades Chegaram!</h2>
+                <h2 className="text-xl font-bold text-slate-800 dark:text-white mb-2">
+                  {updateStatus === 'success' ? 'Perfeito!' : 'Novidades Chegaram!'}
+                </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mb-6 uppercase tracking-widest font-black">Versão {APP_VERSION}</p>
                 
-                <div className="text-left space-y-2 mb-8">
-                  {CHANGELOG.map((item, i) => (
-                    <div key={i} className="flex gap-2 items-start group">
-                      <div className="w-1 h-1 rounded-full bg-sky-500 mt-1.5 shrink-0 group-hover:scale-150 transition-transform" />
-                      <span className="text-[11px] leading-tight text-slate-600 dark:text-slate-300 font-medium">{item}</span>
+                {updateStatus === 'success' ? (
+                  <div className="py-10 animate-bounce">
+                    <p className="text-sky-600 dark:text-sky-400 font-bold text-sm">Atualizações aplicadas com sucesso!</p>
+                    <p className="text-[10px] text-slate-400 mt-2">Reiniciando o sistema...</p>
+                  </div>
+                ) : (
+                  <>
+                    <div className="text-left space-y-2 mb-8">
+                      {CHANGELOG.map((item, i) => (
+                        <div key={i} className="flex gap-2 items-start group">
+                          <div className="w-1 h-1 rounded-full bg-sky-500 mt-1.5 shrink-0 group-hover:scale-150 transition-transform" />
+                          <span className="text-[11px] leading-tight text-slate-600 dark:text-slate-300 font-medium">{item}</span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
 
-                <button 
-                  onClick={() => {
-                    localStorage.setItem('app_version', APP_VERSION);
-                    window.location.reload();
-                  }}
-                  className="w-full py-3 bg-sky-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-sky-500/30 flex items-center justify-center gap-2 hover:bg-sky-500 transition-all active:scale-95"
-                >
-                  <RefreshCw className="w-4 h-4" />
-                  Atualizar Agora
-                </button>
+                    <button 
+                      onClick={handleUpdateClick}
+                      className="w-full py-3 bg-sky-600 text-white rounded-xl text-sm font-bold shadow-lg shadow-sky-500/30 flex items-center justify-center gap-2 hover:bg-sky-500 transition-all active:scale-95"
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      Atualizar Agora
+                    </button>
+                  </>
+                )}
                 
                 <p className="text-[9px] text-slate-400 mt-4 font-bold uppercase tracking-tighter">O sistema foi modificado para melhor atendê-lo.</p>
               </div>
