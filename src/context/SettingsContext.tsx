@@ -29,7 +29,7 @@ interface AppSettings {
 const DEFAULT_SETTINGS: AppSettings = {
   url: 'https://carteirinhafajopa.netlify.app',
   directorName: '',
-  instName: 'FAJOPA',
+  instName: 'A vero ID',
   instColor: '#0ea5e9',
   instLogo: null,
   cardLogo: null,

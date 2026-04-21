@@ -68,7 +68,7 @@ export default function Header() {
        />
 
       <div className="absolute bottom-2 font-black text-[9px] tracking-[0.15em] text-blue-900 dark:text-sky-100 bg-white/80 dark:bg-slate-900/60 backdrop-blur-md px-2.5 py-0.5 rounded shadow-sm border border-white/40 dark:border-slate-600/50 z-30">
-        {instName === 'Vero ID' ? 'VERO ID' : instName}
+        {instName === 'A vero ID' ? 'A VERO ID' : instName}
       </div>
     </div>
   );

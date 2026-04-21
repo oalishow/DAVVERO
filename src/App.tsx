@@ -6,6 +6,7 @@ import { loginAnon } from './lib/firebase';
 import { motion, AnimatePresence } from 'motion/react';
 import ErrorBoundary from './components/ErrorBoundary';
 import DynamicPWA from './components/DynamicPWA';
+import NotificationObserver from './components/NotificationObserver';
 import { useSettings } from './context/SettingsContext';
 import { APP_VERSION, CHANGELOG } from './lib/constants';
 
@@ -102,6 +103,7 @@ export default function App() {
   return (
     <div className="min-h-screen relative flex items-center justify-center p-0 sm:p-4 print:block print:p-0">
       <DynamicPWA />
+      <NotificationObserver />
       <div className="w-full max-w-3xl glass-panel rounded-none sm:rounded-3xl p-3 sm:p-5 md:p-10 animated-fade-in relative overflow-hidden print:max-w-none print:p-0 print:shadow-none print:bg-white print:dark:bg-white min-h-[100dvh] sm:min-h-0 print:min-h-0 print:border-none print:block">
         {/* Glows Decorativos de Fundo */}
         <div className="absolute -top-32 -left-32 w-64 h-64 bg-sky-300 dark:bg-sky-600 rounded-full mix-blend-multiply dark:mix-blend-screen blur-[90px] opacity-30 pointer-events-none print:hidden" />

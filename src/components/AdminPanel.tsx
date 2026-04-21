@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Settings, UserPlus, Database, Trash2, Bell, Printer, Loader2, Users, UserCheck, UserX, Clock, Image as ImageIcon } from 'lucide-react';
-import { doc, updateDoc, collection, addDoc, query, getDocs } from 'firebase/firestore';
-import { db, appId } from '../lib/firebase';
+import { Settings, UserPlus, Database, Trash2, Bell, Printer, Loader2, Users, UserCheck, UserX, Clock, Image as ImageIcon, Mail, LogOut } from 'lucide-react';
+import { doc, updateDoc, collection, addDoc, query, getDocs, onSnapshot, where, Timestamp } from 'firebase/firestore';
+import { db, appId, auth } from '../lib/firebase';
+import { signOut } from 'firebase/auth';
 import type { Member } from '../types';
 import { useSettings } from '../context/SettingsContext';
 import { APP_VERSION } from '../lib/constants';
@@ -101,7 +102,22 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
       updateSettings({ version: APP_VERSION }).catch(console.error);
     }
     loadDashboardStats();
-  }, [showList, showBin, showRequests, settings.version]); // Reload stats when modals close or cloud changes
+
+    // Monitoramento em tempo real de estatísticas (Apenas se logado)
+    const user = auth.currentUser;
+    if (user && !user.isAnonymous) {
+      const q = query(collection(db, `artifacts/${appId}/public/data/students`));
+      const unsub = onSnapshot(q, () => {
+        loadDashboardStats();
+      });
+      return () => unsub();
+    }
+  }, [showList, showBin, showRequests, settings.version]);
+
+  const handleLogoutAdmin = async () => {
+    await signOut(auth);
+    onLogout();
+  };
 
   const handleRegister = async () => {
     if (!name || !validity || !ra || !course || !birthdate || roles.length === 0) {
@@ -160,13 +176,22 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
         />
       )}
 
-      <div className="flex justify-between items-center mb-6 border-b border-slate-200 dark:border-slate-700/60 pb-3 sm:pb-4 no-print">
-        <h2 className="text-lg sm:text-xl font-semibold text-slate-800 dark:text-slate-200">Painel de Gestão</h2>
+      <div className="flex justify-between items-center mb-6 border-b border-slate-200 dark:border-slate-700/60 pb-3 sm:pb-4 no-print gap-2">
+        <div className="flex flex-col">
+          <h2 className="text-lg sm:text-xl font-semibold text-slate-800 dark:text-slate-200">Painel de Gestão</h2>
+          <div className="flex items-center gap-1.5 mt-0.5">
+            <div className={`w-1.5 h-1.5 rounded-full ${auth.currentUser && !auth.currentUser.isAnonymous ? 'bg-emerald-500' : 'bg-amber-500'}`}></div>
+            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">
+              {auth.currentUser && !auth.currentUser.isAnonymous ? `Logado como: ${auth.currentUser.email}` : 'Acesso via Senha Mestre'}
+            </span>
+          </div>
+        </div>
         <div className="flex items-center gap-2 sm:gap-3">
           <button onClick={() => setShowSettings(true)} className="p-1.5 sm:p-2 text-sky-600 dark:text-sky-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-all" title="Configurações">
             <Settings className="w-5 h-5" />
           </button>
-          <button onClick={onLogout} className="py-1.5 px-3 sm:py-2 sm:px-4 border border-slate-300 dark:border-slate-600/60 rounded-lg text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-rose-50 dark:hover:text-rose-500 transition-all">
+          <button onClick={handleLogoutAdmin} className="py-1.5 px-3 sm:py-2 sm:px-4 border border-slate-300 dark:border-slate-600/60 rounded-lg text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-rose-50 dark:hover:text-rose-500 transition-all flex items-center gap-2">
+            <LogOut className="w-4 h-4" />
             Sair
           </button>
         </div>

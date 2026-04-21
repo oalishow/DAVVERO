@@ -3,8 +3,8 @@ import { createPortal } from 'react-dom';
 import { X, Save, ShieldCheck, Image as ImageIcon } from 'lucide-react';
 import { collection, addDoc } from 'firebase/firestore';
 import { db, appId } from '../lib/firebase';
+import { PASSWORD_STORAGE_KEY, DEFAULT_ADMIN_PASSWORD, CUSTOM_ROLES_KEY, CUSTOM_COURSES_KEY } from '../lib/constants';
 import type { Member } from '../types';
-import { CUSTOM_ROLES_KEY, CUSTOM_COURSES_KEY } from '../lib/constants';
 import ImageCropperModal from './ImageCropperModal';
 
 interface PublicRequestModalProps {
@@ -16,6 +16,7 @@ export default function PublicRequestModal({ onClose, onSubmitSuccess }: PublicR
   const [name, setName] = useState('');
   const [ra, setRa] = useState('');
   const [email, setEmail] = useState('');
+  const [masterPassword, setMasterPassword] = useState('');
   const [rg, setRg] = useState('');
   const [cpf, setCpf] = useState('');
   const [birthdate, setBirthdate] = useState('');
@@ -103,6 +104,13 @@ export default function PublicRequestModal({ onClose, onSubmitSuccess }: PublicR
       return;
     }
 
+    const storedMaster = localStorage.getItem(PASSWORD_STORAGE_KEY) || DEFAULT_ADMIN_PASSWORD;
+    if (masterPassword !== storedMaster) {
+      setError('A Senha Mestra informada está incorreta.');
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError('');
 
@@ -172,6 +180,16 @@ export default function PublicRequestModal({ onClose, onSubmitSuccess }: PublicR
           <div>
               <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">E-mail para Contacto *</label>
               <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Para ser notificado(a) da aprovação" className="input-modern w-full rounded-xl py-3 px-4 text-sm" />
+          </div>
+          <div className="p-3 bg-amber-50/50 dark:bg-amber-900/10 border border-amber-100 dark:border-amber-900/30 rounded-xl">
+              <label className="block text-[10px] sm:text-xs font-semibold text-amber-600 dark:text-amber-400 uppercase mb-1">Senha Mestra de Autorização *</label>
+              <input 
+                type="password" 
+                value={masterPassword} 
+                onChange={e => setMasterPassword(e.target.value)} 
+                placeholder="Solicite à secretaria ou coordenação" 
+                className="input-modern w-full rounded-xl py-3 px-4 text-sm dark:bg-slate-800" 
+              />
           </div>
           <div className="grid grid-cols-2 gap-4">
               <div>
