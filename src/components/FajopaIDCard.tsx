@@ -369,7 +369,6 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
       </div>
 
       <div className="absolute top-[2%] right-[4%] opacity-50 text-[6.5px] text-right font-bold text-blue-950 pointer-events-none leading-tight select-none">
-         {baseUrl.replace('https://', '')}<br/>
          ©2025 - Alison Fernando Rodrigues dos Santos - {cardFrontText || 'Vero ID'}<br/>
          Processado em: {processedAt}
       </div>
