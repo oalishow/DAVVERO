@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, Settings, Save, ShieldAlert, Mail, Link, UserCircle, Palette, Upload, Trash2, Wand2, FileText, ImageIcon, RotateCw, Move } from 'lucide-react';
 import { GoogleGenAI, Type } from "@google/genai";
 import FajopaIDCard from './FajopaIDCard';
+import { useSettings } from '../context/SettingsContext';
 import { 
   PASSWORD_STORAGE_KEY, 
   URL_STORAGE_KEY, 
@@ -23,7 +24,8 @@ import {
   CARD_VISIBLE_FIELDS_KEY,
   CARD_BACK_IMAGE_KEY,
   INSTITUTION_DESCRIPTION_KEY,
-  CARD_DESCRIPTION_KEY
+  CARD_DESCRIPTION_KEY,
+  CARD_SIGNATURE_CONFIG_KEY
 } from '../lib/constants';
 
 interface LogoConfig {
@@ -49,37 +51,28 @@ const MOCK_MEMBER = {
 };
 
 export default function SettingsModal({ onClose }: { onClose: () => void }) {
-  const [url, setUrl] = useState('');
-  const [directorName, setDirectorName] = useState('');
-  const [instName, setInstName] = useState('');
-  const [instColor, setInstColor] = useState('#0ea5e9');
-  const [instLogo, setInstLogo] = useState<string | null>(null);
-  const [cardLogo, setCardLogo] = useState<string | null>(null);
-  const [cardBackLogo, setCardBackLogo] = useState<string | null>(null);
-  const [cardBackImage, setCardBackImage] = useState<string | null>(null);
-  
-  const [cardFrontText, setCardFrontText] = useState('');
-  const [cardBackText, setCardBackText] = useState('');
-  
-  const [frontLogoConfig, setFrontLogoConfig] = useState<LogoConfig>(DEFAULT_CONFIG);
-  const [backLogoConfig, setBackLogoConfig] = useState<LogoConfig>(DEFAULT_CONFIG);
+  const { settings: cloudSettings, updateSettings } = useSettings();
 
-  const [instSignature, setInstSignature] = useState<string | null>(null);
-  const [instDescription, setInstDescription] = useState('');
-  const [cardDescription, setCardDescription] = useState('');
-  const [visibleFields, setVisibleFields] = useState<Record<string, boolean>>({
-    name: true,
-    ra: true,
-    course: true,
-    birth: true,
-    validity: true,
-    photo: true,
-    qrcode: true,
-    logo: true,
-    signature: true,
-    director: true,
-    footer: true
-  });
+  const [url, setUrl] = useState(cloudSettings.url);
+  const [directorName, setDirectorName] = useState(cloudSettings.directorName);
+  const [instName, setInstName] = useState(cloudSettings.instName);
+  const [instColor, setInstColor] = useState(cloudSettings.instColor);
+  const [instLogo, setInstLogo] = useState<string | null>(cloudSettings.instLogo);
+  const [cardLogo, setCardLogo] = useState<string | null>(cloudSettings.cardLogo);
+  const [cardBackLogo, setCardBackLogo] = useState<string | null>(cloudSettings.cardBackLogo);
+  const [cardBackImage, setCardBackImage] = useState<string | null>(cloudSettings.cardBackImage);
+  
+  const [cardFrontText, setCardFrontText] = useState(cloudSettings.cardFrontText);
+  const [cardBackText, setCardBackText] = useState(cloudSettings.cardBackText);
+  
+  const [frontLogoConfig, setFrontLogoConfig] = useState<LogoConfig>(cloudSettings.frontLogoConfig);
+  const [backLogoConfig, setBackLogoConfig] = useState<LogoConfig>(cloudSettings.backLogoConfig);
+
+  const [instSignature, setInstSignature] = useState<string | null>(cloudSettings.instSignature);
+  const [signatureScale, setSignatureScale] = useState(cloudSettings.signatureScale);
+  const [instDescription, setInstDescription] = useState(cloudSettings.instDescription);
+  const [cardDescription, setCardDescription] = useState(cloudSettings.cardDescription);
+  const [visibleFields, setVisibleFields] = useState<Record<string, boolean>>(cloudSettings.visibleFields);
   
   const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -95,69 +88,58 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
   const signatureInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setUrl(localStorage.getItem(URL_STORAGE_KEY) || DEFAULT_PUBLIC_URL);
-    setDirectorName(localStorage.getItem(DIRECTOR_NAME_KEY) || DEFAULT_DIRECTOR_NAME);
-    setInstName(localStorage.getItem(INSTITUTION_NAME_KEY) || 'FAJOPA');
-    setInstColor(localStorage.getItem(INSTITUTION_COLOR_KEY) || '#0ea5e9');
-    setInstLogo(localStorage.getItem(INSTITUTION_LOGO_KEY));
-    setCardLogo(localStorage.getItem(CARD_LOGO_KEY));
-    setCardBackLogo(localStorage.getItem(CARD_BACK_LOGO_KEY));
-    
-    setCardFrontText(localStorage.getItem(CARD_FRONT_TEXT_KEY) || '');
-    setCardBackText(localStorage.getItem(CARD_BACK_TEXT_KEY) || '');
-
-    try {
-      const fConfig = JSON.parse(localStorage.getItem(CARD_FRONT_LOGO_CONFIG_KEY) || 'null');
-      const bConfig = JSON.parse(localStorage.getItem(CARD_BACK_LOGO_CONFIG_KEY) || 'null');
-      if (fConfig) setFrontLogoConfig(fConfig);
-      if (bConfig) setBackLogoConfig(bConfig);
-    } catch (e) { console.error(e); }
-
-    setCardBackImage(localStorage.getItem(CARD_BACK_IMAGE_KEY));
-    setInstSignature(localStorage.getItem(DIRECTOR_SIGNATURE_KEY));
-    setInstDescription(localStorage.getItem(INSTITUTION_DESCRIPTION_KEY) || 'SISTEMA DE VERIFICAÇÃO DE IDENTIDADE');
-    setCardDescription(localStorage.getItem(CARD_DESCRIPTION_KEY) || '');
-
-    try {
-      const savedVisible = JSON.parse(localStorage.getItem(CARD_VISIBLE_FIELDS_KEY) || 'null');
-      if (savedVisible) setVisibleFields(prev => ({ ...prev, ...savedVisible }));
-    } catch (e) { console.error(e); }
-    
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = 'unset'; };
   }, []);
 
-  const handleSaveGeneral = () => {
-    if (url) localStorage.setItem(URL_STORAGE_KEY, url);
-    localStorage.setItem(DIRECTOR_NAME_KEY, directorName);
-    localStorage.setItem(INSTITUTION_NAME_KEY, instName);
-    localStorage.setItem(INSTITUTION_COLOR_KEY, instColor);
-    localStorage.setItem(INSTITUTION_DESCRIPTION_KEY, instDescription);
-    localStorage.setItem(CARD_DESCRIPTION_KEY, cardDescription);
-    localStorage.setItem(CARD_VISIBLE_FIELDS_KEY, JSON.stringify(visibleFields));
+  const handleSaveGeneral = async () => {
+    setStatus({ msg: 'Sincronizando com a nuvem...', type: 'loading' as any });
     
-    localStorage.setItem(CARD_FRONT_TEXT_KEY, cardFrontText);
-    localStorage.setItem(CARD_BACK_TEXT_KEY, cardBackText);
-    
-    localStorage.setItem(CARD_FRONT_LOGO_CONFIG_KEY, JSON.stringify(frontLogoConfig));
-    localStorage.setItem(CARD_BACK_LOGO_CONFIG_KEY, JSON.stringify(backLogoConfig));
+    try {
+      await updateSettings({
+        url,
+        directorName,
+        instName,
+        instColor,
+        instLogo,
+        cardLogo,
+        cardBackLogo,
+        cardBackImage,
+        cardFrontText,
+        cardBackText,
+        frontLogoConfig,
+        backLogoConfig,
+        instSignature,
+        signatureScale,
+        instDescription,
+        cardDescription,
+        visibleFields
+      });
 
-    if (instLogo) localStorage.setItem(INSTITUTION_LOGO_KEY, instLogo);
-    else localStorage.removeItem(INSTITUTION_LOGO_KEY);
+      // Legacy fallback
+      localStorage.setItem(URL_STORAGE_KEY, url);
+      localStorage.setItem(DIRECTOR_NAME_KEY, directorName);
+      localStorage.setItem(INSTITUTION_NAME_KEY, instName);
+      localStorage.setItem(INSTITUTION_COLOR_KEY, instColor);
+      localStorage.setItem(INSTITUTION_DESCRIPTION_KEY, instDescription);
+      localStorage.setItem(CARD_DESCRIPTION_KEY, cardDescription);
+      localStorage.setItem(CARD_VISIBLE_FIELDS_KEY, JSON.stringify(visibleFields));
+      localStorage.setItem(CARD_FRONT_TEXT_KEY, cardFrontText);
+      localStorage.setItem(CARD_BACK_TEXT_KEY, cardBackText);
+      localStorage.setItem(CARD_FRONT_LOGO_CONFIG_KEY, JSON.stringify(frontLogoConfig));
+      localStorage.setItem(CARD_BACK_LOGO_CONFIG_KEY, JSON.stringify(backLogoConfig));
+      localStorage.setItem(CARD_SIGNATURE_CONFIG_KEY, signatureScale.toString());
+      if (instLogo) localStorage.setItem(INSTITUTION_LOGO_KEY, instLogo);
+      if (cardLogo) localStorage.setItem(CARD_LOGO_KEY, cardLogo);
+      if (cardBackLogo) localStorage.setItem(CARD_BACK_LOGO_KEY, cardBackLogo);
+      if (cardBackImage) localStorage.setItem(CARD_BACK_IMAGE_KEY, cardBackImage);
+      if (instSignature) localStorage.setItem(DIRECTOR_SIGNATURE_KEY, instSignature);
 
-    if (cardLogo) localStorage.setItem(CARD_LOGO_KEY, cardLogo);
-    else localStorage.removeItem(CARD_LOGO_KEY);
-
-    if (cardBackLogo) localStorage.setItem(CARD_BACK_LOGO_KEY, cardBackLogo);
-    else localStorage.removeItem(CARD_BACK_LOGO_KEY);
-
-    if (cardBackImage) localStorage.setItem(CARD_BACK_IMAGE_KEY, cardBackImage);
-    else localStorage.removeItem(CARD_BACK_IMAGE_KEY);
-
-    if (instSignature) localStorage.setItem(DIRECTOR_SIGNATURE_KEY, instSignature);
-    else localStorage.removeItem(DIRECTOR_SIGNATURE_KEY);
-    
-    showStatus('Configurações aplicadas!', 'success');
+      showStatus('Configurações aplicadas globalmente!', 'success');
+    } catch (e) {
+      console.error(e);
+      showStatus('Erro ao salvar no banco de dados.', 'error');
+    }
   };
 
   const handleMagicPalette = async () => {
@@ -315,6 +297,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                   backLogoConfig,
                   cardBackImage,
                   cardDescription,
+                  signatureScale,
                   instSignature,
                   instName,
                   instColor,
@@ -689,6 +672,23 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                   )}
                   <input type="file" ref={signatureInputRef} onChange={(e) => handleFileUpload(e, setInstSignature, 300)} accept="image/png" className="hidden" />
                   <p className="text-[8px] text-slate-400 mt-1">Fundo transparente recomendado</p>
+
+                  {instSignature && (
+                    <div className="mt-4 w-full px-2">
+                       <label className="block text-[8px] font-bold text-slate-400 uppercase mb-1">Aumentar/Diminuir Assinatura (%)</label>
+                       <div className="flex items-center gap-2">
+                         <input 
+                           type="range" 
+                           min="50" 
+                           max="300" 
+                           value={signatureScale} 
+                           onChange={e=>setSignatureScale(Number(e.target.value))} 
+                           className="flex-1 accent-sky-500 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer" 
+                         />
+                         <span className="text-[10px] font-mono font-bold text-slate-500 w-8">{signatureScale}%</span>
+                       </div>
+                    </div>
+                  )}
                </div>
             </div>
           </div>

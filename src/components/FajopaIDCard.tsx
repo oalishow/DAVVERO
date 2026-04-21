@@ -1,25 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import type { Member } from '../types';
 import { QRCodeSVG } from 'qrcode.react';
-import { 
-  URL_STORAGE_KEY, 
-  DEFAULT_PUBLIC_URL, 
-  DIRECTOR_NAME_KEY, 
-  DEFAULT_DIRECTOR_NAME,
-  INSTITUTION_LOGO_KEY,
-  INSTITUTION_NAME_KEY,
-  INSTITUTION_COLOR_KEY,
-  DIRECTOR_SIGNATURE_KEY,
-  CARD_LOGO_KEY,
-  CARD_BACK_LOGO_KEY,
-  CARD_FRONT_LOGO_CONFIG_KEY,
-  CARD_BACK_LOGO_CONFIG_KEY,
-  CARD_FRONT_TEXT_KEY,
-  CARD_BACK_TEXT_KEY,
-  CARD_VISIBLE_FIELDS_KEY,
-  CARD_BACK_IMAGE_KEY,
-  CARD_DESCRIPTION_KEY
-} from '../lib/constants';
+import { useSettings } from '../context/SettingsContext';
 
 interface FajopaIDCardProps {
   member: Member;
@@ -36,6 +18,7 @@ interface FajopaIDCardProps {
     backLogoConfig?: { x: number; y: number; scale: number };
     cardBackImage?: string | null;
     cardDescription?: string;
+    signatureScale?: number;
     instSignature?: string | null;
     instName?: string;
     instColor?: string;
@@ -43,87 +26,33 @@ interface FajopaIDCardProps {
   };
 }
 
-export default function FajopaIDCard({ member, exportMode = false, settings }: FajopaIDCardProps) {
-  const [flipped, setFlipped] = useState(false);
-  const [localDirectorName, setLocalDirectorName] = useState(DEFAULT_DIRECTOR_NAME);
-  const [localInstLogo, setLocalInstLogo] = useState<string | null>(null);
-  const [localCardLogo, setLocalCardLogo] = useState<string | null>(null);
-  const [localCardBackLogo, setLocalCardBackLogo] = useState<string | null>(null);
-  const [localUrl, setLocalUrl] = useState(DEFAULT_PUBLIC_URL);
-  
-  const [localCardFrontText, setLocalCardFrontText] = useState('');
-  const [localCardBackText, setLocalCardBackText] = useState('');
-  const [localFrontLogoConfig, setLocalFrontLogoConfig] = useState({ x: 0, y: 0, scale: 100 });
-  const [localBackLogoConfig, setLocalBackLogoConfig] = useState({ x: 0, y: 0, scale: 100 });
+export default function FajopaIDCard({ member, exportMode = false, settings: propSettings }: FajopaIDCardProps) {
+  const { settings: cloudSettings } = useSettings();
+  const settings = propSettings || cloudSettings;
 
-  const [localCardBackImage, setLocalCardBackImage] = useState<string | null>(null);
-  const [localCardDescription, setLocalCardDescription] = useState('');
-  const [localInstSignature, setLocalInstSignature] = useState<string | null>(null);
-  const [localInstName, setLocalInstName] = useState('FAJOPA');
-  const [localInstColor, setLocalInstColor] = useState('#0ea5e9');
-  const [localVisibleFields, setLocalVisibleFields] = useState<Record<string, boolean>>({
-    name: true,
-    ra: true,
-    course: true,
-    birth: true,
-    validity: true,
-    photo: true,
-    qrcode: true,
-    logo: true,
-    signature: true,
-    director: true,
-    footer: true
-  });
-  
+  const [flipped, setFlipped] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const [scale, setScale] = useState(1);
   const processedAt = member.createdAt ? new Date(member.createdAt).toLocaleString('pt-BR') : 'N/D';
-  
-  useEffect(() => {
-    setLocalDirectorName(localStorage.getItem(DIRECTOR_NAME_KEY) || DEFAULT_DIRECTOR_NAME);
-    setLocalInstLogo(localStorage.getItem(INSTITUTION_LOGO_KEY));
-    setLocalCardLogo(localStorage.getItem(CARD_LOGO_KEY));
-    setLocalCardBackLogo(localStorage.getItem(CARD_BACK_LOGO_KEY));
-    
-    setLocalCardFrontText(localStorage.getItem(CARD_FRONT_TEXT_KEY) || '');
-    setLocalCardBackText(localStorage.getItem(CARD_BACK_TEXT_KEY) || '');
-    setLocalUrl(localStorage.getItem(URL_STORAGE_KEY) || DEFAULT_PUBLIC_URL);
 
-    try {
-      const fConfig = JSON.parse(localStorage.getItem(CARD_FRONT_LOGO_CONFIG_KEY) || 'null');
-      const bConfig = JSON.parse(localStorage.getItem(CARD_BACK_LOGO_CONFIG_KEY) || 'null');
-      if (fConfig) setLocalFrontLogoConfig(fConfig);
-      if (bConfig) setLocalBackLogoConfig(bConfig);
-    } catch (e) { console.error(e); }
-
-    setLocalCardBackImage(localStorage.getItem(CARD_BACK_IMAGE_KEY));
-    setLocalCardDescription(localStorage.getItem(CARD_DESCRIPTION_KEY) || '');
-    setLocalInstSignature(localStorage.getItem(DIRECTOR_SIGNATURE_KEY));
-    setLocalInstName(localStorage.getItem(INSTITUTION_NAME_KEY) || 'FAJOPA');
-    setLocalInstColor(localStorage.getItem(INSTITUTION_COLOR_KEY) || '#0ea5e9');
-
-    try {
-      const savedVisible = JSON.parse(localStorage.getItem(CARD_VISIBLE_FIELDS_KEY) || 'null');
-      if (savedVisible) setLocalVisibleFields(prev => ({ ...prev, ...savedVisible }));
-    } catch (e) { console.error(e); }
-  }, []);
-
-  // Use props settings if provided, otherwise local (localStorage) state
-  const directorName = settings?.directorName ?? localDirectorName;
-  const instLogo = settings?.instLogo ?? localInstLogo;
-  const cardLogo = settings?.cardLogo ?? localCardLogo;
-  const cardBackLogo = settings?.cardBackLogo ?? localCardBackLogo;
-  const cardFrontText = settings?.cardFrontText ?? localCardFrontText;
-  const cardBackText = settings?.cardBackText ?? localCardBackText;
-  const baseUrl = settings?.url ?? localUrl;
-  const frontLogoConfig = settings?.frontLogoConfig ?? localFrontLogoConfig;
-  const backLogoConfig = settings?.backLogoConfig ?? localBackLogoConfig;
-  const cardBackImage = settings?.cardBackImage ?? localCardBackImage;
-  const cardDescription = settings?.cardDescription ?? localCardDescription;
-  const instSignature = settings?.instSignature ?? localInstSignature;
-  const instName = settings?.instName ?? localInstName;
-  const instColor = settings?.instColor ?? localInstColor;
-  const visibleFields = settings?.visibleFields ?? localVisibleFields;
+  const {
+    directorName,
+    instLogo,
+    cardLogo,
+    cardBackLogo,
+    cardFrontText,
+    cardBackText,
+    url: baseUrl,
+    frontLogoConfig,
+    backLogoConfig,
+    cardBackImage,
+    cardDescription,
+    signatureScale,
+    instSignature,
+    instName,
+    instColor,
+    visibleFields
+  } = settings;
 
   const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
   const displayLogoFront = cardLogo || instLogo;
@@ -348,7 +277,15 @@ export default function FajopaIDCard({ member, exportMode = false, settings }: F
         {visibleFields.signature && (
           <div className="w-[80%] max-w-[200px] h-[50px] sm:h-[60px] border-b-[2.5px] border-slate-800 flex items-center justify-center pb-2 mt-2">
              {instSignature && (
-               <img src={instSignature} alt="Assinatura Diretor" className="h-[120%] w-auto object-contain mb-[-10%]" />
+               <img 
+                 src={instSignature} 
+                 alt="Assinatura Diretor" 
+                 className="w-auto object-contain" 
+                 style={{ 
+                   height: `${(signatureScale / 100) * 120}%`,
+                   marginBottom: `-${(signatureScale / 100) * 10}%` 
+                 }} 
+               />
              )}
           </div>
         )}

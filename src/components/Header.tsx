@@ -1,25 +1,16 @@
 import { motion } from 'motion/react';
 import { ShieldCheck } from 'lucide-react';
-import { APP_VERSION, INSTITUTION_LOGO_KEY, INSTITUTION_NAME_KEY, INSTITUTION_COLOR_KEY, INSTITUTION_DESCRIPTION_KEY } from '../lib/constants';
-import { useEffect, useState } from 'react';
+import { APP_VERSION } from '../lib/constants';
+import { useSettings } from '../context/SettingsContext';
 
 export default function Header() {
-  const [instLogo, setInstLogo] = useState<string | null>(null);
-  const [instName, setInstName] = useState('Vero ID');
-  const [instColor, setInstColor] = useState('#0ea5e9');
-  const [instDescription, setInstDescription] = useState('SISTEMA DE VERIFICAÇÃO DE IDENTIDADE');
-
-  useEffect(() => {
-    const savedLogo = localStorage.getItem(INSTITUTION_LOGO_KEY);
-    const savedName = localStorage.getItem(INSTITUTION_NAME_KEY);
-    const savedColor = localStorage.getItem(INSTITUTION_COLOR_KEY);
-    const savedDesc = localStorage.getItem(INSTITUTION_DESCRIPTION_KEY);
-    
-    if (savedLogo) setInstLogo(savedLogo);
-    if (savedName) setInstName(savedName);
-    if (savedColor) setInstColor(savedColor);
-    if (savedDesc) setInstDescription(savedDesc);
-  }, []);
+  const { settings } = useSettings();
+  const { 
+    instLogo, 
+    instName, 
+    instColor, 
+    instDescription 
+  } = settings;
 
   // Versão SVG robusta integrada para garantir que o logo apareça sempre com alta qualidade
   const ScannerLogo = () => (

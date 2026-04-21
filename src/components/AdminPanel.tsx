@@ -3,7 +3,7 @@ import { Settings, UserPlus, Database, Trash2, Bell, Printer, Loader2, Users, Us
 import { doc, updateDoc, collection, addDoc, query, getDocs } from 'firebase/firestore';
 import { db, appId } from '../lib/firebase';
 import type { Member } from '../types';
-import { CUSTOM_ROLES_KEY, CUSTOM_COURSES_KEY } from '../lib/constants';
+import { useSettings } from '../context/SettingsContext';
 import MemberList from './MemberList';
 import SettingsModal from './SettingsModal';
 import RecycleBinModal from './RecycleBinModal';
@@ -13,6 +13,7 @@ import ImageCropperModal from './ImageCropperModal';
 import PrintReportModal from './PrintReportModal';
 
 export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
+  const { settings, updateSettings } = useSettings();
   const [name, setName] = useState('');
   const [ra, setRa] = useState('');
   const [cpf, setCpf] = useState('');
@@ -35,54 +36,34 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
 
   const [stats, setStats] = useState({ totalActive: 0, totalInactive: 0, totalPending: 0, totalTrash: 0 });
   const [newRole, setNewRole] = useState('');
-  const [customRoles, setCustomRoles] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem(CUSTOM_ROLES_KEY);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  
+  const customRoles = settings.customRoles;
+  const customCourses = settings.customCourses;
+
   const baseRoles = ["ALUNO(A)", "PROFESSOR(A)", "COLABORADOR(A)", "SEMINARISTA", "PADRE", "DIÁCONO", "BISPO"];
   const availableRoles = [...baseRoles, ...customRoles];
 
   const [newCourse, setNewCourse] = useState('');
-  const [customCourses, setCustomCourses] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem(CUSTOM_COURSES_KEY);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
   const baseCourses = ["FILOSOFIA", "FILOSOFIA EAD", "TEOLOGIA", "TEOLOGIA EAD"];
   const availableCourses = [...baseCourses, ...customCourses];
-
-  useEffect(() => {
-    localStorage.setItem(CUSTOM_ROLES_KEY, JSON.stringify(customRoles));
-  }, [customRoles]);
-
-  useEffect(() => {
-    localStorage.setItem(CUSTOM_COURSES_KEY, JSON.stringify(customCourses));
-  }, [customCourses]);
 
   const toggleRole = (role: string) => {
     setRoles(prev => prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]);
   };
 
-  const handleAddRole = () => {
+  const handleAddRole = async () => {
     if (newRole.trim() && !availableRoles.includes(newRole.trim().toUpperCase())) {
       const formatted = newRole.trim().toUpperCase();
-      setCustomRoles(prev => [...prev, formatted]);
+      await updateSettings({ customRoles: [...customRoles, formatted] });
       setRoles(prev => [...prev, formatted]);
       setNewRole('');
     }
   };
 
-  const handleAddCourse = () => {
+  const handleAddCourse = async () => {
     if (newCourse.trim() && !availableCourses.includes(newCourse.trim().toUpperCase())) {
       const formatted = newCourse.trim().toUpperCase();
-      setCustomCourses(prev => [...prev, formatted]);
+      await updateSettings({ customCourses: [...customCourses, formatted] });
       setCourse(formatted);
       setNewCourse('');
     }
@@ -96,6 +77,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
       
       let active = 0; let inactive = 0; let pending = 0; let trash = 0;
       allMembers.forEach(m => {
+        if (!m.alphaCode) return; // Skip non-student documents like settings
         if (m.deletedAt) {
           trash++;
         } else if (m.isApproved === false || m.pendingChanges) {

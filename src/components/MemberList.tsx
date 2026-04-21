@@ -38,8 +38,8 @@ export default function MemberList() {
       const snapshot = await getDocs(q);
       const loaded = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as Member);
       loaded.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
-      // Apenas exibe membros aprovados e não excluídos
-      setMembers(loaded.filter(m => !m.deletedAt && m.isApproved !== false));
+      // Apenas exibe membros aprovados e não excluídos (pula docs de config)
+      setMembers(loaded.filter(m => m.alphaCode && !m.deletedAt && m.isApproved !== false));
     } catch (e) {
       console.error(e);
     } finally {
