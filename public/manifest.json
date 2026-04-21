@@ -1,6 +1,6 @@
 {
-  "name": "Vero ID v3.0.0 - Identidade Digital",
-  "short_name": "Vero ID",
+  "name": "A vero ID",
+  "short_name": "A vero ID",
   "description": "Sistema avançado de verificação de identidades institucionais.",
   "start_url": "/",
   "display": "standalone",
