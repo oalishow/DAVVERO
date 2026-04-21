@@ -24,12 +24,13 @@ export const INSTITUTION_DESCRIPTION_KEY = 'veroId_institution_description';
 export const CARD_DESCRIPTION_KEY = 'veroId_card_description';
 export const CUSTOM_ROLES_KEY = 'verifyId_custom_roles';
 export const CUSTOM_COURSES_KEY = 'verifyId_custom_courses';
-export const APP_VERSION = '3.1.7';
+export const APP_VERSION = '4.0.0';
 export const SETTINGS_DOC_PATH = (appId: string) => `artifacts/${appId}/public/data/students/_settings_global`;
 export const ASSETS_DOC_PATH = (appId: string, assetType: string) => `artifacts/${appId}/public/data/students/_asset_${assetType}`;
 export const CHANGELOG = [
-  "Sincronização em nuvem das configurações (Logos, Cores e Nomes).",
-  "As alterações feitas em um dispositivo refletem instantaneamente em todos.",
-  "Melhorias no sistema de detecção de versões.",
-  "Correção de bug de duplicação de informações no verso do cartão."
+  "Novo Nome Oficial: O sistema agora chama-se 'A vero ID'.",
+  "Novo Ícone: Logotipo atualizado com a nova identidade visual.",
+  "Segurança em Camadas: Senha mestra agora obrigatória para novos administradores.",
+  "Notificações Onipresentes: Alertas nativos no Windows para novas solicitações (PWA).",
+  "Sincronização em nuvem das configurações (Logos, Cores e Nomes)."
 ];

@@ -8,6 +8,18 @@ interface ChangelogModalProps {
 export default function ChangelogModal({ onClose }: ChangelogModalProps) {
   const versions = [
     {
+      version: 'v4.0.0',
+      title: 'A vero ID - Nova Identidade',
+      changes: [
+        'Novo Nome: Transição oficial para "A vero ID".',
+        'Novo Logotipo: Ícones e manifestos atualizados com a nova marca.',
+        'Notificações no Windows: Suporte completo a notificações nativas para novos pedidos.',
+        'Segurança Admin: Login por e-mail agora exige confirmação por Senha Mestra.',
+        'Simplificação Pública: Removida a exigência de senha mestra para pedidos de alunos.'
+      ],
+      current: true
+    },
+    {
       version: 'v3.0.0',
       title: 'A Maior Integração até Agora',
       changes: [
@@ -17,8 +29,7 @@ export default function ChangelogModal({ onClose }: ChangelogModalProps) {
         'Dashboard Interativo: Status do painel agora são atalhos clicáveis para facilitar a gestão.',
         'Contador de Alertas: Novo badge de solicitações com indicador numérico e animação de atenção.',
         'Correções iOS/Safari: Otimização total do scanner QR e animações de carta para iPhones.'
-      ],
-      current: true
+      ]
     },
     {
       version: 'v2.8.0',
