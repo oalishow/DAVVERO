@@ -24,4 +24,10 @@ export const INSTITUTION_DESCRIPTION_KEY = 'veroId_institution_description';
 export const CARD_DESCRIPTION_KEY = 'veroId_card_description';
 export const CUSTOM_ROLES_KEY = 'verifyId_custom_roles';
 export const CUSTOM_COURSES_KEY = 'verifyId_custom_courses';
-export const APP_VERSION = '3.0.0';
+export const APP_VERSION = '3.1.0';
+export const CHANGELOG = [
+  "Controle de escala da assinatura do diretor.",
+  "URL de acesso exibida no verso da carteirinha.",
+  "Sistema de detecção de atualizações automáticas.",
+  "Melhorias no layout responsivo para modo retrato."
+];
