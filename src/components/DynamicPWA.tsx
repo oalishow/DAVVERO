@@ -23,45 +23,25 @@ export default function DynamicPWA() {
     }
     appleTitle.setAttribute('content', shortName);
 
-    // 3. Gerar Manifest Dinâmico
-    const manifest = {
-      name: appName,
-      short_name: shortName,
-      description: settings.instDescription || "Sistema avançado de verificação de identidades institucionais.",
-      start_url: "/",
-      display: "standalone",
-      background_color: "#0f172a",
-      theme_color: settings.instColor || "#0ea5e9",
-      icons: [
-        {
-          src: settings.instLogo || "/icon.svg",
-          sizes: "512x512",
-          type: settings.instLogo?.startsWith('data:image/svg') ? "image/svg+xml" : "image/png",
-          purpose: "any maskable"
-        }
-      ]
-    };
-
-    const stringManifest = JSON.stringify(manifest);
-    const blob = new Blob([stringManifest], { type: 'application/json' });
-    const manifestURL = URL.createObjectURL(blob);
-
-    let manifestLink = document.querySelector('link[rel="manifest"]') as HTMLLinkElement;
-    if (!manifestLink) {
-      manifestLink = document.createElement('link');
-      manifestLink.rel = 'manifest';
-      document.head.appendChild(manifestLink);
+    // 3. Atualizar Meta Theme Color
+    let themeColorMeta = document.querySelector('meta[name="theme-color"]');
+    if (!themeColorMeta) {
+      themeColorMeta = document.createElement('meta');
+      themeColorMeta.setAttribute('name', 'theme-color');
+      document.head.appendChild(themeColorMeta);
     }
-    
-    const oldURL = manifestLink.href;
-    manifestLink.href = manifestURL;
+    themeColorMeta.setAttribute('content', settings.instColor || "#0ea5e9");
 
-    // Cleanup blob URL when component unmounts or settings change
-    return () => {
-      if (oldURL.startsWith('blob:')) {
-        URL.revokeObjectURL(oldURL);
-      }
-    };
+    // 4. Atualizar Favicon
+    let favicon = document.querySelector('link[rel="icon"]') as HTMLLinkElement;
+    if (favicon) {
+      favicon.href = settings.instLogo || "/icon.svg";
+    }
+
+    // Nota: Deixamos o manifest.json estático para garantir a instalação no PC.
+    // O Chrome no Desktop é rigoroso com manifestos dinâmicos/blob.
+    
+    return () => {};
   }, [settings]);
 
   return null;

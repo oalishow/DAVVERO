@@ -1,6 +1,8 @@
 {
-  "name": "Vero ID v3.0.0 - Identidade Digital",
+  "name": "Vero ID  - Identidade Digital",
   "description": "Sistema avançado de verificação de identidades para FAJOPA e SPSCJ com relatórios de impressão e gestão de membros.",
-  "requestFramePermissions": ["camera"],
+  "requestFramePermissions": [
+    "camera"
+  ],
   "majorCapabilities": []
 }
