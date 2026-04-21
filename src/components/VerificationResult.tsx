@@ -291,11 +291,11 @@ export default function VerificationResult({ member, status, onReset, isMyID = f
               <path d="M30,52 L30,65 C40,75 60,75 70,65 L70,52 L50,60 Z" fill="currentColor" opacity="0.85" />
             </svg>
             <div className="absolute bottom-0.5 font-black text-[6px] tracking-widest text-black w-full text-center">
-              VERIFY ID
+              VERO ID
             </div>
           </div>
           <p className="text-[10px] font-medium text-slate-800 font-mono text-center mx-auto max-w-[300px]" style={{ color: '#000' }}>
-            ©2025 - Alison Fernando Rodrigues dos Santos<br/>Verify ID. Todos os direitos reservados.
+            ©2025 - Alison Fernando Rodrigues dos Santos<br/>Vero ID. Todos os direitos reservados.
           </p>
         </div>
       )}

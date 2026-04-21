@@ -48,7 +48,7 @@ export default function Footer() {
           </button>
         </div>
         <p className="text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-500">
-          ©2025 - Alison Fernando Rodrigues dos Santos - Verify ID, Todos os direitos reservados.
+          ©2025 - Alison Fernando Rodrigues dos Santos - Vero ID, Todos os direitos reservados.
         </p>
         <a href="mailto:oalison.rodrigues@gmail.com" className="flex items-center gap-1.5 hover:text-sky-600 dark:hover:text-sky-400 transition-colors border-b border-transparent hover:border-sky-600 dark:hover:border-sky-400 pb-0.5 text-[10px] sm:text-xs text-slate-600 dark:text-slate-400">
           <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4" />

@@ -35,7 +35,7 @@ export default function Header() {
        />
 
       <div className="absolute bottom-2 font-black text-[9px] tracking-[0.15em] text-blue-900 dark:text-sky-100 bg-white/80 dark:bg-slate-900/60 backdrop-blur-md px-2.5 py-0.5 rounded shadow-sm border border-white/40 dark:border-slate-600/50 z-30">
-        VERIFY ID
+        VERO ID
       </div>
     </div>
   );
@@ -74,7 +74,7 @@ export default function Header() {
         </motion.div>
       </div>
       <h1 className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-sky-600 via-teal-500 to-emerald-600 dark:from-sky-400 dark:via-teal-300 dark:to-emerald-400 animated-slide-in-up tracking-tight mb-2 print:text-sky-600 print:text-2xl">
-        Verify-ID
+        Vero ID
       </h1>
       <p className="text-slate-500 dark:text-slate-400 font-light text-xs sm:text-sm md:text-base animated-fade-in">
         Verificador de carteirinha FAJOPA e SPSCJ

@@ -53,7 +53,7 @@ export default function InstallPWA() {
           <div>
             <h3 className="text-sm font-bold text-sky-900 dark:text-sky-100 mb-1">Instalar no iPhone</h3>
             <p className="text-xs text-sky-700 dark:text-sky-300 leading-relaxed">
-              Para instalar o <strong>Verify ID</strong>, toque no ícone de <span className="inline-block"><Share className="w-4 h-4 mx-0.5 inline" /></span> <strong>Compartilhar</strong> do seu Safari e selecione <strong>"Adicionar à Tela de Início"</strong>.
+              Para instalar o <strong>Vero ID</strong>, toque no ícone de <span className="inline-block"><Share className="w-4 h-4 mx-0.5 inline" /></span> <strong>Compartilhar</strong> do seu Safari e selecione <strong>"Adicionar à Tela de Início"</strong>.
             </p>
           </div>
         </div>
@@ -72,7 +72,7 @@ export default function InstallPWA() {
           </div>
           <div>
             <h3 className="text-sm font-bold text-emerald-900 dark:text-emerald-100">Instalar Aplicativo</h3>
-            <p className="text-[10px] text-emerald-700 dark:text-emerald-400 uppercase tracking-wider font-semibold">Verify ID native web app</p>
+            <p className="text-[10px] text-emerald-700 dark:text-emerald-400 uppercase tracking-wider font-semibold">Vero ID native web app</p>
           </div>
         </div>
         <button 
