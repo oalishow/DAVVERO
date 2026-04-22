@@ -3,6 +3,8 @@ import { createPortal } from 'react-dom';
 import { X, Save, Trash2, ShieldAlert, Download, QrCode, Image as ImageIcon, Printer } from 'lucide-react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db, appId } from '../lib/firebase';
+import FajopaIDCard from './FajopaIDCard';
+import { useSettings } from '../context/SettingsContext';
 import type { Member } from '../types';
 import { QRCodeCanvas } from 'qrcode.react';
 import { URL_STORAGE_KEY, DEFAULT_PUBLIC_URL, CUSTOM_ROLES_KEY, CUSTOM_COURSES_KEY } from '../lib/constants';
@@ -16,6 +18,7 @@ interface MemberEditModalProps {
 }
 
 export default function MemberEditModal({ member, onClose, onUpdate }: MemberEditModalProps) {
+  const { settings, updateSettings } = useSettings();
   const [name, setName] = useState(member.name || '');
   const [ra, setRa] = useState(member.ra || '');
   const [cpf, setCpf] = useState(member.cpf || '');
@@ -35,36 +38,22 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
   const [legacyQrCode, setLegacyQrCode] = useState(member.legacyQrCode || '');
   const [isActive, setIsActive] = useState(member.isActive !== false);
   const [course, setCourse] = useState(member.course || '');
+  const [diocese, setDiocese] = useState(member.diocese || '');
   const [roles, setRoles] = useState<string[]>(member.roles || []);
   const [newRole, setNewRole] = useState('');
-  const [customRoles, setCustomRoles] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem(CUSTOM_ROLES_KEY);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-  const [newCourse, setNewCourse] = useState('');
-  const [customCourses, setCustomCourses] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem(CUSTOM_COURSES_KEY);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
   
+  const [newCourse, setNewCourse] = useState('');
+  
+  const [newDiocese, setNewDiocese] = useState('');
+
   const baseCourses = ["FILOSOFIA", "FILOSOFIA EAD", "TEOLOGIA", "TEOLOGIA EAD"];
-  const availableCourses = [...baseCourses, ...customCourses];
+  const availableCourses = [...baseCourses, ...settings.customCourses];
 
-  useEffect(() => {
-    localStorage.setItem(CUSTOM_ROLES_KEY, JSON.stringify(customRoles));
-  }, [customRoles]);
+  const baseRoles = ["ALUNO(A)", "PROFESSOR(A)", "COLABORADOR(A)", "SEMINARISTA", "PADRE", "DIÁCONO", "BISPO"];
+  const availableRoles = [...baseRoles, ...settings.customRoles];
 
-  useEffect(() => {
-    localStorage.setItem(CUSTOM_COURSES_KEY, JSON.stringify(customCourses));
-  }, [customCourses]);
+  const baseDioceses = ["MARÍLIA", "ASSIS", "LINS", "BAURU", "OURINHOS", "PRESIDENTE PRUDENTE", "ARAÇATUBA", "BOTUCATU"];
+  const availableDioceses = [...baseDioceses, ...settings.customDioceses];
 
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
@@ -73,28 +62,34 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
   const [modalDeleteOpen, setModalDeleteOpen] = useState(false);
   const qrRef = useRef<HTMLDivElement>(null);
   
-  const baseRoles = ["ALUNO(A)", "PROFESSOR(A)", "COLABORADOR(A)", "SEMINARISTA", "PADRE", "DIÁCONO", "BISPO"];
-  const availableRoles = [...baseRoles, ...customRoles];
-
   const toggleRole = (role: string) => {
     setRoles(prev => prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]);
   };
 
-  const handleAddRole = () => {
+  const handleAddRole = async () => {
     if (newRole.trim() && !availableRoles.includes(newRole.trim().toUpperCase())) {
       const formatted = newRole.trim().toUpperCase();
-      setCustomRoles(prev => [...prev, formatted]);
+      await updateSettings({ customRoles: [...settings.customRoles, formatted] });
       setRoles(prev => [...prev, formatted]);
       setNewRole('');
     }
   };
 
-  const handleAddCourse = () => {
+  const handleAddCourse = async () => {
     if (newCourse.trim() && !availableCourses.includes(newCourse.trim().toUpperCase())) {
       const formatted = newCourse.trim().toUpperCase();
-      setCustomCourses(prev => [...prev, formatted]);
+      await updateSettings({ customCourses: [...settings.customCourses, formatted] });
       setCourse(formatted);
       setNewCourse('');
+    }
+  };
+
+  const handleAddDiocese = async () => {
+    if (newDiocese.trim() && !availableDioceses.includes(newDiocese.trim().toUpperCase())) {
+      const formatted = newDiocese.trim().toUpperCase();
+      await updateSettings({ customDioceses: [...settings.customDioceses, formatted] });
+      setDiocese(formatted);
+      setNewDiocese('');
     }
   };
 
@@ -120,7 +115,7 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
     try {
       const docRef = doc(db, `artifacts/${appId}/public/data/students`, member.id);
       await updateDoc(docRef, {
-        name, ra, cpf, rg, birthdate, email, validityDate: validity, isActive, course, roles,
+        name, ra, cpf, rg, birthdate, email, validityDate: validity, isActive, course, diocese, roles,
         legacyQrCode,
         photoUrl: photoUrl || null
       });
@@ -272,6 +267,31 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
                   />
                   <button 
                     onClick={handleAddCourse}
+                    className="px-3 py-1.5 bg-slate-800 dark:bg-slate-700 text-white rounded-lg text-xs font-bold hover:bg-slate-700 transition-colors"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+              <div className="pt-2 border-t border-slate-200 dark:border-slate-700/50 mt-1">
+                <label className="text-xs font-medium text-slate-500 mb-1 block">Diocese de Origem *</label>
+                <div className="flex gap-2">
+                  <select value={diocese} onChange={e => setDiocese(e.target.value)} className="input-modern flex-1 rounded-lg py-1.5 px-3 text-sm">
+                    <option value="">Selecione a Diocese</option>
+                    {availableDioceses.map(d => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                  </select>
+                  <input 
+                    type="text" 
+                    value={newDiocese} 
+                    onChange={e => setNewDiocese(e.target.value)} 
+                    placeholder="Nova" 
+                    className="input-modern w-24 rounded-lg py-1.5 px-3 text-xs"
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddDiocese())}
+                  />
+                  <button 
+                    onClick={handleAddDiocese}
                     className="px-3 py-1.5 bg-slate-800 dark:bg-slate-700 text-white rounded-lg text-xs font-bold hover:bg-slate-700 transition-colors"
                   >
                     +

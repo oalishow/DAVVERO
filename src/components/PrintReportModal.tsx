@@ -82,6 +82,7 @@ export default function PrintReportModal({ onClose }: PrintReportModalProps) {
                   <th className="p-3 border border-slate-200 dark:border-slate-700 text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400">Nome Completo</th>
                   <th className="p-3 border border-slate-200 dark:border-slate-700 text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400">RA / Ident.</th>
                   <th className="p-3 border border-slate-200 dark:border-slate-700 text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400">Vínculos</th>
+                  <th className="p-3 border border-slate-200 dark:border-slate-700 text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400">Diocese</th>
                   <th className="p-3 border border-slate-200 dark:border-slate-700 text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400">Validade</th>
                   <th className="p-3 border border-slate-200 dark:border-slate-700 text-[10px] uppercase font-bold text-slate-600 dark:text-slate-400">Código</th>
                 </tr>
@@ -99,6 +100,7 @@ export default function PrintReportModal({ onClose }: PrintReportModalProps) {
                     <td className="p-3 border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-800 dark:text-slate-200">{m.name}</td>
                     <td className="p-3 border border-slate-200 dark:border-slate-700 text-xs font-mono text-slate-600 dark:text-slate-400">{m.ra || '---'}</td>
                     <td className="p-3 border border-slate-200 dark:border-slate-700 text-[10px] text-sky-600 font-medium">{m.roles?.join(', ')}</td>
+                    <td className="p-3 border border-slate-200 dark:border-slate-700 text-[10px] text-slate-600">{m.diocese || '---'}</td>
                     <td className="p-3 border border-slate-200 dark:border-slate-700 text-xs">{m.validityDate ? new Date(m.validityDate + 'T23:59:59').toLocaleDateString() : 'N/D'}</td>
                     <td className="p-3 border border-slate-200 dark:border-slate-700 text-[10px] font-mono">{m.alphaCode}</td>
                   </tr>

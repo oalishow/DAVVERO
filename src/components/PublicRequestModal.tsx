@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, Save, ShieldCheck, Image as ImageIcon } from 'lucide-react';
 import { collection, addDoc } from 'firebase/firestore';
 import { db, appId } from '../lib/firebase';
-import { CUSTOM_ROLES_KEY, CUSTOM_COURSES_KEY } from '../lib/constants';
+import { useSettings } from '../context/SettingsContext';
 import type { Member } from '../types';
 import ImageCropperModal from './ImageCropperModal';
 
@@ -13,6 +13,7 @@ interface PublicRequestModalProps {
 }
 
 export default function PublicRequestModal({ onClose, onSubmitSuccess }: PublicRequestModalProps) {
+  const { settings, updateSettings } = useSettings();
   const [name, setName] = useState('');
   const [ra, setRa] = useState('');
   const [email, setEmail] = useState('');
@@ -21,66 +22,55 @@ export default function PublicRequestModal({ onClose, onSubmitSuccess }: PublicR
   const [birthdate, setBirthdate] = useState('');
   const [roles, setRoles] = useState<string[]>([]);
   const [newRole, setNewRole] = useState('');
-  const [customRoles, setCustomRoles] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem(CUSTOM_ROLES_KEY);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  
   const [course, setCourse] = useState('');
   const [newCourse, setNewCourse] = useState('');
-  const [customCourses, setCustomCourses] = useState<string[]>(() => {
-    try {
-      const saved = localStorage.getItem(CUSTOM_COURSES_KEY);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  useEffect(() => {
-    localStorage.setItem(CUSTOM_COURSES_KEY, JSON.stringify(customCourses));
-  }, [customCourses]);
-
-  const baseCourses = ["FILOSOFIA", "FILOSOFIA EAD", "TEOLOGIA", "TEOLOGIA EAD"];
-  const availableCourses = [...baseCourses, ...customCourses];
-
-  useEffect(() => {
-    localStorage.setItem(CUSTOM_ROLES_KEY, JSON.stringify(customRoles));
-  }, [customRoles]);
   
+  const [diocese, setDiocese] = useState('');
+  const [newDiocese, setNewDiocese] = useState('');
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
-  
-  const [consent, setConsent] = useState(false);
-
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [consent, setConsent] = useState(false);
+
+  const baseCourses = ["FILOSOFIA", "FILOSOFIA EAD", "TEOLOGIA", "TEOLOGIA EAD"];
+  const availableCourses = [...baseCourses, ...settings.customCourses];
 
   const baseRoles = ["ALUNO(A)", "PROFESSOR(A)", "COLABORADOR(A)", "SEMINARISTA", "PADRE", "DIÁCONO", "BISPO"];
-  const availableRoles = [...baseRoles, ...customRoles];
+  const availableRoles = [...baseRoles, ...settings.customRoles];
+
+  const baseDioceses = ["MARÍLIA", "ASSIS", "LINS", "BAURU", "OURINHOS", "PRESIDENTE PRUDENTE", "ARAÇATUBA", "BOTUCATU"];
+  const availableDioceses = [...baseDioceses, ...settings.customDioceses];
 
   const toggleRole = (role: string) => {
     setRoles(prev => prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]);
   };
 
-  const handleAddRole = () => {
+  const handleAddRole = async () => {
     if (newRole.trim() && !availableRoles.includes(newRole.trim().toUpperCase())) {
       const formatted = newRole.trim().toUpperCase();
-      setCustomRoles(prev => [...prev, formatted]);
+      await updateSettings({ customRoles: [...settings.customRoles, formatted] });
       setRoles(prev => [...prev, formatted]);
       setNewRole('');
     }
   };
 
-  const handleAddCourse = () => {
+  const handleAddCourse = async () => {
     if (newCourse.trim() && !availableCourses.includes(newCourse.trim().toUpperCase())) {
       const formatted = newCourse.trim().toUpperCase();
-      setCustomCourses(prev => [...prev, formatted]);
+      await updateSettings({ customCourses: [...settings.customCourses, formatted] });
       setCourse(formatted);
       setNewCourse('');
+    }
+  };
+
+  const handleAddDiocese = async () => {
+    if (newDiocese.trim() && !availableDioceses.includes(newDiocese.trim().toUpperCase())) {
+      const formatted = newDiocese.trim().toUpperCase();
+      await updateSettings({ customDioceses: [...settings.customDioceses, formatted] });
+      setDiocese(formatted);
+      setNewDiocese('');
     }
   };
 
@@ -93,8 +83,8 @@ export default function PublicRequestModal({ onClose, onSubmitSuccess }: PublicR
   };
 
   const handleSubmit = async () => {
-    if (!name || !email || !birthdate || roles.length === 0) {
-      setError('Nome, E-mail, Data de Nascimento e ao menos um Vínculo são obrigatórios.');
+    if (!name || !email || !birthdate || !diocese || roles.length === 0) {
+      setError('Nome, E-mail, Data de Nascimento, Diocese e ao menos um Vínculo são obrigatórios.');
       return;
     }
     
@@ -116,6 +106,7 @@ export default function PublicRequestModal({ onClose, onSubmitSuccess }: PublicR
         birthdate,
         roles,
         course,
+        diocese,
         photoUrl: photoBase64,
         isApproved: false, // Pedido pendente  
         createdAt: new Date().toISOString()
@@ -239,6 +230,33 @@ export default function PublicRequestModal({ onClose, onSubmitSuccess }: PublicR
                   />
                   <button 
                     onClick={handleAddCourse}
+                    className="px-3 py-3 bg-slate-800 dark:bg-slate-700 text-white rounded-xl text-xs font-bold hover:bg-slate-700 transition-colors"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+          </div>
+          <div>
+              <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1 mt-2">Diocese de Origem *</label>
+              <div className="flex gap-2">
+                <select value={diocese} onChange={e => setDiocese(e.target.value)} className="input-modern flex-1 rounded-xl py-3 px-4 text-sm">
+                    <option value="">Selecionar Diocese</option>
+                    {availableDioceses.map(d => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                </select>
+                <div className="flex gap-1.5">
+                  <input 
+                    type="text" 
+                    value={newDiocese} 
+                    onChange={e => setNewDiocese(e.target.value)} 
+                    placeholder="Nova" 
+                    className="input-modern w-20 rounded-xl py-3 px-3 text-[10px]"
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddDiocese())}
+                  />
+                  <button 
+                    onClick={handleAddDiocese}
                     className="px-3 py-3 bg-slate-800 dark:bg-slate-700 text-white rounded-xl text-xs font-bold hover:bg-slate-700 transition-colors"
                   >
                     +

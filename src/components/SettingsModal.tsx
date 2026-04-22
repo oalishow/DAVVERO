@@ -41,6 +41,7 @@ const MOCK_MEMBER = {
   name: 'JOÃO DA SILVA SAMPLE',
   ra: '2024.0001',
   course: 'TEOLOGIA',
+  diocese: 'MARÍLIA',
   birthdate: '01/01/2000',
   validityDate: '2025-12-31',
   photoUrl: 'https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=400&h=400&fit=crop',
@@ -52,9 +53,9 @@ const MOCK_MEMBER = {
 
 export default function SettingsModal({ onClose }: { onClose: () => void }) {
   const { settings: cloudSettings, updateSettings } = useSettings();
-
   const [url, setUrl] = useState(cloudSettings.url);
   const [directorName, setDirectorName] = useState(cloudSettings.directorName);
+  const [rectorName, setRectorName] = useState(cloudSettings.rectorName || '');
   const [instName, setInstName] = useState(cloudSettings.instName);
   const [instColor, setInstColor] = useState(cloudSettings.instColor);
   const [instLogo, setInstLogo] = useState<string | null>(cloudSettings.instLogo);
@@ -69,23 +70,29 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
   const [backLogoConfig, setBackLogoConfig] = useState<LogoConfig>(cloudSettings.backLogoConfig);
 
   const [instSignature, setInstSignature] = useState<string | null>(cloudSettings.instSignature);
+  const [rectorSignature, setRectorSignature] = useState<string | null>(cloudSettings.rectorSignature || null);
   const [signatureScale, setSignatureScale] = useState(cloudSettings.signatureScale);
+  const [rectorSignatureScale, setRectorSignatureScale] = useState(cloudSettings.rectorSignatureScale || 100);
   const [instDescription, setInstDescription] = useState(cloudSettings.instDescription);
   const [cardDescription, setCardDescription] = useState(cloudSettings.cardDescription);
   const [visibleFields, setVisibleFields] = useState<Record<string, boolean>>(cloudSettings.visibleFields);
+  const [customDioceses, setCustomDioceses] = useState<string[]>(cloudSettings.customDioceses || []);
+  const [customCourses, setCustomCourses] = useState<string[]>(cloudSettings.customCourses || []);
+  const [customRoles, setCustomRoles] = useState<string[]>(cloudSettings.customRoles || []);
   
   const [password, setPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [aiPalettes, setAiPalettes] = useState<any[]>([]);
   
-  const [status, setStatus] = useState<{msg: string, type: 'success'|'error'} | null>(null);
+  const [status, setStatus] = useState<{msg: string, type: 'success'|'error'|'loading'} | null>(null);
   const [isPreviewFront, setIsPreviewFront] = useState(true);
   const logoInputRef = useRef<HTMLInputElement>(null);
   const cardLogoInputRef = useRef<HTMLInputElement>(null);
   const cardBackLogoInputRef = useRef<HTMLInputElement>(null);
   const cardBackInputRef = useRef<HTMLInputElement>(null);
   const signatureInputRef = useRef<HTMLInputElement>(null);
+  const rectorSignatureInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -93,12 +100,13 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
   }, []);
 
   const handleSaveGeneral = async () => {
-    setStatus({ msg: 'Sincronizando com a nuvem...', type: 'loading' as any });
+    setStatus({ msg: 'Sincronizando com a nuvem...', type: 'loading' });
     
     try {
       await updateSettings({
         url,
         directorName,
+        rectorName,
         instName,
         instColor,
         instLogo,
@@ -110,10 +118,15 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
         frontLogoConfig,
         backLogoConfig,
         instSignature,
+        rectorSignature,
         signatureScale,
+        rectorSignatureScale,
         instDescription,
         cardDescription,
-        visibleFields
+        visibleFields,
+        customDioceses,
+        customCourses,
+        customRoles
       });
 
       // Legacy fallback
@@ -594,6 +607,80 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                  />
               </div>
 
+              {/* Gerenciamento de Listas */}
+              <div className="bg-white dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-4 mb-4">
+                 <label className="text-[10px] font-black text-slate-500 uppercase flex items-center gap-2">
+                   <div className="w-2 h-2 rounded-full bg-indigo-400" /> Gerenciar Listas Personalizadas
+                 </label>
+                 
+                 <div className="space-y-3">
+                   <div>
+                     <label className="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Dioceses Adicionais</label>
+                     <div className="flex flex-wrap gap-2 mb-2">
+                       {customDioceses.map(d => (
+                         <span key={d} className="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-[10px] font-bold px-2 py-1 rounded flex items-center gap-1 group">
+                           {d}
+                           <button onClick={() => setCustomDioceses(prev => prev.filter(item => item !== d))} className="hover:text-rose-500"><X className="w-3 h-3" /></button>
+                         </span>
+                       ))}
+                     </div>
+                     <div className="flex gap-2">
+                       <input id="new-diocese" type="text" placeholder="Nova Diocese" className="input-modern flex-1 rounded-lg py-1.5 px-3 text-xs" onKeyDown={(e) => {
+                         if (e.key === 'Enter') {
+                           const val = (e.target as HTMLInputElement).value.trim().toUpperCase();
+                           if (val && !customDioceses.includes(val)) {
+                             setCustomDioceses([...customDioceses, val]);
+                             (e.target as HTMLInputElement).value = '';
+                           }
+                         }
+                       }} />
+                     </div>
+                   </div>
+
+                   <div>
+                     <label className="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Cursos Adicionais</label>
+                     <div className="flex flex-wrap gap-2 mb-2">
+                       {customCourses.map(c => (
+                         <span key={c} className="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 text-[10px] font-bold px-2 py-1 rounded flex items-center gap-1">
+                           {c}
+                           <button onClick={() => setCustomCourses(prev => prev.filter(item => item !== c))} className="hover:text-rose-500"><X className="w-3 h-3" /></button>
+                         </span>
+                       ))}
+                     </div>
+                     <input type="text" placeholder="Novo Curso" className="input-modern w-full rounded-lg py-1.5 px-3 text-xs" onKeyDown={(e) => {
+                       if (e.key === 'Enter') {
+                         const val = (e.target as HTMLInputElement).value.trim().toUpperCase();
+                         if (val && !customCourses.includes(val)) {
+                           setCustomCourses([...customCourses, val]);
+                           (e.target as HTMLInputElement).value = '';
+                         }
+                       }
+                     }} />
+                   </div>
+
+                   <div>
+                     <label className="text-[9px] font-bold text-slate-400 uppercase mb-1 block">Vínculos Adicionais</label>
+                     <div className="flex flex-wrap gap-2 mb-2">
+                       {customRoles.map(r => (
+                         <span key={r} className="bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400 text-[10px] font-bold px-2 py-1 rounded flex items-center gap-1">
+                           {r}
+                           <button onClick={() => setCustomRoles(prev => prev.filter(item => item !== r))} className="hover:text-rose-500"><X className="w-3 h-3" /></button>
+                         </span>
+                       ))}
+                     </div>
+                     <input type="text" placeholder="Novo Vínculo" className="input-modern w-full rounded-lg py-1.5 px-3 text-xs" onKeyDown={(e) => {
+                       if (e.key === 'Enter') {
+                         const val = (e.target as HTMLInputElement).value.trim().toUpperCase();
+                         if (val && !customRoles.includes(val)) {
+                           setCustomRoles([...customRoles, val]);
+                           (e.target as HTMLInputElement).value = '';
+                         }
+                       }
+                     }} />
+                   </div>
+                 </div>
+              </div>
+
               {/* Visibilidade de Campos */}
               <div className="bg-white dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
                 <label className="text-[10px] font-black text-slate-500 uppercase flex items-center gap-2 mb-3">
@@ -604,13 +691,16 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                     { id: 'name', label: 'Nome' },
                     { id: 'ra', label: 'R.A.' },
                     { id: 'course', label: 'Curso' },
+                    { id: 'diocese', label: 'Diocese' },
                     { id: 'birth', label: 'Nascimento' },
                     { id: 'validity', label: 'Validade' },
                     { id: 'photo', label: 'Foto' },
                     { id: 'qrcode', label: 'QR Code' },
                     { id: 'logo', label: 'Logotipos' },
-                    { id: 'signature', label: 'Assinatura' },
+                    { id: 'signature', label: 'Assin. Diretor' },
+                    { id: 'rectorSignature', label: 'Assin. Reitor' },
                     { id: 'director', label: 'Nome Diretor' },
+                    { id: 'rector', label: 'Nome Reitor' },
                     { id: 'footer', label: 'Rodapé Endereço' },
                   ].map(field => (
                     <label key={field.id} className="flex items-center gap-2 cursor-pointer group">
@@ -641,54 +731,65 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                   <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">URL de Acesso</label>
                   <input type="text" value={url} onChange={e=>setUrl(e.target.value)} className="input-modern w-full rounded-xl py-2 px-3 text-sm" placeholder="Ex: https://vero-id.app" />
                </div>
-               <div>
-                  <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Diretor Geral (Assinante Card)</label>
-                  <div className="relative">
-                     <UserCircle className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                     <input type="text" value={directorName} onChange={e=>setDirectorName(e.target.value.toUpperCase())} className="input-modern w-full rounded-xl py-2 pl-9 pr-3 text-sm font-semibold" placeholder="Ex: PROF. DR. FULANO DE TAL" />
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Diretor Geral (Assinante)</label>
+                    <div className="relative">
+                       <UserCircle className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                       <input type="text" value={directorName} onChange={e=>setDirectorName(e.target.value.toUpperCase())} className="input-modern w-full rounded-xl py-2 pl-9 pr-3 text-[10px] font-semibold" placeholder="DIRETOR GERAL" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">Reitor (Assinante)</label>
+                    <div className="relative">
+                       <UserCircle className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                       <input type="text" value={rectorName} onChange={e=>setRectorName(e.target.value.toUpperCase())} className="input-modern w-full rounded-xl py-2 pl-9 pr-3 text-[10px] font-semibold" placeholder="REITOR" />
+                    </div>
                   </div>
                </div>
 
-               <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-dashed border-slate-300 dark:border-slate-600 flex flex-col items-center">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase mb-2 text-center">Assinatura do Diretor (PNG)</label>
-                  
-                  {instSignature ? (
-                    <div className="relative group">
-                      <img src={instSignature} alt="Assinatura" className="h-10 w-auto object-contain mb-1 bg-white p-1 rounded" />
-                      <button 
-                        onClick={() => setInstSignature(null)}
-                        className="absolute -top-2 -right-2 p-1 bg-rose-500 text-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                      </button>
-                    </div>
-                  ) : (
-                    <button 
-                      onClick={() => signatureInputRef.current?.click()}
-                      className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-sky-500 hover:bg-sky-50 transition-all border border-slate-200 dark:border-slate-600"
-                    >
-                      <Upload className="w-4 h-4" />
-                    </button>
-                  )}
-                  <input type="file" ref={signatureInputRef} onChange={(e) => handleFileUpload(e, setInstSignature, 300)} accept="image/png" className="hidden" />
-                  <p className="text-[8px] text-slate-400 mt-1">Fundo transparente recomendado</p>
+               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Digital Signature: Director */}
+                  <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-dashed border-slate-300 dark:border-slate-600 flex flex-col items-center">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase mb-2 text-center">Assinatura Diretor (PNG)</label>
+                    {instSignature ? (
+                      <div className="relative group">
+                        <img src={instSignature} alt="Assinatura" className="h-10 w-auto object-contain mb-1 bg-white p-1 rounded" />
+                        <button onClick={() => setInstSignature(null)} className="absolute -top-2 -right-2 p-1 bg-rose-500 text-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 className="w-3 h-3" /></button>
+                      </div>
+                    ) : (
+                      <button onClick={() => signatureInputRef.current?.click()} className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-sky-500 border border-slate-200 dark:border-slate-600"><Upload className="w-4 h-4" /></button>
+                    )}
+                    <input type="file" ref={signatureInputRef} onChange={(e) => handleFileUpload(e, setInstSignature, 300)} accept="image/png" className="hidden" />
+                    
+                    {instSignature && (
+                      <div className="mt-2 w-full px-2">
+                        <label className="block text-[8px] font-bold text-slate-400 uppercase mb-1">Escala ({signatureScale}%)</label>
+                        <input type="range" min="50" max="300" value={signatureScale} onChange={e=>setSignatureScale(Number(e.target.value))} className="w-full accent-sky-500 h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer" />
+                      </div>
+                    )}
+                  </div>
 
-                  {instSignature && (
-                    <div className="mt-4 w-full px-2">
-                       <label className="block text-[8px] font-bold text-slate-400 uppercase mb-1">Aumentar/Diminuir Assinatura (%)</label>
-                       <div className="flex items-center gap-2">
-                         <input 
-                           type="range" 
-                           min="50" 
-                           max="300" 
-                           value={signatureScale} 
-                           onChange={e=>setSignatureScale(Number(e.target.value))} 
-                           className="flex-1 accent-sky-500 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer" 
-                         />
-                         <span className="text-[10px] font-mono font-bold text-slate-500 w-8">{signatureScale}%</span>
-                       </div>
-                    </div>
-                  )}
+                  {/* Digital Signature: Rector */}
+                  <div className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-dashed border-slate-300 dark:border-slate-600 flex flex-col items-center">
+                    <label className="text-[10px] font-bold text-slate-400 uppercase mb-2 text-center">Assinatura Reitor (PNG)</label>
+                    {rectorSignature ? (
+                      <div className="relative group">
+                        <img src={rectorSignature} alt="Assinatura Reitor" className="h-10 w-auto object-contain mb-1 bg-white p-1 rounded" />
+                        <button onClick={() => setRectorSignature(null)} className="absolute -top-2 -right-2 p-1 bg-rose-500 text-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"><Trash2 className="w-3 h-3" /></button>
+                      </div>
+                    ) : (
+                      <button onClick={() => rectorSignatureInputRef.current?.click()} className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-400 hover:text-sky-500 border border-slate-200 dark:border-slate-600"><Upload className="w-4 h-4" /></button>
+                    )}
+                    <input type="file" ref={rectorSignatureInputRef} onChange={(e) => handleFileUpload(e, setRectorSignature, 300)} accept="image/png" className="hidden" />
+                    
+                    {rectorSignature && (
+                      <div className="mt-2 w-full px-2">
+                        <label className="block text-[8px] font-bold text-slate-400 uppercase mb-1">Escala ({rectorSignatureScale}%)</label>
+                        <input type="range" min="50" max="300" value={rectorSignatureScale} onChange={e=>setRectorSignatureScale(Number(e.target.value))} className="w-full accent-sky-500 h-1 bg-slate-200 rounded-lg appearance-none cursor-pointer" />
+                      </div>
+                    )}
+                  </div>
                </div>
             </div>
           </div>

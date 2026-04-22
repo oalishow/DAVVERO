@@ -68,7 +68,7 @@ export default function Header() {
        />
 
       <div className="absolute bottom-2 font-black text-[9px] tracking-[0.15em] text-blue-900 dark:text-sky-100 bg-white/80 dark:bg-slate-900/60 backdrop-blur-md px-2.5 py-0.5 rounded shadow-sm border border-white/40 dark:border-slate-600/50 z-30">
-        {instName === 'A vero ID' ? 'A VERO ID' : instName}
+        {instName === 'DAVVERO-ID' || instName === 'FAJOPA e SPSCJ' ? 'DAVVERO-ID' : instName}
       </div>
     </div>
   );
@@ -112,11 +112,21 @@ export default function Header() {
           backgroundImage: `linear-gradient(to right, ${instColor}, #14b8a6, #10b981)`,
         }}
       >
-        {instName}
+        {instName === 'FAJOPA e SPSCJ' ? 'DAVVERO-ID' : instName}
       </h1>
       <p className="text-slate-500 dark:text-slate-400 font-bold text-[10px] sm:text-xs tracking-[0.2em] animated-fade-in uppercase">
         {instDescription}
       </p>
+
+      <div className="flex flex-col items-center mt-4 gap-1.5 uppercase font-black tracking-widest text-[8px] sm:text-[9px] animated-fade-in">
+        <div className="flex items-center gap-1.5 text-emerald-500 dark:text-emerald-400 bg-emerald-500/5 px-3 py-1 rounded-full border border-emerald-500/20">
+          <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse" />
+          MODO: NUVEM (ONLINE)
+        </div>
+        <div className="text-slate-400 dark:text-slate-500 flex items-center gap-1.5 bg-slate-400/5 px-3 py-1 rounded-full border border-slate-400/10">
+          BANCO DE DADOS: {instName}
+        </div>
+      </div>
     </div>
   );
 }

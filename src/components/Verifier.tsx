@@ -309,7 +309,7 @@ export default function Verifier({ externalCode, onExternalVerified }: VerifierP
 
   if (validationResult) {
     return (
-      <div className="w-full flex flex-col items-center">
+      <div className="w-full flex flex-col items-center pt-1 pb-4 px-2">
         {successMsg && (
           <div className="mt-4 p-3 bg-emerald-50 text-emerald-600 text-sm font-medium rounded-xl border border-emerald-200">
             {successMsg}
@@ -427,9 +427,15 @@ export default function Verifier({ externalCode, onExternalVerified }: VerifierP
 
       {showPublicReq && <PublicRequestModal onClose={() => setShowPublicReq(false)} onSubmitSuccess={() => { setShowPublicReq(false); setSuccessMsg('Solicitação enviada com sucesso! Aguarde analise.'); setTimeout(() => setSuccessMsg(''), 4000); }} />}
       
-      <div className="mt-8 text-center text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 max-w-sm px-4">
-        <p className="font-bold mb-1 uppercase tracking-widest">Proteção de Dados (LGPD)</p>
-        <p className="leading-relaxed">Os dados processados por este sistema são estritamente para fins de validação institucional, em total conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018). Todos os dados processados via QR Code trafegam de forma segura e não partilhada.</p>
+      <div className="mt-8 text-center text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 max-w-sm px-4 space-y-4">
+        <div>
+          <p className="font-bold mb-1 uppercase tracking-widest">Proteção de Dados (LGPD)</p>
+          <p className="leading-relaxed">Os dados processados por este sistema são estritamente para fins de validação institucional, em total conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018). Todos os dados processados via QR Code trafegam de forma segura e não partilhada.</p>
+        </div>
+        <div>
+          <p className="font-bold mb-1 uppercase tracking-widest text-sky-600 dark:text-sky-400">Garantia de Meia-Entrada</p>
+          <p className="leading-relaxed italic">Este sistema atende aos padrões da <strong>Lei Federal nº 12.933/2013</strong> e do <strong>Decreto nº 8.537/2015</strong>, garantindo o benefício da meia-entrada em todo o território nacional.</p>
+        </div>
       </div>
     </div>
   );

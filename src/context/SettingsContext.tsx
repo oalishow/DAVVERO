@@ -6,6 +6,7 @@ import { SETTINGS_DOC_PATH, ASSETS_DOC_PATH } from '../lib/constants';
 interface AppSettings {
   url: string;
   directorName: string;
+  rectorName: string;
   instName: string;
   instColor: string;
   instLogo: string | null;
@@ -17,19 +18,23 @@ interface AppSettings {
   frontLogoConfig: { x: number; y: number; scale: number };
   backLogoConfig: { x: number; y: number; scale: number };
   instSignature: string | null;
+  rectorSignature: string | null;
   signatureScale: number;
+  rectorSignatureScale: number;
   instDescription: string;
   cardDescription: string;
   visibleFields: Record<string, boolean>;
   version: string;
   customRoles: string[];
   customCourses: string[];
+  customDioceses: string[];
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
   url: 'https://carteirinhafajopa.netlify.app',
   directorName: '',
-  instName: 'A vero ID',
+  rectorName: '',
+  instName: 'FAJOPA e SPSCJ',
   instColor: '#0ea5e9',
   instLogo: null,
   cardLogo: null,
@@ -40,9 +45,11 @@ const DEFAULT_SETTINGS: AppSettings = {
   frontLogoConfig: { x: 0, y: 0, scale: 100 },
   backLogoConfig: { x: 0, y: 0, scale: 100 },
   instSignature: null,
+  rectorSignature: null,
   signatureScale: 100,
+  rectorSignatureScale: 100,
   instDescription: 'SISTEMA DE VERIFICAÇÃO DE IDENTIDADE',
-  cardDescription: '',
+  cardDescription: 'DOCUMENTO PADRONIZADO NACIONALMENTE CONFORME A LEI 12.933/2013 E DECRETO 8.537/2015 QUE ASSEGURAM O DIREITO À MEIA-ENTRADA.',
   visibleFields: {
     name: true,
     ra: true,
@@ -53,12 +60,16 @@ const DEFAULT_SETTINGS: AppSettings = {
     qrcode: true,
     logo: true,
     signature: true,
+    rectorSignature: true,
     director: true,
-    footer: true
+    rector: true,
+    footer: true,
+    diocese: true
   },
   version: '3.1.7',
   customRoles: [],
-  customCourses: []
+  customCourses: [],
+  customDioceses: []
 };
 
 interface SettingsContextType {
@@ -80,8 +91,25 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     // Listener principal
     const unsubMain = onSnapshot(docRef, (snapshot) => {
       if (snapshot.exists()) {
-        const data = snapshot.data();
-        setSettings(prev => ({ ...prev, ...data }));
+        const data = snapshot.data() as any;
+        
+        // Garantir que campos de visibilidade novos existam mesclando com o default
+        const mergedVisibleFields = {
+          ...DEFAULT_SETTINGS.visibleFields,
+          ...(data.visibleFields || {})
+        };
+
+        setSettings(prev => ({ 
+          ...prev, 
+          ...data,
+          visibleFields: mergedVisibleFields
+        }));
+
+        // Migração automática de nome legado para o novo padrão solicitado
+        const legacyNames = ['DA VERO-ID', 'DAVVERO-ID', 'Vero ID', 'A vero ID', 'DA VERO ID'];
+        if (legacyNames.includes(data.instName)) {
+           updateSettings({ instName: 'FAJOPA e SPSCJ' }).catch(console.error);
+        }
       } else {
         setDoc(docRef, DEFAULT_SETTINGS).catch(() => {});
       }

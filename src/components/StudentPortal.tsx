@@ -7,7 +7,7 @@ import type { Member } from '../types';
 import VerificationResult from './VerificationResult';
 import Modal from './Modal';
 
-const STUDENT_BOND_KEY = 'verifyId_student_identity';
+const STUDENT_BOND_KEY = 'davveroId_student_identity';
 const STUDENT_FALLBACK_PIN = 'student_fallback_pin';
 
 interface StudentPortalProps {

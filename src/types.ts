@@ -11,6 +11,7 @@ export interface Member {
   photoUrl?: string | null;
   roles?: string[];
   course?: string;
+  diocese?: string;
   isActive?: boolean;
   isApproved?: boolean;
   createdAt?: string;

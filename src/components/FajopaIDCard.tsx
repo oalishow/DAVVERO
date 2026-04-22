@@ -38,6 +38,7 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
 
   const {
     directorName,
+    rectorName,
     instLogo,
     cardLogo,
     cardBackLogo,
@@ -49,7 +50,9 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
     cardBackImage,
     cardDescription,
     signatureScale,
+    rectorSignatureScale,
     instSignature,
+    rectorSignature,
     instName,
     instColor,
     visibleFields
@@ -97,7 +100,7 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
   const safeName = member.name?.toUpperCase() || 'N/D';
   const safeRA = member.ra || 'N/D';
   const safeCourse = member.course?.toUpperCase() || 'N/D';
-  const safeBirth = member.birthdate || 'N/D';
+  const safeBirth = member.birthdate ? new Date(member.birthdate + 'T12:00:00').toLocaleDateString('pt-BR') : 'N/D';
   const safeDate = member.validityDate ? new Date(member.validityDate + 'T23:59:59').toLocaleDateString('pt-BR') : 'Pelo Qr code';
   
   const avatarUrl = member.photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(safeName)}&background=e2e8f0&color=475569`;
@@ -116,15 +119,18 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
     >
       {/* Top Divider / Header Decor */}
       <div 
-        className="absolute top-0 left-0 w-full h-[18%] border-b-4 flex items-center z-20 shadow-sm"
+        className="absolute top-0 left-0 w-full h-[18%] border-b-4 flex items-center justify-between px-[5%] z-20 shadow-sm"
         style={{ 
           backgroundColor: '#0c1222', // Very dark for contrast
           borderBottomColor: instColor 
         }}
       >
-         <h1 className="text-white font-black pl-[5%] tracking-wide" style={{ fontSize: '24px' }}>
+         <h1 className="text-white font-black tracking-tight" style={{ fontSize: '20px' }}>
            {cardFrontText || 'IDENTIFICAÇÃO ESTUDANTIL'}
          </h1>
+         <span className="text-white opacity-80 text-[11px] font-bold tracking-widest bg-white/10 px-3 py-1 rounded-full uppercase">
+           {instName === 'Vero ID' || instName === 'A vero ID' || instName === 'DA VERO-ID' || instName === 'DAVVERO-ID' || instName === 'FAJOPA e SPSCJ' ? 'FAJOPA e SPSCJ' : instName}
+         </span>
       </div>
 
       {/* Bottom Footer block */}
@@ -138,15 +144,15 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
           clipPath: 'polygon(5% 0, 100% 0, 100% 100%, 0 100%)' 
         }}
       >
-         <span className="text-white font-bold tracking-widest uppercase pl-4 flex items-center gap-1.5" style={{ fontSize: '10px' }}>
-           {(!instName || instName === 'Vero ID' || instName === 'A vero ID') && (
-              <svg viewBox="0 0 100 100" className="w-[12px] h-[12px] text-white shrink-0">
+         <span className="text-white font-bold tracking-widest uppercase pl-4 flex items-center gap-1.5" style={{ fontSize: '12px' }}>
+           {(!instName || instName === 'Vero ID' || instName === 'A vero ID' || instName === 'DA VERO-ID' || instName === 'DAVVERO-ID' || instName === 'FAJOPA e SPSCJ') && (
+              <svg viewBox="0 0 100 100" className="w-[14px] h-[14px] text-white shrink-0">
                 <path d="M50,5 L90,20 C90,60 75,85 50,95 C25,85 10,60 10,20 L50,5 Z" fill="none" stroke="currentColor" strokeWidth="6" strokeLinejoin="round" />
                 <path d="M50,32 L82,46 L50,60 L18,46 Z" fill="currentColor" />
                 <path d="M30,52 L30,65 C40,75 60,75 70,65 L70,52 L50,60 Z" fill="currentColor" opacity="0.85" />
               </svg>
            )}
-           {instName === 'FAJOPA' ? 'FACULDADE JOÃO PAULO II' : (instName === 'Vero ID' ? 'A vero ID' : instName)}
+           {member.roles?.join(' • ') || 'ESTUDANTE'}
          </span>
       </div>
 
@@ -165,10 +171,11 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
           { id: 'ra', label: 'R.A.:', value: safeRA, w: '50%' },
           { id: 'course', label: 'CURSO:', value: safeCourse, w: '50%' },
           { id: 'birth', label: 'NASC:', value: safeBirth, w: '50%' },
-          {id: 'validity', label: 'VAL:', value: safeDate, w: '50%'},
-        ].filter(r => visibleFields[r.id]).map((row, i) => (
-          <div key={i} className={`flex bg-white rounded-full border-[1.5px] border-slate-400 overflow-hidden shadow-sm items-center ${row.isName ? 'h-[23%]' : 'h-[16%]'}`} style={{ width: row.w }}>
-            <span className="bg-white text-blue-900 font-bold px-2 flex items-center justify-center h-full border-r-[1.5px] border-slate-300 tracking-tight shrink-0" style={{ fontSize: '13px' }}>
+          { id: 'validity', label: 'VAL:', value: safeDate, w: '50%' },
+          { id: 'diocese', label: 'DIOCESE:', value: member.diocese || '-', w: '50%' },
+        ].filter(r => visibleFields?.[r.id]).map((row, i) => (
+          <div key={i} className={`flex bg-white rounded-full border-[1.5px] border-slate-400 overflow-hidden shadow-sm items-center ${row.isName ? 'h-[22%]' : 'h-[14%]'}`} style={{ width: row.w }}>
+            <span className="bg-white text-blue-900 font-bold px-2 flex items-center justify-center h-full border-r-[1.5px] border-slate-300 tracking-tight shrink-0" style={{ fontSize: '12px' }}>
               {row.label}
             </span>
             <span className={`text-slate-800 font-bold px-2 bg-white flex-1 h-full flex items-center ${row.isName ? 'text-left justify-start whitespace-normal leading-[1.05] break-words' : 'justify-center whitespace-nowrap overflow-hidden text-ellipsis'}`} style={{ fontSize: row.isName ? '12px' : '12px' }}>
@@ -276,38 +283,68 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
         </>
       )}
       
-      <div className={`absolute top-[20%] w-[86%] left-[7%] text-center text-blue-950 font-bold leading-tight ${cardBackImage ? 'bg-white/70 shadow-sm' : 'bg-white/95 border-[2px] border-slate-200 shadow-md'} backdrop-blur-sm rounded-xl p-2 z-10 flex flex-col justify-center`} style={{ fontSize: '13px', minHeight: '60px' }}>
+      <div className={`absolute top-[10%] w-[86%] left-[7%] text-center text-blue-950 font-bold leading-tight ${cardBackImage ? 'bg-white/70 shadow-sm' : 'bg-white/95 border-[2px] border-slate-200 shadow-md'} backdrop-blur-sm rounded-xl p-2 z-10 flex flex-col justify-center`} style={{ fontSize: '11px', minHeight: '40px' }}>
         Este cartão é pessoal e intransferível, sendo o usuário responsável pela utilização. Em caso de perda, avise imediatamente a secretaria da faculdade.
       </div>
 
-      <div className="absolute top-[40%] w-full flex flex-col items-center z-0">
-        {/* Signature Area */}
-        {visibleFields.signature && (
-          <div className="w-[80%] max-w-[200px] h-[40px] sm:h-[50px] border-b-[2.5px] border-slate-800 flex items-center justify-center pb-1 mt-1">
-             {instSignature && (
-               <img 
-                 src={instSignature} 
-                 alt="Assinatura Diretor" 
-                 className="w-auto object-contain" 
-                 style={{ 
-                   height: `${(signatureScale / 100) * 110}%`,
-                   marginBottom: `-${(signatureScale / 100) * 10}%` 
-                 }} 
-               />
-             )}
-          </div>
-        )}
-        
-        {visibleFields.director && (
-          directorName ? (
-             <div className="flex flex-col items-center mt-1 leading-none">
-               <div className="text-slate-800 font-bold uppercase tracking-tight text-[12px] leading-none mb-0.5">{directorName}</div>
-               <div className="text-blue-900 font-bold text-[10px] leading-none">DIRETOR GERAL DA FACULDADE</div>
-             </div>
-          ) : (
-             <div className="text-blue-900 font-bold mt-1 text-[10px]">DIRETOR GERAL DA FACULDADE</div>
-          )
-        )}
+      <div className="absolute top-[28%] w-full flex flex-col items-center z-0">
+        <div className="w-full flex justify-center gap-10 px-4">
+          {/* Signature 1: Director */}
+          {(visibleFields.signature || visibleFields.director) && (
+            <div className="flex flex-col items-center min-w-[140px] max-w-[180px]">
+               {visibleFields.signature && (
+                <div className="w-full h-[45px] border-b-[2px] border-slate-800 flex items-center justify-center pb-1">
+                   {instSignature && (
+                     <img 
+                       src={instSignature} 
+                       alt="Assinatura Diretor" 
+                       className="w-auto object-contain" 
+                       style={{ 
+                         height: `${(signatureScale / 100) * 110}%`,
+                         marginBottom: `-${(signatureScale / 100) * 6}%` 
+                       }} 
+                     />
+                   )}
+                </div>
+              )}
+              
+              {visibleFields.director && (
+                <div className="flex flex-col items-center mt-1 leading-tight text-center">
+                  <div className="text-slate-800 font-bold uppercase tracking-tight text-[9px] leading-tight mb-0.5 whitespace-normal">{directorName || 'DIRETOR GERAL'}</div>
+                  <div className="text-blue-900 font-bold text-[7px] leading-tight uppercase">Diretor Geral</div>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Signature 2: Rector */}
+          {(visibleFields.rectorSignature || visibleFields.rector) && (
+            <div className="flex flex-col items-center min-w-[140px] max-w-[180px]">
+               {visibleFields.rectorSignature && (
+                <div className="w-full h-[45px] border-b-[2px] border-slate-800 flex items-center justify-center pb-1">
+                   {rectorSignature && (
+                     <img 
+                       src={rectorSignature} 
+                       alt="Assinatura Reitor" 
+                       className="w-auto object-contain" 
+                       style={{ 
+                         height: `${(rectorSignatureScale / 100) * 110}%`,
+                         marginBottom: `-${(rectorSignatureScale / 100) * 6}%` 
+                       }} 
+                     />
+                   )}
+                </div>
+              )}
+              
+              {visibleFields.rector && (
+                <div className="flex flex-col items-center mt-1 leading-tight text-center">
+                  <div className="text-slate-800 font-bold uppercase tracking-tight text-[9px] leading-tight mb-0.5 whitespace-normal">{rectorName || 'REITOR'}</div>
+                  <div className="text-blue-900 font-bold text-[7px] leading-tight uppercase">Reitor do Seminário</div>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
         
         {visibleFields.logo && (
           <div 
@@ -357,7 +394,7 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
              </div>
              <div className="flex flex-col text-left">
                 <div className="flex items-center gap-1">
-                  <span className="text-blue-900 font-black tracking-tighter" style={{ fontSize: '22px', lineHeight: '1' }}>{cardBackText || (instName === 'Vero ID' ? 'A vero ID' : instName)}</span>
+                  <span className="text-blue-900 font-black tracking-tighter" style={{ fontSize: '22px', lineHeight: '1' }}>{cardBackText || (instName === 'Vero ID' || instName === 'A vero ID' || instName === 'DA VERO-ID' || instName === 'DAVVERO-ID' || instName === 'FAJOPA e SPSCJ' ? 'FAJOPA e SPSCJ' : instName)}</span>
                 </div>
                 {instName === 'FAJOPA' && (
                   <div className="bg-blue-900 text-white rounded font-bold px-1 py-0.5 text-center mt-0.5 whitespace-nowrap shadow-sm" style={{ fontSize: '8px' }}>
@@ -377,7 +414,7 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
       </div>
 
       <div className="absolute top-[2%] right-[4%] opacity-80 text-[7px] text-right font-bold text-blue-950 pointer-events-none leading-relaxed select-none z-20">
-         ©2025 - Alison Fernando Rodrigues dos Santos - {cardFrontText || 'A vero ID'}<br/>
+         ©2025 - Alison Fernando Rodrigues dos Santos - {cardFrontText || 'DAVVERO-ID'}<br/>
          Emitido em: {emittedAt} • Gerado digitalmente: {generatedAt}
       </div>
 

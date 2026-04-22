@@ -24,6 +24,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const [validity, setValidity] = useState('');
   const [roles, setRoles] = useState<string[]>([]);
   const [course, setCourse] = useState('');
+  const [diocese, setDiocese] = useState('');
   
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
@@ -41,6 +42,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
   
   const customRoles = settings.customRoles;
   const customCourses = settings.customCourses;
+  const customDioceses = settings.customDioceses;
 
   const baseRoles = ["ALUNO(A)", "PROFESSOR(A)", "COLABORADOR(A)", "SEMINARISTA", "PADRE", "DIÁCONO", "BISPO"];
   const availableRoles = [...baseRoles, ...customRoles];
@@ -48,6 +50,10 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const [newCourse, setNewCourse] = useState('');
   const baseCourses = ["FILOSOFIA", "FILOSOFIA EAD", "TEOLOGIA", "TEOLOGIA EAD"];
   const availableCourses = [...baseCourses, ...customCourses];
+
+  const [newDiocese, setNewDiocese] = useState('');
+  const baseDioceses = ["MARÍLIA", "ASSIS", "LINS", "BAURU", "OURINHOS", "PRESIDENTE PRUDENTE", "ARAÇATUBA", "BOTUCATU"];
+  const availableDioceses = [...baseDioceses, ...customDioceses];
 
   const toggleRole = (role: string) => {
     setRoles(prev => prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]);
@@ -68,6 +74,15 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
       await updateSettings({ customCourses: [...customCourses, formatted] });
       setCourse(formatted);
       setNewCourse('');
+    }
+  };
+
+  const handleAddDiocese = async () => {
+    if (newDiocese.trim() && !availableDioceses.includes(newDiocese.trim().toUpperCase())) {
+      const formatted = newDiocese.trim().toUpperCase();
+      await updateSettings({ customDioceses: [...customDioceses, formatted] });
+      setDiocese(formatted);
+      setNewDiocese('');
     }
   };
 
@@ -121,7 +136,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
   };
 
   const handleRegister = async () => {
-    if (!name || !validity || !ra || !course || !birthdate || roles.length === 0) {
+    if (!name || !validity || !ra || !course || !diocese || !birthdate || roles.length === 0) {
       setStatus({ msg: 'Preencha todos os campos obrigatórios (*).', type: 'error' });
       setTimeout(() => setStatus(null), 4000);
       return;
@@ -144,13 +159,14 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
         photoUrl: photoBase64,
         roles,
         course,
+        diocese,
         isActive: true,
         isApproved: true,
         createdAt: new Date().toISOString()
       });
 
       setStatus({ msg: 'Identidade criada com sucesso!', type: 'success' });
-      setName(''); setRa(''); setCpf(''); setRg(''); setBirthdate(''); setValidity(''); setCourse(''); setRoles([]); setPhotoBase64(null);
+      setName(''); setRa(''); setCpf(''); setRg(''); setBirthdate(''); setValidity(''); setCourse(''); setDiocese(''); setRoles([]); setPhotoBase64(null);
       setTimeout(() => setStatus(null), 4000);
       loadDashboardStats();
     } catch (error) {
@@ -329,6 +345,34 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
                   className="px-4 py-2 bg-slate-800 dark:bg-slate-700 text-white rounded-xl text-xs font-bold hover:bg-slate-700 transition-colors whitespace-nowrap"
                 >
                   Add Curso
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div className="md:col-span-2 border-t border-slate-200 dark:border-slate-700/50 pt-3 mt-1">
+            <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Diocese de Origem *</label>
+            <div className="flex flex-col sm:flex-row gap-2">
+              <select value={diocese} onChange={e => setDiocese(e.target.value)} className="input-modern flex-1 rounded-xl py-2.5 px-3 text-sm">
+                <option value="">Selecione a Diocese</option>
+                {availableDioceses.map(d => (
+                  <option key={d} value={d}>{d}</option>
+                ))}
+              </select>
+              <div className="flex gap-2 flex-1">
+                <input 
+                  type="text" 
+                  value={newDiocese} 
+                  onChange={e => setNewDiocese(e.target.value)} 
+                  placeholder="Nova Diocese" 
+                  className="input-modern flex-1 rounded-xl py-2 px-3 text-xs"
+                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddDiocese())}
+                />
+                <button 
+                  onClick={handleAddDiocese}
+                  className="px-4 py-2 bg-slate-800 dark:bg-slate-700 text-white rounded-xl text-xs font-bold hover:bg-slate-700 transition-colors whitespace-nowrap"
+                >
+                  Add Diocese
                 </button>
               </div>
             </div>
