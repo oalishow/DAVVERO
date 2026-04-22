@@ -1,10 +1,29 @@
 import { motion } from 'motion/react';
-import { ShieldCheck } from 'lucide-react';
+import { ShieldCheck, Download } from 'lucide-react';
 import { APP_VERSION } from '../lib/constants';
 import { useSettings } from '../context/SettingsContext';
+import { useState, useEffect } from 'react';
 
 export default function Header() {
   const { settings } = useSettings();
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handlePrompt = (e: Event) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handlePrompt);
+    return () => window.removeEventListener('beforeinstallprompt', handlePrompt);
+  }, []);
+
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') setDeferredPrompt(null);
+  };
+
   const { 
     instLogo, 
     instName, 
@@ -119,6 +138,15 @@ export default function Header() {
       </p>
 
       <div className="flex flex-col items-center mt-4 gap-1.5 uppercase font-black tracking-widest text-[8px] sm:text-[9px] animated-fade-in">
+        {deferredPrompt && (
+          <button 
+            onClick={handleInstallClick}
+            className="flex items-center gap-2 bg-sky-500 text-white px-4 py-2 rounded-full shadow-lg shadow-sky-500/20 hover:bg-sky-400 transition-all scale-110 mb-2 animate-bounce"
+          >
+            <Download className="w-3 h-3" />
+            INSTALAR DAVVERO-ID
+          </button>
+        )}
         <div className="flex items-center gap-1.5 text-emerald-500 dark:text-emerald-400 bg-emerald-500/5 px-3 py-1 rounded-full border border-emerald-500/20">
           <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse" />
           MODO: NUVEM (ONLINE)
