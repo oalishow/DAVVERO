@@ -16,6 +16,7 @@ interface VerificationResultProps {
 export default function VerificationResult({ member, status, onReset, isMyID = false }: VerificationResultProps) {
   const [exporting, setExporting] = useState(false);
   const [modalResetOpen, setModalResetOpen] = useState(false);
+  const [showExportSuccess, setShowExportSuccess] = useState(false);
   const now = new Date();
   const timestampStr = `${now.toLocaleDateString('pt-BR')} às ${now.toLocaleTimeString('pt-BR')}`;
   
@@ -131,6 +132,7 @@ export default function VerificationResult({ member, status, onReset, isMyID = f
          
          const fileName = `Carteirinha_FAJOPA_${safeName.replace(/\s+/g, '_')}.pdf`;
          pdf.save(fileName);
+         setShowExportSuccess(true);
       } else {
          // Safari optimization for Jpeg capture
          if (isSafari) await htmlToImage.toJpeg(card, captureOptions);
@@ -147,6 +149,7 @@ export default function VerificationResult({ member, status, onReset, isMyID = f
          document.body.appendChild(link);
          link.click();
          document.body.removeChild(link);
+         setShowExportSuccess(true);
       }
     } catch(err) {
       console.error('Export erro:', err);
@@ -280,6 +283,31 @@ export default function VerificationResult({ member, status, onReset, isMyID = f
           onConfirm={onReset}
         >
           Deseja limpar os dados atuais e realizar uma nova leitura de QR Code ou consulta?
+        </Modal>
+
+        <Modal
+          isOpen={showExportSuccess}
+          onClose={() => setShowExportSuccess(false)}
+          title="Download Concluído!"
+          confirmLabel="Entendido"
+          onConfirm={() => setShowExportSuccess(false)}
+        >
+          <div className="flex flex-col items-center py-4 text-center">
+            <div className="w-16 h-16 bg-emerald-100 dark:bg-emerald-500/20 rounded-full flex items-center justify-center text-emerald-600 mb-4 animate-bounce">
+              <Printer className="w-8 h-8" />
+            </div>
+            <p className="text-sm text-slate-600 dark:text-slate-300">
+              Seu documento foi gerado com sucesso!
+            </p>
+            <p className="text-xs text-slate-500 mt-2 font-medium">
+              Por favor, verifique a sua pasta de <strong>Downloads</strong> e abra o arquivo para visualizar ou imprimir.
+            </p>
+            {isMyID && (
+              <p className="text-[10px] text-sky-500 mt-4 bg-sky-50 dark:bg-sky-500/10 px-3 py-1.5 rounded-lg border border-sky-100 dark:border-sky-500/30">
+                Dica: Em dispositivos móveis, o arquivo costuma aparecer nas notificações ou no app "Arquivos".
+              </p>
+            )}
+          </div>
         </Modal>
 
         <button onClick={() => setModalResetOpen(true)} className="flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold text-slate-700 bg-slate-200 hover:bg-slate-300 transition-colors">
