@@ -1,6 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getAuth, signInAnonymously, onAuthStateChanged } from "firebase/auth";
-import { initializeFirestore, setLogLevel, doc, getDocFromServer, CACHE_SIZE_UNLIMITED, enableIndexedDbPersistence } from "firebase/firestore";
+import { initializeFirestore, setLogLevel, doc, getDocFromServer, persistentLocalCache, persistentMultipleTabManager } from "firebase/firestore";
 
 const firebaseConfig = {
     apiKey: "AIzaSyAldUSOslWbr9sTvg0ePP-8K0A2eBOuHOg",
@@ -14,19 +14,11 @@ const firebaseConfig = {
 
 export const app = initializeApp(firebaseConfig);
 
-// Persistence can help with connection loss during reloads
+// Modern DB initialization with persistent local cache
 export const db = initializeFirestore(app, {
-  ignoreUndefinedProperties: true
+  ignoreUndefinedProperties: true,
+  localCache: typeof window !== "undefined" ? persistentLocalCache({ tabManager: persistentMultipleTabManager() }) : undefined
 });
-
-// Try to enable persistence to help with reliability across reloads
-if (typeof window !== "undefined") {
-    enableIndexedDbPersistence(db).catch((err) => {
-        if (err.code !== 'failed-precondition' && err.code !== 'unimplemented') {
-            console.warn("Persistence could not be enabled:", err.code);
-        }
-    });
-}
 
 export const auth = getAuth(app);
 setLogLevel('error');

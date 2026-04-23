@@ -122,10 +122,10 @@ export default function Header() {
 
   return (
     <div className="text-center relative print:hidden">
-      <div className="absolute top-0 right-0 flex items-center gap-2">
+      <div className="absolute top-0 right-0 flex items-center gap-2 z-50">
         <button 
           onClick={toggleTheme}
-          className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 transition-colors no-print"
+          className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 transition-colors no-print hover:scale-110 active:scale-95"
           title={isDark ? "Mudar para Claro" : "Mudar para Escuro"}
         >
           {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}

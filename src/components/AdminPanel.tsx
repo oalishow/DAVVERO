@@ -202,7 +202,6 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
       setStatus({ msg: 'Identidade criada com sucesso!', type: 'success' });
       setName(''); setRa(''); setCpf(''); setRg(''); setBirthdate(''); setValidity(''); setCourse(''); setDiocese(''); setRoles([]); setPhotoBase64(null);
       setTimeout(() => setStatus(null), 4000);
-      loadDashboardStats();
     } catch (error) {
       console.error(error);
       setStatus({ msg: 'Falha no registo. Verifique a conexão.', type: 'error' });
@@ -517,7 +516,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
       {showBin && <RecycleBinModal onClose={() => setShowBin(false)} />}
       {showBackup && <BackupModal onClose={() => setShowBackup(false)} />}
-      {showRequests && <AdminRequestsModal onClose={() => { setShowRequests(false); loadDashboardStats(); }} />}
+      {showRequests && <AdminRequestsModal onClose={() => setShowRequests(false)} />}
       {showPrintReport && <PrintReportModal onClose={() => setShowPrintReport(false)} />}
     </div>
   );
