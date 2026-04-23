@@ -126,28 +126,39 @@ body {
     gap: 10mm !important;
     align-items: center !important;
     justify-content: flex-start !important;
-    width: 100% !important;
-    margin: 0 auto !important;
-    padding: 10mm 0 !important;
+    width: 210mm !important; /* Full A4 Width */
+    margin: 0 !important;
+    padding: 20mm 0 !important;
     background: white !important;
+    min-height: 297mm !important;
   }
 
   .print-card {
     position: relative !important;
     display: block !important;
-    width: 85.6mm !important;
-    height: 54mm !important;
-    aspect-ratio: 85.6/54 !important;
-    transform: none !important;
+    width: 600px !important;
+    height: 378px !important;
+    transform: scale(0.5) !important; /* Scale to approx 80mm wide */
+    transform-origin: top center !important;
+    margin-bottom: -189px !important; /* Offset the space taken by the scaled element */
     backface-visibility: visible !important;
     break-inside: avoid !important;
     page-break-inside: avoid !important;
     border: 1px solid #000 !important;
-    border-radius: 3mm !important;
+    border-radius: 16px !important;
     overflow: hidden !important;
     box-sizing: border-box !important;
-    margin: 0 auto 5mm auto !important;
     box-shadow: none !important;
+  }
+
+  /* Specific header for print to match PDF */
+  .print-header {
+    display: block !important;
+    font-size: 16pt !important;
+    font-weight: bold !important;
+    text-align: center !important;
+    margin-bottom: 20mm !important;
+    text-transform: uppercase !important;
   }
 
   /* Force light theme colors globally for print (EXCETO para o print-card) */

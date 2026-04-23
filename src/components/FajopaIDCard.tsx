@@ -496,12 +496,15 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
 
   if (exportMode) {
     return (
-      <div className="absolute opacity-0 pointer-events-none -z-50 left-0 top-0 overflow-hidden w-0 h-0 print:static print:opacity-100 print:w-full print:h-auto print:z-50 print:pointer-events-auto">
-        <div id="export-card-node" className="flex flex-col gap-10 w-[600px] items-center p-8 bg-white print:p-0 print:gap-4 print:bg-transparent" style={{ position: 'relative' }}>
-          <div className="relative w-[600px] h-[378px] print:w-full print:h-auto">
+      <div className="absolute opacity-0 pointer-events-none -z-50 left-0 top-0 overflow-hidden w-0 h-0 print:static print:opacity-100 print:w-[210mm] print:h-auto print:z-50 print:pointer-events-auto print:bg-white">
+        <div id="export-card-node" className="flex flex-col w-[600px] items-center p-8 bg-white print:p-0 print:bg-transparent" style={{ position: 'relative' }}>
+          <div className="hidden print:block print-header">
+            Identificação Estudantil - FAJOPA
+          </div>
+          <div className="relative w-[600px] h-[378px] print-card">
             {frontSide}
           </div>
-          <div className="relative w-[600px] h-[378px] print:w-full print:h-auto">
+          <div className="relative w-[600px] h-[378px] print-card">
              {backSide}
           </div>
         </div>

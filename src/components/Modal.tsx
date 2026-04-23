@@ -42,17 +42,17 @@ export default function Modal({
             className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800"
           >
             <div className="p-6 sm:p-8">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter shrink-0">{title}</h3>
+              <div className="flex items-start justify-between mb-6 gap-4">
+                <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter leading-tight flex-1 break-words">{title}</h3>
                 <button 
                   onClick={onClose}
-                  className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-400"
+                  className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors text-slate-400 shrink-0"
                 >
                   <X className="w-5 h-5" />
                 </button>
               </div>
               
-              <div className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-8">
+              <div className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-8 break-words overflow-hidden">
                 {children}
               </div>
               
