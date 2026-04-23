@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { collection, query, getDocs } from 'firebase/firestore';
+import { collection, query, onSnapshot } from 'firebase/firestore';
 import { Search, Filter } from 'lucide-react';
 import { db, appId } from '../lib/firebase';
 import type { Member } from '../types';
@@ -28,28 +28,24 @@ export default function MemberList() {
   const availableRoles = [...baseRoles, ...customRoles];
 
   useEffect(() => {
-    loadMembers();
-  }, []);
-
-  const loadMembers = async () => {
     setLoading(true);
-    try {
-      const q = query(collection(db, `artifacts/${appId}/public/data/students`));
-      const snapshot = await getDocs(q);
+    const q = query(collection(db, `artifacts/${appId}/public/data/students`));
+    const unsub = onSnapshot(q, (snapshot) => {
       const loaded = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as Member);
       loaded.sort((a, b) => (a.name || '').localeCompare(b.name || ''));
       // Apenas exibe membros aprovados e não excluídos (pula docs de config)
       setMembers(loaded.filter(m => m.alphaCode && !m.deletedAt && m.isApproved !== false));
-    } catch (e) {
-      console.error(e);
-    } finally {
       setLoading(false);
-    }
-  };
+    }, (err) => {
+      console.error(err);
+      setLoading(false);
+    });
+
+    return () => unsub();
+  }, []);
 
   const handleUpdateClose = () => {
     setEditingMember(null);
-    loadMembers(); // Recarrega os dados para mostrar as atualizações
   };
 
   // Filtragem local

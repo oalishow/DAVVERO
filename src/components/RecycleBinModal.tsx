@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Trash2, ShieldAlert } from 'lucide-react';
-import { collection, query, getDocs, doc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { collection, query, doc, updateDoc, deleteDoc, onSnapshot } from 'firebase/firestore';
 import { db, appId } from '../lib/firebase';
 import type { Member } from '../types';
 import Modal from './Modal';
@@ -12,16 +12,9 @@ export default function RecycleBinModal({ onClose }: { onClose: () => void }) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    loadDeletedMembers();
-    document.body.style.overflow = 'hidden';
-    return () => { document.body.style.overflow = 'unset'; };
-  }, []);
-
-  const loadDeletedMembers = async () => {
     setLoading(true);
-    try {
-      const q = query(collection(db, `artifacts/${appId}/public/data/students`));
-      const snapshot = await getDocs(q);
+    const q = query(collection(db, `artifacts/${appId}/public/data/students`));
+    const unsub = onSnapshot(q, async (snapshot) => {
       const members = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as Member);
       
       const now = new Date().getTime();
@@ -44,12 +37,18 @@ export default function RecycleBinModal({ onClose }: { onClose: () => void }) {
       
       activeDeleted.sort((a, b) => new Date(b.deletedAt!).getTime() - new Date(a.deletedAt!).getTime());
       setDeletedMembers(activeDeleted);
-    } catch (e) {
-      console.error(e);
-    } finally {
       setLoading(false);
-    }
-  };
+    }, (err) => {
+      console.error(err);
+      setLoading(false);
+    });
+
+    document.body.style.overflow = 'hidden';
+    return () => {
+      unsub();
+      document.body.style.overflow = 'unset';
+    };
+  }, []);
 
   const handleRestore = async (id: string) => {
     try {
