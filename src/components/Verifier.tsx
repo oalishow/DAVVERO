@@ -38,16 +38,21 @@ export default function Verifier({ externalCode, onExternalVerified }: VerifierP
 
   useEffect(() => {
     // Populate cache for "offline fallback" strategy
-    const loadCache = async () => {
+    const loadCache = async (retries = 3) => {
       try {
         const q = query(collection(db, `artifacts/${appId}/public/data/students`));
         const snapshot = await getDocs(q);
         const members = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as Member);
         setMembersCache(members);
+        setCacheLoaded(true);
       } catch(e) {
         console.error("Cache load error", e);
-      } finally {
-        setCacheLoaded(true);
+        if (retries > 0) {
+            console.log(`Retrying cache load in 3s... (${retries} left)`);
+            setTimeout(() => loadCache(retries - 1), 3000);
+        } else {
+            setCacheLoaded(true); // Stop loading spinner even if failed to allow manual entry
+        }
       }
     };
     loadCache();
@@ -57,9 +62,14 @@ export default function Verifier({ externalCode, onExternalVerified }: VerifierP
     if (cacheLoaded && !initialVerifyChecked) {
       const params = new URLSearchParams(window.location.search);
       const verifyCode = params.get('verify');
+      
+      // Ignore URL parsing for verification if the query params are only internal system params
+      const hasOnlyInternalParams = Array.from(params.keys()).every(k => k === 'v' || k === 'install');
+      const hasIgnorableSearch = params.toString().length === 0 || hasOnlyInternalParams;
+
       if (verifyCode) {
         runVerification(verifyCode, false, window.location.href);
-      } else if (window.location.search || window.location.pathname.length > 1) {
+      } else if (!hasIgnorableSearch || (window.location.pathname.length > 1 && window.location.pathname !== '/index.html')) {
         // Fallback for native camera opening legacy URL formats redirected to this domain
         runVerification(window.location.href, false, window.location.href);
       }

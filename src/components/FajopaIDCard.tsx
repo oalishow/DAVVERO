@@ -150,12 +150,19 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
 
       {/* Dark Red Bottom Decorative Border */}
       <div 
-        className="absolute bottom-0 left-0 w-full h-[6%] z-30 flex flex-col justify-between"
+        className="absolute bottom-0 left-0 w-full h-[6%] z-30 flex flex-col pt-[1px]"
         style={{ 
           backgroundColor: '#7f1d1d' // Dark red
         }}
       >
-        <div style={{ height: '20%', backgroundColor: '#fbbf24' }}></div>
+        <div style={{ height: '3px', backgroundColor: '#fbbf24', width: '100%' }}></div>
+        {isSeminarista && validDiocese && (
+          <div className="w-full flex-1 flex items-center justify-center">
+            <span className="text-white font-semibold uppercase tracking-wide opacity-95 mx-4 whitespace-nowrap" style={{ fontSize: '6px' }}>
+              SPSCJ - Seminário Provincial Sagrado Coração de Jesus - Rua: Olavo Bilac, 554, São Miguel, Marília-SP
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Bottom Footer block */}

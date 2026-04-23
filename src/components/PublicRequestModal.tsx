@@ -129,7 +129,20 @@ export default function PublicRequestModal({ onClose, onSubmitSuccess }: PublicR
 
       await addDoc(collection(db, `artifacts/${appId}/public/data/students`), payload);
 
-      // Aqui entra o EmailJS na implementação estendida.
+      if (email.trim()) {
+        try {
+          await addDoc(collection(db, 'mail'), {
+            to: email.trim(),
+            message: {
+              subject: "Recebemos sua Solicitação de Cadastro",
+              html: `<h3>Olá, ${name.trim()}!</h3><p>Sua solicitação de Identidade Estudantil foi recebida em nosso sistema e está em análise.</p><p>Você pode acompanhar o status da sua solicitação através do portal "Acompanhar Pedido" na tela inicial usando seu RA ou CPF.</p>`
+            }
+          });
+        } catch(mailErr) {
+          console.warn("Mail trigger failed, continuing...", mailErr);
+        }
+      }
+
       onSubmitSuccess();
     } catch (e) {
       console.error(e);

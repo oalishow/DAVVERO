@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Settings, Save, ShieldAlert, Mail, Link, UserCircle, Palette, Upload, Trash2, Wand2, FileText, ImageIcon, RotateCw, Move } from 'lucide-react';
+import { X, Settings, Save, ShieldAlert, Mail, Link, UserCircle, Palette, Upload, Trash2, Wand2, FileText, ImageIcon, RotateCw, Move, BellRing, Sun, Moon } from 'lucide-react';
 import { GoogleGenAI, Type } from "@google/genai";
 import FajopaIDCard from './FajopaIDCard';
 import { useSettings } from '../context/SettingsContext';
@@ -343,7 +343,8 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
            {[
              { id: 'visual', label: 'Identidade Visual', icon: Palette },
              { id: 'content', label: 'Campos e Textos', icon: FileText },
-             { id: 'database', label: 'Banco de Dados', icon: Link }
+             { id: 'database', label: 'Banco de Dados', icon: Link },
+             { id: 'system', label: 'Sistema & Notificações', icon: Settings }
            ].map(tab => (
              <button
                key={tab.id}
@@ -736,6 +737,62 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                   <input type="password" value={password} onChange={e=>setPassword(e.target.value)} placeholder="Senha Atual" className="input-modern w-full rounded-xl py-2 px-3 text-sm" />
                   <input type="password" value={newPassword} onChange={e=>setNewPassword(e.target.value)} placeholder="Nova Senha" className="input-modern w-full rounded-xl py-2 px-3 text-sm" />
                   <button onClick={handleSavePassword} className="btn-modern w-full py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-sm font-medium">Trocar Senha Local</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'system' as any && (
+            <div className="space-y-8 animate-in fade-in transition-all duration-300">
+               <div className="bg-slate-50 dark:bg-slate-900/40 p-5 rounded-2xl border border-slate-200 dark:border-slate-700/50">
+                   <h3 className="text-sm font-bold flex items-center gap-2 mb-4 text-slate-700 dark:text-slate-300 uppercase tracking-widest text-[10px]">
+                     <Palette className="w-4 h-4" /> Aparência do Aplicativo
+                   </h3>
+                   <div className="grid grid-cols-3 gap-2">
+                       <button onClick={() => { localStorage.setItem('theme', 'light'); document.documentElement.classList.remove('dark'); window.dispatchEvent(new Event('themeChange')); showStatus('Modo Claro ativado.', 'success');}} className="btn-modern flex flex-col items-center justify-center p-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 transition-colors">
+                          <Sun className="w-5 h-5 mb-1" /> <span className="text-[10px] font-bold uppercase">Claro</span>
+                       </button>
+                       <button onClick={() => { localStorage.setItem('theme', 'dark'); document.documentElement.classList.add('dark'); window.dispatchEvent(new Event('themeChange')); showStatus('Modo Escuro ativado.', 'success');}} className="btn-modern flex flex-col items-center justify-center p-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 transition-colors">
+                          <Moon className="w-5 h-5 mb-1" /> <span className="text-[10px] font-bold uppercase">Escuro</span>
+                       </button>
+                       <button onClick={() => { localStorage.removeItem('theme'); if(window.matchMedia('(prefers-color-scheme: dark)').matches){document.documentElement.classList.add('dark')}else{document.documentElement.classList.remove('dark')}; window.dispatchEvent(new Event('themeChange')); showStatus('Modo Sistema ativado.', 'success');}} className="btn-modern flex flex-col items-center justify-center p-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 transition-colors">
+                          <Settings className="w-5 h-5 mb-1" /> <span className="text-[10px] font-bold uppercase">Auto</span>
+                       </button>
+                   </div>
+               </div>
+
+               <div className="bg-sky-50 dark:bg-sky-900/10 p-5 rounded-2xl border border-sky-200 dark:border-sky-500/20">
+                <h3 className="text-sm font-bold flex items-center gap-2 mb-4 text-sky-700 dark:text-sky-300 uppercase tracking-widest text-[10px]">
+                  <BellRing className="w-4 h-4" /> Notificações do Sistema
+                </h3>
+                <div className="space-y-4">
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                    Ative as notificações de navegador para ser alertado sempre que novos alunos solicitarem verificações ou enviarem sugestões de edição da identidade estudantil.
+                  </p>
+                  
+                  <button 
+                    onClick={() => {
+                        if (!("Notification" in window)) {
+                            showStatus('Seu navegador não suporta notificações.', 'error');
+                            return;
+                        }
+                        Notification.requestPermission().then(permission => {
+                            if (permission === "granted") {
+                                showStatus('Notificações ativadas com sucesso!', 'success');
+                            } else {
+                                showStatus('Permissão para notificações foi negada.', 'error');
+                            }
+                        });
+                    }} 
+                    className="btn-modern w-full py-2.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-sm font-medium flex items-center justify-center gap-2"
+                  >
+                    <BellRing className="w-4 h-4" /> Configurar Notificações no Dispositivo
+                  </button>
+
+                  <div className="mt-4 p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-[10px] text-slate-500 flex items-start gap-2">
+                     <ShieldAlert className="w-4 h-4 text-amber-500 shrink-0" />
+                     <p><b>Nota:</b> Se você já negou a permissão anteriormente, precisará clicar no ícone de "cadeado" na barra de endereços do seu navegador para permitir manualmente.</p>
+                  </div>
                 </div>
               </div>
             </div>

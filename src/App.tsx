@@ -2,7 +2,7 @@ import { useState, useEffect, lazy, Suspense } from 'react';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import { Moon, Sun, Shield, User, Lock, Loader2, Sparkles, RefreshCw, X } from 'lucide-react';
-import { loginAnon } from './lib/firebase';
+import { loginAnon, testConnection } from './lib/firebase';
 import { motion, AnimatePresence } from 'motion/react';
 import ErrorBoundary from './components/ErrorBoundary';
 import DynamicPWA from './components/DynamicPWA';
@@ -50,8 +50,12 @@ export default function App() {
     
     // Um pouco mais de tempo para lerem a mensagem de sucesso (2.5s)
     setTimeout(() => {
-      // Forçar recarga total ignorando cache (cache-busting)
-      window.location.href = window.location.origin + window.location.pathname + '?v=' + Date.now();
+      // Remover paramátros de URL que causam resets indesejados
+      if (window.location.search.includes('v=')) {
+         window.location.href = window.location.origin + window.location.pathname;
+      } else {
+         window.location.reload();
+      }
     }, 2500);
   };
 
@@ -67,11 +71,8 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    // Determine initial theme based strictly on system preference
+    // Determine initial theme
     const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)');
-    
-    // Clear any previous manual overrides to ensure transparency
-    localStorage.removeItem('theme');
     
     const applyTheme = (isDark: boolean) => {
       if (isDark) {
@@ -81,18 +82,52 @@ export default function App() {
       }
     };
 
+    const applyCurrentThemeSetting = () => {
+       const savedTheme = localStorage.getItem('theme');
+       if (savedTheme === 'dark') {
+          applyTheme(true);
+       } else if (savedTheme === 'light') {
+          applyTheme(false);
+       } else {
+          applyTheme(systemPrefersDark.matches);
+       }
+    };
+
     // Initial load
-    applyTheme(systemPrefersDark.matches);
+    applyCurrentThemeSetting();
 
     // Listener for system changes
-    const themeListener = (e: MediaQueryListEvent) => {
-      applyTheme(e.matches);
+    const themeListener = () => {
+      if (!localStorage.getItem('theme')) {
+        applyTheme(systemPrefersDark.matches);
+      }
     };
 
     systemPrefersDark.addEventListener('change', themeListener);
+    
+    // Custom event for immediate theme toggle without reload
+    const onThemeChange = () => applyCurrentThemeSetting();
+    window.addEventListener('themeChange', onThemeChange);
 
     // Liberações Iniciais (Firebase login anonimo necessário para acessar dados base)
-    loginAnon();
+    const initFirebase = async (retries = 3) => {
+      const success = await loginAnon();
+      if (!success && retries > 0) {
+        console.warn(`Firebase login failed. Retrying in 3s... (${retries} left)`);
+        setTimeout(() => initFirebase(retries - 1), 3000);
+        return;
+      }
+      
+      // Silently test connection to warm up the SDK
+      const connected = await testConnection();
+      (window as any).db_connected = connected;
+      
+      if (!connected && retries > 0) {
+        console.warn(`Firestore server test failed. Retrying in 5s... (${retries} left)`);
+        setTimeout(() => initFirebase(retries - 1), 5000);
+      }
+    };
+    initFirebase();
 
     // Update check
     const storedVersion = localStorage.getItem('app_version');

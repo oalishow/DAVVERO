@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, CreditCard, QrCode, LogOut, Loader2, ShieldCheck, Lock, KeyRound } from 'lucide-react';
+import { User, CreditCard, QrCode, LogOut, Loader2, ShieldCheck, Lock, KeyRound, Clock } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db, appId } from '../lib/firebase';
@@ -36,6 +36,10 @@ export default function StudentPortal({ overrideCode, onOverrideConsumed }: Stud
   const [pinInput, setPinInput] = useState('');
   const [pinConfirm, setPinConfirm] = useState('');
   const [resetCodeStr, setResetCodeStr] = useState('');
+
+  const [trackMode, setTrackMode] = useState(false);
+  const [trackRa, setTrackRa] = useState('');
+  const [trackStatusResult, setTrackStatusResult] = useState<{status: 'APPROVED' | 'PENDING' | 'REJECTED' | 'NOT_FOUND' | 'INACTIVE', msg: string, name?: string} | null>(null);
 
   useEffect(() => {
     if (bondedId && !member) {
@@ -117,6 +121,56 @@ export default function StudentPortal({ overrideCode, onOverrideConsumed }: Stud
       }
     } catch (err) {
       setError("Erro ao vincular identidade.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleTrackRequest = async () => {
+    if (!trackRa.trim()) return;
+    setIsLoading(true);
+    setError(null);
+    setTrackStatusResult(null);
+    try {
+      const q = query(
+        collection(db, `artifacts/${appId}/public/data/students`),
+        where('ra', '==', trackRa.trim())
+      );
+      const snapshot = await getDocs(q);
+      
+      if (snapshot.empty) {
+        setTrackStatusResult({ status: 'NOT_FOUND', msg: 'Nenhum pedido encontrado para este RA/CPF.' });
+      } else {
+        // Find if any is not deleted, or take the last deleted if all are
+        const docs = snapshot.docs.map(d => d.data());
+        const activeDoc = docs.find(d => !d.deletedAt) || docs[0];
+        
+        let statusText = '';
+        let statusObj: 'APPROVED' | 'PENDING' | 'REJECTED' | 'INACTIVE' = 'PENDING';
+        
+        const now = new Date();
+        // Check validity date format (YYYY-MM-DD)
+        const validityDate = activeDoc.validityDate ? new Date(`${activeDoc.validityDate}T23:59:59`) : null;
+        const isExpired = validityDate && validityDate < now;
+        
+        if (activeDoc.deletedAt) {
+          statusObj = 'REJECTED';
+          statusText = 'Seu pedido foi reprovado ou as informações eram inválidas.';
+        } else if (activeDoc.isApproved === false) {
+          statusObj = 'PENDING';
+          statusText = 'Seu pedido está em análise. Fique de olho no seu dispositivo ou retorno da secretaria.';
+        } else if (activeDoc.isActive === false || isExpired) {
+          statusObj = 'INACTIVE';
+          statusText = 'Sua carteirinha encontra-se vencida ou desativada no sistema. Por favor, procure a secretaria ou o seminário para regularização.';
+        } else {
+          statusObj = 'APPROVED';
+          statusText = 'Seu pedido foi aprovado! Você já pode vincular sua carteirinha usando o código de segurança recebido via E-mail.';
+        }
+
+        setTrackStatusResult({ status: statusObj, msg: statusText, name: activeDoc.name });
+      }
+    } catch (err) {
+      setError("Erro ao buscar status do pedido.");
     } finally {
       setIsLoading(false);
     }
@@ -378,50 +432,110 @@ export default function StudentPortal({ overrideCode, onOverrideConsumed }: Stud
                <CreditCard className="w-5 h-5" /> Vincular Identidade
              </button>
              <button
+               onClick={() => { setTrackMode(true); setLinkMode(true); }}
+               className="w-full btn-modern py-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold tracking-wide shadow-sm flex items-center justify-center gap-3 active:scale-95 transition-all"
+             >
+               <Clock className="w-5 h-5 text-slate-400" /> Acompanhar Pedido
+             </button>
+             <button
                onClick={() => setModalHelpOpen(true)}
-               className="w-full py-4 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-bold flex items-center justify-center gap-2 active:scale-95"
+               className="w-full py-4 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-bold flex items-center justify-center gap-2 active:scale-95 mt-2"
              >
                 Como funciona?
              </button>
           </div>
         </div>
       ) : (
-        <AnimatePresence>
-          <motion.div 
-            initial={{ opacity: 0, y: 10 }} 
-            animate={{ opacity: 1, y: 0 }} 
-            className="w-full max-w-[320px] sm:max-w-sm mx-auto flex flex-col items-center bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 p-6 rounded-3xl shadow-2xl"
-          >
-            <QrCode className="w-12 h-12 text-slate-400 mb-6" />
-            <h3 className="text-lg font-black uppercase tracking-tight text-slate-800 dark:text-white mb-2">Código de Uso</h3>
-            <p className="text-xs text-slate-500 text-center mb-6">Digite o seu código alfanumérico para carregar seus dados no dispositivo.</p>
-            
-            <input
-              type="text"
-              autoCapitalize="characters"
-              placeholder="Ex: XXXX-YYYY"
-              value={alphaCode}
-              onChange={(e) => setAlphaCode(e.target.value.toUpperCase())}
-              className="text-center text-xl tracking-widest font-bold w-full py-4 px-6 rounded-xl bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 outline-none text-slate-900 dark:text-white uppercase focus:border-sky-500 transition-colors"
-            />
-            
-            {error && <p className="text-xs font-bold text-rose-500 uppercase mt-4 mb-2">{error}</p>}
+        <AnimatePresence mode="wait">
+          {trackMode ? (
+            <motion.div 
+              key="track"
+              initial={{ opacity: 0, y: 10 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              exit={{ opacity: 0, y: -10 }}
+              className="w-full max-w-[320px] sm:max-w-sm mx-auto flex flex-col items-center bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 p-6 rounded-3xl shadow-2xl"
+            >
+              <Clock className="w-12 h-12 text-slate-400 mb-6" />
+              <h3 className="text-lg font-black uppercase tracking-tight text-slate-800 dark:text-white mb-2">Acompanhar Pedido</h3>
+              <p className="text-xs text-slate-500 text-center mb-6">Digite o seu RA ou CPF (apenas números) para verificar o status da sua solicitação.</p>
+              
+              <input
+                type="text"
+                autoCapitalize="characters"
+                placeholder="Ex: 123456789"
+                value={trackRa}
+                onChange={(e) => setTrackRa(e.target.value.toUpperCase())}
+                className="text-center text-xl tracking-widest font-bold w-full py-4 px-6 rounded-xl bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 outline-none text-slate-900 dark:text-white uppercase focus:border-sky-500 transition-colors"
+              />
+              
+              {error && <p className="text-xs font-bold text-rose-500 uppercase mt-4 mb-2 text-center">{error}</p>}
 
-            <div className="flex gap-3 w-full mt-6">
-              <button
-                onClick={() => setLinkMode(false)}
-                className="flex-1 py-3 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
-              >
-                Voltar
-              </button>
-              <button
-                onClick={linkIdentity}
-                className="flex-1 py-3 text-sm font-bold text-white bg-sky-600 hover:bg-sky-500 rounded-xl shadow-lg transition-colors"
-              >
-                Buscar
-              </button>
-            </div>
-          </motion.div>
+              {trackStatusResult && (
+                 <div className={`mt-6 w-full p-4 rounded-xl border-2 text-center flex flex-col items-center justify-center ${trackStatusResult.status === 'APPROVED' ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/10' : trackStatusResult.status === 'REJECTED' || trackStatusResult.status === 'INACTIVE' ? 'border-rose-500 bg-rose-50 dark:bg-rose-900/10' : trackStatusResult.status === 'NOT_FOUND' ? 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50' : 'border-amber-500 bg-amber-50 dark:bg-amber-900/10'}`}>
+                    <h4 className={`text-sm font-black uppercase mb-1 ${trackStatusResult.status === 'APPROVED' ? 'text-emerald-700 dark:text-emerald-400' : trackStatusResult.status === 'REJECTED' || trackStatusResult.status === 'INACTIVE' ? 'text-rose-700 dark:text-rose-400' : trackStatusResult.status === 'NOT_FOUND' ? 'text-slate-600 dark:text-slate-400' : 'text-amber-700 dark:text-amber-400'}`}>
+                        {trackStatusResult.status === 'APPROVED' ? 'Aprovado' : trackStatusResult.status === 'REJECTED' ? 'Reprovado / Removido' : trackStatusResult.status === 'INACTIVE' ? 'Desativada / Vencida' : trackStatusResult.status === 'NOT_FOUND' ? 'Não Encontrado' : 'Em Análise'}
+                    </h4>
+                    {trackStatusResult.name && <p className="text-xs font-bold text-slate-800 dark:text-white mb-2">{trackStatusResult.name}</p>}
+                    <p className={`text-[10px] leading-tight ${trackStatusResult.status === 'APPROVED' ? 'text-emerald-600 dark:text-emerald-500' : trackStatusResult.status === 'REJECTED' || trackStatusResult.status === 'INACTIVE' ? 'text-rose-600 dark:text-rose-500' : trackStatusResult.status === 'NOT_FOUND' ? 'text-slate-500' : 'text-amber-600 dark:text-amber-500'}`}>
+                        {trackStatusResult.msg}
+                    </p>
+                 </div>
+              )}
+
+              <div className="flex gap-3 w-full mt-6">
+                <button
+                  onClick={() => { setLinkMode(false); setTrackMode(false); setTrackStatusResult(null); setError(null); }}
+                  className="flex-1 py-3 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
+                >
+                  Voltar
+                </button>
+                <button
+                  onClick={handleTrackRequest}
+                  className="flex-1 py-3 text-sm font-bold text-white bg-slate-800 dark:bg-slate-700 hover:bg-slate-700 dark:hover:bg-slate-600 rounded-xl shadow-lg transition-colors flex items-center justify-center"
+                >
+                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin text-white shadow-sm" /> : 'Consultar'}
+                </button>
+              </div>
+            </motion.div>
+          ) : (
+            <motion.div 
+              key="link"
+              initial={{ opacity: 0, y: 10 }} 
+              animate={{ opacity: 1, y: 0 }} 
+              exit={{ opacity: 0, y: -10 }}
+              className="w-full max-w-[320px] sm:max-w-sm mx-auto flex flex-col items-center bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 p-6 rounded-3xl shadow-2xl"
+            >
+              <QrCode className="w-12 h-12 text-slate-400 mb-6" />
+              <h3 className="text-lg font-black uppercase tracking-tight text-slate-800 dark:text-white mb-2">Código de Uso</h3>
+              <p className="text-xs text-slate-500 text-center mb-6">Digite o seu código alfanumérico para carregar seus dados no dispositivo.</p>
+              
+              <input
+                type="text"
+                autoCapitalize="characters"
+                placeholder="Ex: XXXX-YYYY"
+                value={alphaCode}
+                onChange={(e) => setAlphaCode(e.target.value.toUpperCase())}
+                className="text-center text-xl tracking-widest font-bold w-full py-4 px-6 rounded-xl bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 outline-none text-slate-900 dark:text-white uppercase focus:border-sky-500 transition-colors"
+              />
+              
+              {error && <p className="text-xs font-bold text-rose-500 uppercase mt-4 mb-2">{error}</p>}
+
+              <div className="flex gap-3 w-full mt-6">
+                <button
+                  onClick={() => setLinkMode(false)}
+                  className="flex-1 py-3 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
+                >
+                  Voltar
+                </button>
+                <button
+                  onClick={linkIdentity}
+                  className="flex-1 py-3 text-sm font-bold text-white bg-sky-600 hover:bg-sky-500 rounded-xl shadow-lg transition-colors flex items-center justify-center"
+                >
+                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : 'Buscar'}
+                </button>
+              </div>
+            </motion.div>
+          )}
         </AnimatePresence>
       )}
     </div>

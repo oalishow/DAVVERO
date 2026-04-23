@@ -1,5 +1,5 @@
 import { motion } from 'motion/react';
-import { ShieldCheck, Download } from 'lucide-react';
+import { ShieldCheck, Download, Sun, Moon } from 'lucide-react';
 import { APP_VERSION } from '../lib/constants';
 import { useSettings } from '../context/SettingsContext';
 import { useState, useEffect } from 'react';
@@ -7,6 +7,7 @@ import { useState, useEffect } from 'react';
 export default function Header() {
   const { settings } = useSettings();
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isDark, setIsDark] = useState(false);
 
   useEffect(() => {
     const handlePrompt = (e: Event) => {
@@ -14,8 +15,34 @@ export default function Header() {
       setDeferredPrompt(e);
     };
     window.addEventListener('beforeinstallprompt', handlePrompt);
-    return () => window.removeEventListener('beforeinstallprompt', handlePrompt);
+    
+    // Check initial theme
+    const checkTheme = () => {
+      setIsDark(document.documentElement.classList.contains('dark'));
+    };
+    checkTheme();
+    window.addEventListener('themeChange', checkTheme);
+    
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handlePrompt);
+      window.removeEventListener('themeChange', checkTheme);
+    };
   }, []);
+
+  const toggleTheme = () => {
+    const newTheme = isDark ? 'light' : 'dark';
+    localStorage.setItem('theme', newTheme);
+    
+    // Explicitly toggle DOM
+    if (newTheme === 'dark') {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    
+    window.dispatchEvent(new Event('themeChange'));
+    setIsDark(!isDark);
+  };
 
   const handleInstallClick = async () => {
     if (!deferredPrompt) return;
@@ -31,7 +58,8 @@ export default function Header() {
     instDescription 
   } = settings;
 
-  // Versão SVG robusta integrada para garantir que o logo apareça sempre com alta qualidade
+  // Versão SVG robusta...
+
   const ScannerLogo = () => (
     <div className="relative flex flex-col items-center justify-center w-32 h-32 sm:w-40 sm:h-40 bg-slate-50 dark:bg-slate-800/80 rounded-3xl shadow-[inset_0_4px_20px_rgba(0,0,0,0.05)] border-[1.5px] border-slate-200 dark:border-slate-700 overflow-hidden">
        {/* Shield background subtle glow */}
@@ -94,8 +122,17 @@ export default function Header() {
 
   return (
     <div className="text-center relative print:hidden">
-      <div className="absolute top-0 right-0 py-1 px-2.5 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-[10px] font-bold text-slate-500 dark:text-slate-400 no-print">
-        v{APP_VERSION}
+      <div className="absolute top-0 right-0 flex items-center gap-2">
+        <button 
+          onClick={toggleTheme}
+          className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 transition-colors no-print"
+          title={isDark ? "Mudar para Claro" : "Mudar para Escuro"}
+        >
+          {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+        </button>
+        <div className="py-1 px-2.5 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-[10px] font-bold text-slate-500 dark:text-slate-400 no-print">
+          v{APP_VERSION}
+        </div>
       </div>
       <div className="flex justify-center mb-6 no-print min-h-[140px] items-center relative">
         <motion.div

@@ -38,7 +38,22 @@ export default function AdminRequestsModal({ onClose }: { onClose: () => void })
     return () => { document.body.style.overflow = 'unset'; };
   }, []);
 
-  const handleApproveNew = async (id: string) => {
+  const sendEmailNotification = async (toEmail: string, subject: string, htmlHtml: string) => {
+    if (!toEmail) return;
+    try {
+      await addDoc(collection(db, 'mail'), {
+        to: toEmail,
+        message: {
+          subject: subject,
+          html: htmlHtml
+        }
+      });
+    } catch(e) {
+      console.error("Falha ao registrar envio de e-mail:", e);
+    }
+  };
+
+  const handleApproveNew = async (id: string, email: string) => {
     try {
       // Cria um código nativo AlphaCode e ativa a identidade provisoriamente.
       const alphaCode = Array(6).fill(0).map(() => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[Math.floor(Math.random() * 36)]).join('');
@@ -50,6 +65,9 @@ export default function AdminRequestsModal({ onClose }: { onClose: () => void })
         validityDate: new Date(new Date().setFullYear(new Date().getFullYear() + 1)).toISOString().split('T')[0] // Vence em 1 ano por segurança
       });
       fetchRequests();
+
+      // Email Notification
+      await sendEmailNotification(email, "Sua Carteirinha de Estudante Foi Aprovada!", `<h3>Parabéns!</h3><p>Sua solicitação para a identidade estudantil DAVVERO-ID foi <b>Aprovada</b>.</p><p>O seu código de uso no aplicativo é: <b>${alphaCode}</b></p><p>Acesse o portal e valide a sua identidade.</p>`);
     } catch (err) {
       console.error(err);
       setErrorMessage('Erro ao aprovar membro.');
@@ -73,6 +91,11 @@ export default function AdminRequestsModal({ onClose }: { onClose: () => void })
 
       await updateDoc(doc(db, `artifacts/${appId}/public/data/students`, member.id), updatePayload);
       fetchRequests();
+
+      // Email Notification
+      if (member.email || updatePayload.email) {
+          await sendEmailNotification(updatePayload.email || member.email, "Edição Concluída", `<h3>Atualização Aprovada!</h3><p>As edições que você sugeriu na sua carteirinha de estudante foram validadas e atualizadas no sistema com sucesso.</p><p>Atualize a página na sua Minha ID para ver as mudanças.</p>`);
+      }
     } catch (e) {
       console.error(e);
       setErrorMessage('Erro ao aplicar pacote de atualizações.');
@@ -83,12 +106,18 @@ export default function AdminRequestsModal({ onClose }: { onClose: () => void })
     if (!selectedReject) return;
     const { id, isEdit } = selectedReject;
     
+    // Check if we can find the email before we delete it
+    const memberObj = requests.find(r => r.id === id);
+    const emailToNotify = memberObj?.email;
+
     try {
       const mRef = doc(db, `artifacts/${appId}/public/data/students`, id);
       if (isEdit) {
         await updateDoc(mRef, { pendingChanges: null, hasPendingAction: false });
+        if (emailToNotify) await sendEmailNotification(emailToNotify, "Atualização Recusada", `<p>A sua sugestão de edição de dados não foi aceita pela instituição após a devida comprovação cadastral.</p>`);
       } else {
         await deleteDoc(mRef);
+        if (emailToNotify) await sendEmailNotification(emailToNotify, "Cadastro Não Aprovado", `<p>A sua solicitação de identidade estudantil não pôde ser aprovada neste momento.</p><p>Fale diretamente com os responsáveis do seu seminário/dioceses se achar que existe algum erro.</p>`);
       }
       setModalRejectOpen(false);
       setSelectedReject(null);
@@ -169,7 +198,7 @@ export default function AdminRequestsModal({ onClose }: { onClose: () => void })
                         </div>
                     </div>
                     <div className="flex gap-2 mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
-                        <button onClick={() => handleApproveNew(req.id)} className="flex-1 py-2 bg-emerald-100 text-emerald-700 hover:bg-emerald-500 hover:text-white rounded-lg text-xs font-semibold border border-emerald-300 transition-colors">Aprovar Identidade</button>
+                        <button onClick={() => handleApproveNew(req.id, req.email || '')} className="flex-1 py-2 bg-emerald-100 text-emerald-700 hover:bg-emerald-500 hover:text-white rounded-lg text-xs font-semibold border border-emerald-300 transition-colors">Aprovar Identidade</button>
                         <button onClick={() => handleReject(req.id, false)} className="flex-1 py-2 bg-rose-100 text-rose-700 hover:bg-rose-500 hover:text-white rounded-lg text-xs font-semibold border border-rose-300 transition-colors">Recusar</button>
                     </div>
                   </div>
