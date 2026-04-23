@@ -8,6 +8,20 @@ interface ChangelogModalProps {
 export default function ChangelogModal({ onClose }: ChangelogModalProps) {
   const versions = [
     {
+      version: 'v4.5.0',
+      title: 'Padronização Legal e UX',
+      changes: [
+        'Transparência Estudantil: Nova descrição jurídica alinhada à Lei 12.933/2013 em todo o sistema e verso da carteirinha.',
+        'Validade Nacional (DNE): Nova seção no portal para solicitação do Documento Nacional do Estudante (Padrão ITI/UNE).',
+        'Animações Tech: Novo fluxo de autenticação com scanner de QR Code realista e animação de "Gerando Documento".',
+        'Otimização Firestore: Implementado onSnapshot para atualizações em tempo real (Sem refresh).',
+        'Status do Sistema: Informações de build e conexão movidas para o rodapé para um layout mais limpo.',
+        'Persistência: Cache local otimizado e correção do seletor de tema manual.',
+        'Estabilidade: Correção de bugs de exportação PDF em dispositivos móveis e Safari.'
+      ],
+      current: true
+    },
+    {
       version: 'v4.2.5',
       title: 'Integração e Estabilidade Visual',
       changes: [
@@ -18,7 +32,7 @@ export default function ChangelogModal({ onClose }: ChangelogModalProps) {
         'Vencimento Inteligente: Carteirinhas vencidas são inativadas sozinhas e vão para Pendentes, avisando o painel gestor.',
         'Estabilidade Geral: Correção da exportação de fotos para PDF em iPhones e otimização de toques.'
       ],
-      current: true
+      current: false
     },
     {
       version: 'v4.1.0',

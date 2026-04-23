@@ -54,7 +54,7 @@ const DEFAULT_SETTINGS: AppSettings = {
   rectorSignatureScale: 100,
   secondaryBackLogoScale: 100,
   instDescription: 'SISTEMA DE VERIFICAÇÃO DE IDENTIDADE',
-  cardDescription: 'DOCUMENTO PADRONIZADO NACIONALMENTE CONFORME A LEI 12.933/2013 E DECRETO 8.537/2015 QUE ASSEGURAM O DIREITO À MEIA-ENTRADA.',
+  cardDescription: 'Documento de identificação estudantil é padronizado e apresenta os dados requeridos pela Lei 12.933/2013 para comprovação de matrícula, sendo sua aceitação sujeita aos critérios dos organizadores de eventos.',
   visibleFields: {
     name: true,
     ra: true,

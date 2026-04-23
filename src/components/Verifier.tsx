@@ -455,7 +455,7 @@ export default function Verifier({ externalCode, onExternalVerified }: VerifierP
         </div>
         <div>
           <p className="font-bold mb-1 uppercase tracking-widest text-sky-600 dark:text-sky-400">Garantia de Meia-Entrada</p>
-          <p className="leading-relaxed italic">Este sistema atende aos padrões da <strong>Lei Federal nº 12.933/2013</strong> e do <strong>Decreto nº 8.537/2015</strong>, garantindo o benefício da meia-entrada em todo o território nacional.</p>
+          <p className="leading-relaxed italic text-[10px] sm:text-xs">Documento de identificação estudantil. Apresenta os dados requeridos pela Lei 12.933/2013 para comprovação de matrícula, sendo sua aceitação sujeita aos critérios dos organizadores de eventos.</p>
         </div>
       </div>
     </div>

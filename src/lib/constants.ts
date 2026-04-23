@@ -25,13 +25,15 @@ export const INSTITUTION_DESCRIPTION_KEY = 'davveroId_institution_description';
 export const CARD_DESCRIPTION_KEY = 'davveroId_card_description';
 export const CUSTOM_ROLES_KEY = 'davveroId_custom_roles';
 export const CUSTOM_COURSES_KEY = 'davveroId_custom_courses';
-export const APP_VERSION = '4.3.0';
+export const APP_VERSION = '4.5.0';
 export const SETTINGS_DOC_PATH = (appId: string) => `artifacts/${appId}/public/data/students/_settings_global`;
 export const ASSETS_DOC_PATH = (appId: string, assetType: string) => `artifacts/${appId}/public/data/students/_asset_${assetType}`;
 export const CHANGELOG = [
-  "Versão 4.2.5 - Integração e Estabilidade Visual",
-  "Correção Lógica PWA: O Modal de atualização agora é completamente fixo na lógica do código-fonte (não pisca e nem some sozinho).",
-  "Centralização iOS: Garantida a centralização na tela do iPhone com scroll fixo e estabilizado.",
-  "Link Inteligente: Botão no Painel de Gestão para gerar link rápido de instalação simplificada.",
-  "Estabilidade PDF: Fotos exportadas corretamente em iPhones e otimização das áreas de touch no layout."
+  "Versão 4.5.0 - Padronização Legal e UX",
+  "Transparência Estudantil: Nova descrição jurídica alinhada à Lei 12.933/2013 em todo o sistema e verso da carteirinha.",
+  "Validade Nacional (DNE): Nova seção no portal para solicitação do Documento Nacional do Estudante (Padrão ITI/UNE).",
+  "Animações Tech: Novo fluxo de autenticação com scanner de QR Code realista e animação de 'Gerando Documento'.",
+  "Otimização Firestore: Implementado onSnapshot para atualizações em tempo real (Sem refresh).",
+  "Persistência: Cache local otimizado e correção do seletor de tema manual.",
+  "Estabilidade: Correção de bugs de exportação PDF em dispositivos móveis e Safari."
 ];

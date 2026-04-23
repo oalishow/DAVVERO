@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { User, CreditCard, QrCode, LogOut, Loader2, ShieldCheck, Lock, KeyRound, Clock } from 'lucide-react';
+import { User, CreditCard, QrCode, LogOut, Loader2, ShieldCheck, Lock, KeyRound, Clock, ExternalLink } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { collection, query, where, getDocs, limit } from 'firebase/firestore';
 import { db, appId } from '../lib/firebase';
@@ -25,11 +25,14 @@ export default function StudentPortal({ overrideCode, onOverrideConsumed }: Stud
 
   const [linkMode, setLinkMode] = useState(false);
   const [alphaCode, setAlphaCode] = useState('');
+  const [isProcessingAnimation, setIsProcessingAnimation] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
 
   // Modal States
   const [modalUnlinkOpen, setModalUnlinkOpen] = useState(false);
   const [modalHelpOpen, setModalHelpOpen] = useState(false);
   const [modalPinReset, setModalPinReset] = useState(false);
+  const [modalDNEOpen, setModalDNEOpen] = useState(false);
 
   // Fallback PIN state
   const [pinMode, setPinMode] = useState<'create' | 'verify' | 'none'>('none');
@@ -101,7 +104,12 @@ export default function StudentPortal({ overrideCode, onOverrideConsumed }: Stud
   const linkIdentity = async () => {
     if (!alphaCode.trim()) return;
     setIsLoading(true);
+    setIsProcessingAnimation(true);
     setError(null);
+    
+    // Wait for 3 seconds of animation as requested
+    await new Promise(resolve => setTimeout(resolve, 3000));
+    
     try {
       const q = query(
         collection(db, `artifacts/${appId}/public/data/students`),
@@ -123,6 +131,7 @@ export default function StudentPortal({ overrideCode, onOverrideConsumed }: Stud
       setError("Erro ao vincular identidade.");
     } finally {
       setIsLoading(false);
+      setIsProcessingAnimation(false);
     }
   };
 
@@ -176,7 +185,7 @@ export default function StudentPortal({ overrideCode, onOverrideConsumed }: Stud
     }
   };
 
-  const handlePinSubmit = () => {
+  const handlePinSubmit = async () => {
     if (pinMode === 'create') {
       if (pinInput.length === 4) {
         if (!pinConfirm) {
@@ -185,7 +194,10 @@ export default function StudentPortal({ overrideCode, onOverrideConsumed }: Stud
           setError('Confirme o PIN');
         } else if (pinInput === pinConfirm) {
           localStorage.setItem(STUDENT_FALLBACK_PIN, pinInput);
+          setIsGenerating(true);
+          await new Promise(resolve => setTimeout(resolve, 3000));
           setIsUnlocked(true);
+          setIsGenerating(false);
           setPinMode('none');
           setError(null);
         } else {
@@ -199,7 +211,10 @@ export default function StudentPortal({ overrideCode, onOverrideConsumed }: Stud
     } else if (pinMode === 'verify') {
       const savedPin = localStorage.getItem(STUDENT_FALLBACK_PIN);
       if (pinInput === savedPin) {
+        setIsGenerating(true);
+        await new Promise(resolve => setTimeout(resolve, 3000));
         setIsUnlocked(true);
+        setIsGenerating(false);
         setPinMode('none');
         setError(null);
         setPinInput('');
@@ -246,7 +261,7 @@ export default function StudentPortal({ overrideCode, onOverrideConsumed }: Stud
     setPinMode('none');
   };
 
-  if (isLoading) {
+  if (isLoading && !isProcessingAnimation && !isGenerating) {
     return (
       <div className="flex flex-col items-center justify-center py-20 gap-4">
         <Loader2 className="w-10 h-10 text-sky-500 animate-spin" />
@@ -258,6 +273,36 @@ export default function StudentPortal({ overrideCode, onOverrideConsumed }: Stud
   if (bondedId && member) {
     if (!isUnlocked) {
       if (pinMode !== 'none') {
+        if (isGenerating) {
+          return (
+            <div className="flex flex-col items-center justify-center py-24 px-4 text-center space-y-8 animate-in fade-in duration-500">
+              <div className="relative">
+                <motion.div 
+                  className="w-24 h-24 rounded-3xl border-4 border-slate-100 border-t-indigo-500 animate-spin"
+                  style={{ borderRadius: '2rem' }}
+                />
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <CreditCard className="w-10 h-10 text-indigo-500 animate-pulse" />
+                </div>
+              </div>
+              <div className="space-y-3">
+                <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">Gerando Documento</h3>
+                <p className="text-xs text-slate-500 font-bold uppercase tracking-widest leading-relaxed">
+                  Criptografando dados e<br/>aplicando selo de autenticidade
+                </p>
+              </div>
+              <div className="w-48 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                <motion.div 
+                  className="h-full bg-indigo-500"
+                  initial={{ width: 0 }}
+                  animate={{ width: '100%' }}
+                  transition={{ duration: 3, ease: "linear" }}
+                />
+              </div>
+            </div>
+          );
+        }
+
         const title = pinMode === 'create' ? (!pinConfirm ? 'Criar Senha/PIN (4 dígitos)' : 'Confirme a Senha') : 'Digite sua Senha/PIN';
         return (
           <div className="flex flex-col items-center py-20 px-4 text-center space-y-6 animate-fade-in max-w-[320px] sm:max-w-sm mx-auto h-full">
@@ -393,7 +438,42 @@ export default function StudentPortal({ overrideCode, onOverrideConsumed }: Stud
              onReset={() => {}} 
              isMyID={true}
            />
+
+           <div className="mt-8 w-full px-4 py-6 bg-slate-50 dark:bg-slate-800/50 rounded-3xl border border-slate-200 dark:border-slate-700/50 text-center">
+              <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest mb-3 leading-tight">Validade Nacional</h3>
+              <p className="text-[10px] text-slate-500 mb-4 px-4 leading-relaxed font-medium">O DAVVERO-ID é seu documento institucional. Para eventos nacionais que exijam o padrão ITI com certificação ICP-Brasil, você pode solicitar o DNE oficial.</p>
+              <button 
+                onClick={() => setModalDNEOpen(true)}
+                className="w-full py-3.5 px-4 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-xl text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-700 transition-all flex items-center justify-center gap-2 active:scale-95"
+              >
+                 Solicitar Documento Nacional (DNE - Padrão ITI)
+              </button>
+           </div>
         </div>
+
+        <Modal 
+          isOpen={modalDNEOpen} 
+          onClose={() => setModalDNEOpen(false)} 
+          title="Transparência: Documento Nacional"
+          confirmLabel="Prosseguir para UNE"
+          onConfirm={() => {
+            window.open("https://www.documentodoestudante.com.br/", "_blank");
+            setModalDNEOpen(false);
+          }}
+        >
+          <div className="space-y-3">
+             <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+               O <strong>DAVVERO-ID</strong> é seu documento institucional gratuito.
+             </p>
+             <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+               Para eventos de grande porte em nível nacional que exijam certificação digital <strong>ICP-Brasil</strong>, você pode solicitar a emissão física por uma entidade parceira como a UNE.
+             </p>
+             <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800">
+                <p className="text-[10px] text-blue-700 dark:text-blue-400 font-bold uppercase tracking-widest mb-1">Nota Legal</p>
+                <p className="text-[10px] text-blue-600 dark:text-blue-500 leading-tight">Você será redirecionado para o site oficial do Documento do Estudante (Padrão ITI).</p>
+             </div>
+          </div>
+        </Modal>
       </>
     );
   }
@@ -503,37 +583,58 @@ export default function StudentPortal({ overrideCode, onOverrideConsumed }: Stud
               initial={{ opacity: 0, y: 10 }} 
               animate={{ opacity: 1, y: 0 }} 
               exit={{ opacity: 0, y: -10 }}
-              className="w-full max-w-[320px] sm:max-w-sm mx-auto flex flex-col items-center bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 p-6 rounded-3xl shadow-2xl"
+              className="w-full max-w-[320px] sm:max-w-sm mx-auto flex flex-col items-center bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 p-6 rounded-3xl shadow-2xl relative overflow-hidden"
             >
-              <QrCode className="w-12 h-12 text-slate-400 mb-6" />
-              <h3 className="text-lg font-black uppercase tracking-tight text-slate-800 dark:text-white mb-2">Código de Uso</h3>
-              <p className="text-xs text-slate-500 text-center mb-6">Digite o seu código alfanumérico para carregar seus dados no dispositivo.</p>
-              
-              <input
-                type="text"
-                autoCapitalize="characters"
-                placeholder="Ex: XXXX-YYYY"
-                value={alphaCode}
-                onChange={(e) => setAlphaCode(e.target.value.toUpperCase())}
-                className="text-center text-xl tracking-widest font-bold w-full py-4 px-6 rounded-xl bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 outline-none text-slate-900 dark:text-white uppercase focus:border-sky-500 transition-colors"
-              />
-              
-              {error && <p className="text-xs font-bold text-rose-500 uppercase mt-4 mb-2">{error}</p>}
+              {isProcessingAnimation ? (
+                <div className="py-12 flex flex-col items-center space-y-8 animate-in fade-in duration-500">
+                  <div className="relative w-24 h-24 bg-slate-50 dark:bg-slate-800 rounded-2xl border-2 border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden shadow-inner">
+                    <QrCode className="w-16 h-16 text-slate-300 dark:text-slate-600" />
+                    <motion.div 
+                      className="absolute left-0 right-0 h-1 bg-sky-500 shadow-[0_0_15px_rgba(14,165,233,0.8)] z-10"
+                      initial={{ top: '0%' }}
+                      animate={{ top: ['0%', '100%', '0%'] }}
+                      transition={{ duration: 1.5, repeat: Infinity, ease: "easeInOut" }}
+                    />
+                    <div className="absolute inset-0 bg-sky-500/5 animate-pulse" />
+                  </div>
+                  <div className="space-y-2 text-center">
+                    <h3 className="text-base font-black text-slate-800 dark:text-white uppercase tracking-widest">Validando Código...</h3>
+                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">Sincronizando com a base institucional</p>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <QrCode className="w-12 h-12 text-slate-400 mb-6" />
+                  <h3 className="text-lg font-black uppercase tracking-tight text-slate-800 dark:text-white mb-2">Código de Uso</h3>
+                  <p className="text-xs text-slate-500 text-center mb-6">Digite o seu código alfanumérico para carregar seus dados no dispositivo.</p>
+                  
+                  <input
+                    type="text"
+                    autoCapitalize="characters"
+                    placeholder="Ex: XXXX-YYYY"
+                    value={alphaCode}
+                    onChange={(e) => setAlphaCode(e.target.value.toUpperCase())}
+                    className="text-center text-xl tracking-widest font-bold w-full py-4 px-6 rounded-xl bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 outline-none text-slate-900 dark:text-white uppercase focus:border-sky-500 transition-colors"
+                  />
+                  
+                  {error && <p className="text-xs font-bold text-rose-500 uppercase mt-4 mb-2">{error}</p>}
 
-              <div className="flex gap-3 w-full mt-6">
-                <button
-                  onClick={() => setLinkMode(false)}
-                  className="flex-1 py-3 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
-                >
-                  Voltar
-                </button>
-                <button
-                  onClick={linkIdentity}
-                  className="flex-1 py-3 text-sm font-bold text-white bg-sky-600 hover:bg-sky-500 rounded-xl shadow-lg transition-colors flex items-center justify-center"
-                >
-                  {isLoading ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : 'Buscar'}
-                </button>
-              </div>
+                  <div className="flex gap-3 w-full mt-6">
+                    <button
+                      onClick={() => setLinkMode(false)}
+                      className="flex-1 py-3 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
+                    >
+                      Voltar
+                    </button>
+                    <button
+                      onClick={linkIdentity}
+                      className="flex-1 py-3 text-sm font-bold text-white bg-sky-600 hover:bg-sky-500 rounded-xl shadow-lg transition-colors flex items-center justify-center"
+                    >
+                      {isLoading ? <Loader2 className="w-4 h-4 animate-spin text-white" /> : 'Buscar'}
+                    </button>
+                  </div>
+                </>
+              )}
             </motion.div>
           )}
         </AnimatePresence>

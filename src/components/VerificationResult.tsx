@@ -248,7 +248,7 @@ export default function VerificationResult({ member, status, onReset, isMyID = f
           <div className="mt-3 px-2 py-1.5 bg-sky-50 dark:bg-sky-900/20 border border-sky-100 dark:border-sky-500/20 rounded-xl text-left">
             <p className="text-[8px] uppercase tracking-widest mb-0.5 font-bold text-sky-600 dark:text-sky-400">Garantia Legal</p>
             <p className="text-[9px] text-slate-600 dark:text-slate-400 font-medium leading-tight italic">
-              Este documento atende aos requisitos da <strong>Lei Federal nº 12.933/2013</strong> e do <strong>Decreto nº 8.537/2015</strong>, que asseguram o direito à meia-entrada em eventos artísticos e esportivos.
+              Documento de identificação estudantil. Apresenta os dados requeridos pela Lei 12.933/2013 para comprovação de matrícula, sendo sua aceitação sujeita aos critérios dos organizadores de eventos.
             </p>
           </div>
         )}

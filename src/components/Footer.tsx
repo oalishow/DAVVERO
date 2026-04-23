@@ -36,19 +36,28 @@ export default function Footer() {
       </div>
 
       <div className="pt-3 sm:pt-4 flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4 text-slate-500 border-t border-slate-300 dark:border-slate-800/80">
-        <div className="flex items-center gap-2 sm:gap-3">
-          <span className="font-mono text-[9px] sm:text-[10px] bg-slate-200 dark:bg-slate-800 py-1 px-2 rounded border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300">
-            v{APP_VERSION}
-          </span>
-          <button 
-            onClick={() => setShowChangelog(true)}
-            className="text-[10px] sm:text-[11px] text-sky-600 dark:text-sky-400 hover:text-sky-500 dark:hover:text-sky-300 underline underline-offset-2 transition-colors"
-          >
-            Novidades
-          </button>
+        <div className="flex flex-col items-center md:items-start gap-1">
+          <div className="flex items-center gap-2 sm:gap-3">
+            <span className="font-mono text-[9px] sm:text-[10px] bg-slate-200 dark:bg-slate-800 py-1 px-2 rounded border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+              v{APP_VERSION}
+            </span>
+            <button 
+              onClick={() => setShowChangelog(true)}
+              className="text-[10px] sm:text-[11px] text-sky-600 dark:text-sky-400 hover:text-sky-500 dark:hover:text-sky-300 underline underline-offset-2 transition-colors font-bold uppercase tracking-widest"
+            >
+              Novidades
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 text-[8px] text-emerald-600 dark:text-emerald-400 font-black uppercase">
+              <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
+              DB Conectado
+            </div>
+            <span className="text-[7px] font-bold text-slate-400 uppercase tracking-tighter opacity-70">Build: 23.04.26</span>
+          </div>
         </div>
-        <p className="text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-500">
-          ©2025 - Alison Fernando Rodrigues dos Santos - DAVVERO-ID, Todos os direitos reservados.
+        <p className="text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-500 text-center md:text-left">
+          ©2025 - Alison Fernando Rodrigues dos Santos - DAVVERO-ID
         </p>
         <a href="mailto:oalison.rodrigues@gmail.com" className="flex items-center gap-1.5 hover:text-sky-600 dark:hover:text-sky-400 transition-colors border-b border-transparent hover:border-sky-600 dark:hover:border-sky-400 pb-0.5 text-[10px] sm:text-xs text-slate-600 dark:text-slate-400">
           <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4" />

@@ -68,7 +68,7 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
   const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
   const displayLogoFront = cardLogo || instLogo;
   const displayLogoBack = cardBackLogo || cardLogo || instLogo;
-  const displayDescription = cardDescription || 'Documento padronizado nacionalmente conforme a lei 12.933/2013.\nVálido em todo território nacional até o findar da validade.';
+  const displayDescription = cardDescription || 'Documento de identificação estudantil é padronizado e apresenta os dados requeridos pela Lei 12.933/2013 para comprovação de matrícula, sendo sua aceitação sujeita aos critérios dos organizadores de eventos.';
   
   const normalizedDiocese = member.diocese?.toUpperCase().trim() || '';
   const isSeminarista = member.roles?.some(r => r.trim().toUpperCase() === 'SEMINARISTA');
