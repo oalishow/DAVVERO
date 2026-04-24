@@ -4,6 +4,7 @@ import { X, Printer, Loader2 } from 'lucide-react';
 import { collection, query, getDocs, orderBy } from 'firebase/firestore';
 import { db, appId } from '../lib/firebase';
 import type { Member } from '../types';
+import { APP_VERSION } from '../lib/constants';
 
 interface PrintReportModalProps {
   onClose: () => void;
@@ -63,7 +64,7 @@ export default function PrintReportModal({ onClose }: PrintReportModalProps) {
 
         {/* Cabeçalho de Impressão (Visível apenas na impressão) */}
         <div className="hidden print:block text-center mb-8 border-b-2 border-slate-900 pb-4">
-            <h1 className="text-2xl font-bold uppercase tracking-widest">Relatório Geral de Membros - Verify-ID</h1>
+            <h1 className="text-2xl font-bold uppercase tracking-widest">Relatório Geral de Membros - DAVVERO-ID</h1>
             <p className="text-sm mt-1">Gerado em: {new Date().toLocaleDateString()} às {new Date().toLocaleTimeString()}</p>
             <p className="text-xs mt-1 italic">Total de registos: {members.length}</p>
         </div>
@@ -113,7 +114,7 @@ export default function PrintReportModal({ onClose }: PrintReportModalProps) {
         )}
 
         <div className="mt-8 pt-6 border-t border-slate-200 dark:border-slate-700 text-center text-[10px] text-slate-400 no-print">
-            Relatório gerado pelo sistema Verify-ID v.2.8.0
+            Relatório gerado pelo sistema DAVVERO-ID v.{APP_VERSION}
         </div>
       </div>
     </div>,

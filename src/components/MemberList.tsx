@@ -6,7 +6,11 @@ import type { Member } from '../types';
 import { CUSTOM_ROLES_KEY } from '../lib/constants';
 import MemberEditModal from './MemberEditModal';
 
-export default function MemberList() {
+interface MemberListProps {
+  initialFilterStatus?: 'all' | 'active' | 'inactive';
+}
+
+export default function MemberList({ initialFilterStatus = 'all' }: MemberListProps) {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
@@ -14,6 +18,7 @@ export default function MemberList() {
   // Filtros
   const [searchTerm, setSearchTerm] = useState('');
   const [filterRole, setFilterRole] = useState('');
+  const [filterStatus, setFilterStatus] = useState<'all' | 'active' | 'inactive'>(initialFilterStatus);
 
   const [customRoles, setCustomRoles] = useState<string[]>(() => {
     try {
@@ -26,6 +31,10 @@ export default function MemberList() {
 
   const baseRoles = ["ALUNO(A)", "PROFESSOR(A)", "COLABORADOR(A)", "SEMINARISTA", "PADRE", "DIÁCONO", "BISPO"];
   const availableRoles = [...baseRoles, ...customRoles];
+
+  useEffect(() => {
+    setFilterStatus(initialFilterStatus);
+  }, [initialFilterStatus]);
 
   useEffect(() => {
     setLoading(true);
@@ -57,8 +66,11 @@ export default function MemberList() {
     const matchSearch = matchName || matchRa || matchRoles;
 
     const matchFilterRole = filterRole === '' || m.roles?.includes(filterRole);
+    let matchStatus = true;
+    if (filterStatus === 'active') matchStatus = m.isActive;
+    if (filterStatus === 'inactive') matchStatus = !m.isActive;
 
-    return matchSearch && matchFilterRole;
+    return matchSearch && matchFilterRole && matchStatus;
   });
 
   if (loading) {
@@ -83,6 +95,20 @@ export default function MemberList() {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
+        </div>
+        <div className="relative w-full sm:w-auto">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Filter className="w-4 h-4 text-slate-400" />
+          </div>
+          <select 
+            value={filterStatus} 
+            onChange={(e) => setFilterStatus(e.target.value as 'all' | 'active' | 'inactive')}
+            className="input-modern w-full sm:w-32 pl-10 pr-4 py-2.5 rounded-xl text-sm appearance-none"
+          >
+            <option value="all">Status: Todos</option>
+            <option value="active">Status: Ativo</option>
+            <option value="inactive">Status: Inativo</option>
+          </select>
         </div>
         <div className="relative w-full sm:w-auto">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">

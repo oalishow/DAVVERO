@@ -36,6 +36,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
 
   const [status, setStatus] = useState<{ msg: string; type: 'success' | 'error' | 'loading' } | null>(null);
   const [showList, setShowList] = useState(false);
+  const [listFilterStatus, setListFilterStatus] = useState<'all' | 'active' | 'inactive'>('all');
   const [showSettings, setShowSettings] = useState(false);
   const [showBin, setShowBin] = useState(false);
   const [showBackup, setShowBackup] = useState(false);
@@ -249,7 +250,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-8 no-print">
         <button 
-          onClick={() => setShowList(true)}
+          onClick={() => { setListFilterStatus('active'); setShowList(true); }}
           className="bg-white dark:bg-slate-800/40 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/50 flex flex-col items-center justify-center text-center shadow-sm hover:border-sky-500/50 transition-colors group"
         >
            <div className="w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
@@ -271,7 +272,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
            <p className="text-[10px] uppercase font-bold text-slate-500 tracking-wider">Pendentes</p>
         </button>
         <button 
-          onClick={() => setShowList(true)}
+          onClick={() => { setListFilterStatus('inactive'); setShowList(true); }}
           className="bg-white dark:bg-slate-800/40 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/50 flex flex-col items-center justify-center text-center shadow-sm hover:border-sky-500/50 transition-colors group"
         >
            <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
@@ -483,34 +484,34 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
               )}
             </button>
           </div>
-
-          <div className="bg-gradient-to-br from-sky-500/10 to-blue-500/10 border border-sky-200 dark:border-sky-500/20 p-4 rounded-2xl mb-4 flex flex-col sm:flex-row items-center justify-between gap-4">
-             <div className="flex items-center gap-3">
-               <div className="w-10 h-10 bg-sky-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-sky-500/30">
-                 <Share2 className="w-5 h-5" />
-               </div>
-               <div>
-                  <h4 className="text-sm font-bold text-slate-800 dark:text-sky-200">Link de Instalação Inteligente</h4>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Envie este link para que os membros instalem o app automaticamente.</p>
-               </div>
-             </div>
-             <button 
-               onClick={() => {
-                 const url = new URL(window.location.origin);
-                 url.searchParams.set('install', 'true');
-                 navigator.clipboard.writeText(url.toString());
-                 setStatus({ msg: 'Link de instalação copiado!', type: 'success' });
-                 setTimeout(() => setStatus(null), 3000);
-               }}
-               className="bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 px-5 py-2.5 rounded-xl text-xs font-bold shadow-sm border border-sky-100 dark:border-sky-500/30 hover:bg-sky-50 dark:hover:bg-slate-700 transition-all flex items-center gap-2 group"
-             >
-               {status?.msg === 'Link de instalação copiado!' ? <Check className="w-4 h-4 text-emerald-500" /> : <Share2 className="w-4 h-4 group-hover:scale-110 transition-transform" />}
-               Copiar Link de Convite
-             </button>
-          </div>
         </div>
 
-        {showList && <MemberList />}
+        {showList && <MemberList initialFilterStatus={listFilterStatus} />}
+
+        <div className="bg-gradient-to-br from-sky-500/10 to-blue-500/10 border border-sky-200 dark:border-sky-500/20 p-4 rounded-2xl mb-4 mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+           <div className="flex items-center gap-3">
+             <div className="w-10 h-10 bg-sky-500 rounded-xl flex items-center justify-center text-white shadow-lg shadow-sky-500/30">
+               <Share2 className="w-5 h-5" />
+             </div>
+             <div>
+                <h4 className="text-sm font-bold text-slate-800 dark:text-sky-200">Link de Instalação Inteligente</h4>
+                <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">Envie este link para que os membros instalem o app automaticamente.</p>
+             </div>
+           </div>
+           <button 
+             onClick={() => {
+               const url = new URL(window.location.origin);
+               url.searchParams.set('install', 'true');
+               navigator.clipboard.writeText(url.toString());
+               setStatus({ msg: 'Link de instalação copiado!', type: 'success' });
+               setTimeout(() => setStatus(null), 3000);
+             }}
+             className="bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 px-5 py-2.5 rounded-xl text-xs font-bold shadow-sm border border-sky-100 dark:border-sky-500/30 hover:bg-sky-50 dark:hover:bg-slate-700 transition-all flex items-center gap-2 group"
+           >
+             {status?.msg === 'Link de instalação copiado!' ? <Check className="w-4 h-4 text-emerald-500" /> : <Share2 className="w-4 h-4 group-hover:scale-110 transition-transform" />}
+             Copiar Link de Convite
+           </button>
+        </div>
       </div>
 
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}

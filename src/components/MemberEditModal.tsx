@@ -163,7 +163,7 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
   }, []);
 
   return createPortal(
-    <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-[100] overflow-y-auto">
+    <div className="fixed inset-0 bg-slate-900/40 dark:bg-black/80 backdrop-blur-sm flex items-center justify-center p-2 sm:p-4 z-[100] overflow-y-auto print:static print:bg-white print:p-0">
       <Modal 
         isOpen={modalDeleteOpen} 
         onClose={() => setModalDeleteOpen(false)} 
@@ -185,7 +185,7 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
           }}
         />
       )}
-      <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-200 dark:border-slate-700/50 rounded-2xl shadow-[0_30px_60px_rgba(0,0,0,0.12)] p-4 sm:p-6 w-full max-w-4xl my-auto max-h-[95vh] overflow-y-auto custom-scrollbar animated-scale-in">
+      <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-200 dark:border-slate-700/50 rounded-2xl shadow-[0_30px_60px_rgba(0,0,0,0.12)] p-4 sm:p-6 w-full max-w-4xl my-auto max-h-[95vh] overflow-y-auto custom-scrollbar animated-scale-in print:hidden">
         
         <div className="flex justify-between items-center mb-4 pb-3 border-b border-slate-100 dark:border-slate-700/60 sticky top-0 bg-white/5 dark:bg-slate-800/5 backdrop-blur-sm z-20">
           <h2 className="text-xl font-bold text-sky-600 dark:text-sky-400">Ficha do Membro</h2>
@@ -389,6 +389,90 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
         </div>
 
       </div>
+
+      <div className="hidden print:block absolute inset-0 bg-white z-[300] p-8 text-black">
+         <div className="max-w-3xl mx-auto">
+            <h1 className="text-2xl font-bold uppercase tracking-widest border-b-2 border-black pb-4 mb-8">Ficha Cadastral Individual - DAVVERO-ID</h1>
+            
+            <div className="flex gap-8 mb-8">
+               <div className="w-32 h-40 border-2 border-black rounded-lg overflow-hidden shrink-0">
+                  <img src={photoBase64 || member.photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(name || 'User')}&background=e2e8f0&color=475569`} alt="" className="w-full h-full object-cover" crossOrigin="anonymous"/>
+               </div>
+               
+               <div className="flex-1 grid grid-cols-2 gap-y-4 gap-x-8 text-sm">
+                  <div className="col-span-2">
+                     <p className="font-bold text-xs text-gray-500 uppercase">Nome Completo</p>
+                     <p className="text-lg font-bold border-b border-gray-300 pb-1">{name || '---'}</p>
+                  </div>
+                  <div>
+                     <p className="font-bold text-xs text-gray-500 uppercase">Status</p>
+                     <p className="text-base font-bold border-b border-gray-300 pb-1">{isActive ? 'Ativo' : 'Suspenso'}</p>
+                  </div>
+                  <div>
+                     <p className="font-bold text-xs text-gray-500 uppercase">RA / Matrícula</p>
+                     <p className="text-base font-bold border-b border-gray-300 pb-1">{ra || '---'}</p>
+                  </div>
+                  <div>
+                     <p className="font-bold text-xs text-gray-500 uppercase">CPF</p>
+                     <p className="text-base font-bold border-b border-gray-300 pb-1">{cpf || '---'}</p>
+                  </div>
+                  <div>
+                     <p className="font-bold text-xs text-gray-500 uppercase">RG</p>
+                     <p className="text-base font-bold border-b border-gray-300 pb-1">{rg || '---'}</p>
+                  </div>
+                  <div>
+                     <p className="font-bold text-xs text-gray-500 uppercase">Data de Nascimento</p>
+                     <p className="text-base font-bold border-b border-gray-300 pb-1">{birthdate ? new Date(birthdate + 'T12:00:00').toLocaleDateString('pt-BR') : '---'}</p>
+                  </div>
+                  <div>
+                     <p className="font-bold text-xs text-gray-500 uppercase">Validade</p>
+                     <p className="text-base font-bold border-b border-gray-300 pb-1">{validity ? new Date(validity + 'T12:00:00').toLocaleDateString('pt-BR') : '---'}</p>
+                  </div>
+                  <div className="col-span-2">
+                     <p className="font-bold text-xs text-gray-500 uppercase">Vínculos Institucionais</p>
+                     <p className="text-base font-bold border-b border-gray-300 pb-1">{roles.join(', ') || 'Nenhum'}</p>
+                  </div>
+                  {course && (
+                    <div className="col-span-2">
+                       <p className="font-bold text-xs text-gray-500 uppercase">Curso</p>
+                       <p className="text-base font-bold border-b border-gray-300 pb-1">{course}</p>
+                    </div>
+                  )}
+                  {diocese && (
+                    <div className="col-span-2">
+                       <p className="font-bold text-xs text-gray-500 uppercase">Diocese</p>
+                       <p className="text-base font-bold border-b border-gray-300 pb-1">{diocese}</p>
+                    </div>
+                  )}
+               </div>
+            </div>
+
+            <div className="bg-gray-100 p-4 flex gap-6 items-center rounded-lg border border-gray-300">
+               <div>
+                  <QRCodeCanvas value={verificationUrl} size={100} level="M" />
+               </div>
+               <div className="flex-1">
+                  <p className="font-bold text-xs text-gray-500 uppercase mb-1">Código de Autenticação (Alpha-Code)</p>
+                  <p className="text-xl font-mono font-black tracking-widest">{member.alphaCode}</p>
+                  <p className="text-xs text-gray-500 mt-2">Este código é utilizado para verificação da autenticidade da carteirinha no sistema e também como código de uso no portal do aluno.</p>
+               </div>
+            </div>
+
+            <div className="mt-20 pt-8 border-t-2 border-dashed border-gray-400 text-center flex justify-around">
+               <div className="w-64">
+                  <div className="border-t border-black pt-2 font-bold text-sm">Assinatura do Responsável</div>
+               </div>
+               <div className="w-64">
+                  <div className="border-t border-black pt-2 font-bold text-sm">Assinatura do Membro</div>
+               </div>
+            </div>
+
+            <p className="text-center text-xs text-gray-400 mt-12">
+               Emitido em {new Date().toLocaleDateString('pt-BR')} às {new Date().toLocaleTimeString('pt-BR')} pelo sistema DAVVERO-ID.
+            </p>
+         </div>
+      </div>
+
     </div>,
     document.body
   );

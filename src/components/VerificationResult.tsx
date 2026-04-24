@@ -66,6 +66,8 @@ export default function VerificationResult({ member, status, onReset, isMyID = f
 
   const avatarUrl = member?.photoUrl || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%2364748b"><path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-3.33 0-10 1.67-10 5v2h20v-2c0-3.33-6.67-5-10-5z"/></svg>';
 
+  const [showLargeQR, setShowLargeQR] = useState(false);
+
   const handleExport = async () => {
     setExporting(true);
     try {
@@ -261,7 +263,11 @@ export default function VerificationResult({ member, status, onReset, isMyID = f
         </div>
 
         {member?.alphaCode && (
-          <div className="mt-3 flex flex-col items-center gap-1 bg-white p-2 rounded-xl w-fit mx-auto border-2 border-slate-200 shadow-sm">
+          <div 
+            className="mt-3 flex flex-col items-center gap-1 bg-white p-2 rounded-xl w-fit mx-auto border-2 border-slate-200 shadow-sm cursor-pointer hover:scale-105 transition-transform active:scale-95"
+            onClick={() => setShowLargeQR(true)}
+            title="Clique para ampliar o QR Code"
+          >
             <QRCodeSVG 
               value={`${cleanBaseUrl}?verify=${member.alphaCode}`} 
               size={60} 
@@ -310,6 +316,31 @@ export default function VerificationResult({ member, status, onReset, isMyID = f
           </div>
         </Modal>
 
+        {member?.alphaCode && (
+          <Modal
+            isOpen={showLargeQR}
+            onClose={() => setShowLargeQR(false)}
+            title="QR Code de Validação"
+          >
+             <div className="flex flex-col items-center justify-center p-4">
+                <div className="bg-white p-4 rounded-3xl shadow-lg border-2 border-slate-200">
+                   <QRCodeSVG 
+                     value={`${cleanBaseUrl}?verify=${member.alphaCode}`} 
+                     size={220} 
+                     level="H" 
+                     includeMargin={true}
+                   />
+                </div>
+                <p className="mt-6 text-sm font-bold text-slate-600 dark:text-slate-300 tracking-widest">
+                   {member.alphaCode}
+                </p>
+                <p className="mt-2 text-[10px] text-slate-400 text-center max-w-[200px]">
+                   Apresente este código para verificação de sua identidade.
+                </p>
+             </div>
+          </Modal>
+        )}
+
         <button onClick={() => setModalResetOpen(true)} className="flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold text-slate-700 bg-slate-200 hover:bg-slate-300 transition-colors">
           Nova Consulta
         </button>
@@ -336,11 +367,11 @@ export default function VerificationResult({ member, status, onReset, isMyID = f
               <path d="M30,52 L30,65 C40,75 60,75 70,65 L70,52 L50,60 Z" fill="currentColor" opacity="0.85" />
             </svg>
             <div className="absolute bottom-0.5 font-black text-[6px] tracking-widest text-black w-full text-center">
-              A VERO ID
+              DAVVERO-ID
             </div>
           </div>
           <p className="text-[10px] font-medium text-slate-800 font-mono text-center mx-auto max-w-[300px]" style={{ color: '#000' }}>
-            ©2025 - Alison Fernando Rodrigues dos Santos<br/>A vero ID. Todos os direitos reservados.
+            ©2025 - Alison Fernando Rodrigues dos Santos<br/>DAVVERO-ID. Todos os direitos reservados.
           </p>
         </div>
       )}

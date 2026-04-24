@@ -201,6 +201,11 @@ body {
     display: block !important;
   }
 
+  /* Oculta o fundo (lista) caso haja modais ativos na impressão */
+  body:has(.fixed.inset-0:not(.hidden)) #root {
+    display: none !important;
+  }
+
   /* Specific Wrapper constraints */
   .w-full.flex.flex-col.items-center {
     display: block !important;
