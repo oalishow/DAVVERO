@@ -24,6 +24,7 @@ import {
 } from "../lib/firebase";
 import type { Event, Attendance, Member } from "../types";
 import PublicAttendeesModal from "./PublicAttendeesModal";
+import Modal from "./Modal";
 
 export default function EventsPage() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -34,6 +35,11 @@ export default function EventsPage() {
   >(null);
   const [viewPublicAttendeesEvent, setViewPublicAttendeesEvent] =
     useState<Event | null>(null);
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
 
   useEffect(() => {
     // Load student if logged in
@@ -121,19 +127,20 @@ export default function EventsPage() {
   };
 
   const handleUnenroll = async (attendanceId: string) => {
-    if (
-      !confirm(
+    setConfirmModal({
+      isOpen: true,
+      message:
         "Tem a certeza que deseja cancelar a sua inscrição neste evento?",
-      )
-    )
-      return;
-    try {
-      await unsubscribeFromEvent(attendanceId);
-      alert("Inscrição cancelada com sucesso.");
-    } catch (err) {
-      console.error(err);
-      alert("Erro ao cancelar inscrição.");
-    }
+      onConfirm: async () => {
+        try {
+          await unsubscribeFromEvent(attendanceId);
+          alert("Inscrição cancelada com sucesso.");
+        } catch (err) {
+          console.error(err);
+          alert("Erro ao cancelar inscrição.");
+        }
+      },
+    });
   };
 
   const getStatusColor = (status: string) => {
@@ -346,6 +353,18 @@ export default function EventsPage() {
           })
         )}
       </div>
+      <Modal
+        isOpen={!!confirmModal?.isOpen}
+        onClose={() => setConfirmModal(null)}
+        title="Cancelar Inscrição"
+        confirmLabel="Confirmar"
+        confirmVariant="danger"
+        onConfirm={confirmModal?.onConfirm}
+      >
+        <p className="text-slate-600 dark:text-slate-400">
+          {confirmModal?.message}
+        </p>
+      </Modal>
     </div>
   );
 }

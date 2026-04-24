@@ -33,12 +33,21 @@ import {
 import type { Event, Attendance } from "../types";
 import EventAttendeesModal from "./EventAttendeesModal";
 import CertificateEditor from "./CertificateEditor";
+import Modal from "./Modal";
 
 export default function EventManagement() {
   const [events, setEvents] = useState<Event[]>([]);
   const [attendancesCount, setAttendancesCount] = useState<
     Record<string, number>
   >({});
+
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    variant: "primary" | "danger" | "success";
+    onConfirm: () => void;
+  } | null>(null);
 
   const [editingEventId, setEditingEventId] = useState<string | null>(null);
   const [showAttendeesEvent, setShowAttendeesEvent] = useState<Event | null>(
@@ -392,7 +401,10 @@ export default function EventManagement() {
       <div className="bg-white dark:bg-slate-800/40 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-700/50">
         <h3 className="text-base sm:text-lg font-medium text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
           <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-          Eventos Criados <span className="text-[10px] bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full font-bold ml-1">BETA</span>
+          Eventos Criados{" "}
+          <span className="text-[10px] bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 px-2 py-0.5 rounded-full font-bold ml-1">
+            BETA
+          </span>
         </h3>
 
         {events.length === 0 ? (
@@ -446,7 +458,7 @@ export default function EventManagement() {
                     </p>
                   </div>
 
-                  <div className="flex bg-slate-100 dark:bg-slate-800 rounded-lg p-0.5 gap-0.5 overflow-hidden">
+                  <div className="flex flex-wrap bg-slate-100 dark:bg-slate-800 rounded-lg p-1 gap-1">
                     <button
                       onClick={() => setShowAttendeesEvent(event)}
                       className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-md transition-colors"
@@ -469,20 +481,22 @@ export default function EventManagement() {
                     )}
                     <button
                       onClick={() => {
-                        if (
-                          confirm(
+                        setConfirmModal({
+                          isOpen: true,
+                          title: "Excluir Evento",
+                          message:
                             "Tem certeza que deseja excluir este evento? Esta ação não pode ser desfeita.",
-                          )
-                        ) {
-                          deleteEvent(event.id)
-                            .then(() => {
-                              setEvents(
-                                events.filter((e) => e.id !== event.id),
-                              );
-                              alert("Evento excluído com sucesso.");
-                            })
-                            .catch((e) => alert(e.message));
-                        }
+                          variant: "danger",
+                          onConfirm: () => {
+                            deleteEvent(event.id)
+                              .then(() => {
+                                setEvents(
+                                  events.filter((e) => e.id !== event.id),
+                                );
+                              })
+                              .catch((e) => alert(e.message));
+                          },
+                        });
                       }}
                       className="flex-1 sm:flex-none flex items-center justify-center gap-1.5 px-3 py-1.5 hover:bg-rose-50 dark:hover:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-bold rounded-md transition-colors"
                     >
@@ -493,13 +507,16 @@ export default function EventManagement() {
                   {event.status === "aberto" && (
                     <button
                       onClick={() => {
-                        if (
-                          confirm(
+                        setConfirmModal({
+                          isOpen: true,
+                          title: "Encerrar Evento",
+                          message:
                             "Encerrar evento? Os alunos presentes receberão certificados.",
-                          )
-                        ) {
-                          closeEvent(event.id).catch((e) => alert(e.message));
-                        }
+                          variant: "primary",
+                          onConfirm: () => {
+                            closeEvent(event.id).catch((e) => alert(e.message));
+                          },
+                        });
                       }}
                       className="w-full sm:w-auto whitespace-nowrap px-3 py-1.5 bg-emerald-100 hover:bg-emerald-200 dark:bg-emerald-500/20 dark:hover:bg-emerald-500/30 text-emerald-700 dark:text-emerald-400 text-xs font-bold rounded-lg transition-colors border border-emerald-200 dark:border-emerald-500/30"
                     >
@@ -512,6 +529,19 @@ export default function EventManagement() {
           </div>
         )}
       </div>
+
+      <Modal
+        isOpen={!!confirmModal?.isOpen}
+        onClose={() => setConfirmModal(null)}
+        title={confirmModal?.title || ""}
+        confirmLabel="Confirmar"
+        confirmVariant={confirmModal?.variant || "primary"}
+        onConfirm={confirmModal?.onConfirm}
+      >
+        <p className="text-slate-600 dark:text-slate-400">
+          {confirmModal?.message}
+        </p>
+      </Modal>
     </div>
   );
 }

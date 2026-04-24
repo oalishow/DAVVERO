@@ -3,6 +3,7 @@ import { X, Search, CheckCircle, Clock, Trash2 } from "lucide-react";
 import type { Event, Attendance, Member } from "../types";
 import { db, appId, unsubscribeFromEvent } from "../lib/firebase";
 import { doc, getDoc, collection, getDocs, query } from "firebase/firestore";
+import Modal from "./Modal";
 
 interface EventAttendeesModalProps {
   event: Event;
@@ -18,6 +19,11 @@ export default function EventAttendeesModal({
   >([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [confirmModal, setConfirmModal] = useState<{
+    isOpen: boolean;
+    message: string;
+    onConfirm: () => void;
+  } | null>(null);
 
   const loadData = async () => {
     try {
@@ -65,13 +71,62 @@ export default function EventAttendeesModal({
   }, [event.id]);
 
   const handleRemove = async (attendanceId: string) => {
-    if (confirm("Tem a certeza que deseja remover esta inscrição?")) {
-      try {
-        await unsubscribeFromEvent(attendanceId);
-        loadData(); // Reload data to reflect change
-      } catch (err) {
-        alert("Erro ao remover inscrição.");
-      }
+    setConfirmModal({
+      isOpen: true,
+      message: "Tem a certeza que deseja remover esta inscrição?",
+      onConfirm: async () => {
+        try {
+          await unsubscribeFromEvent(attendanceId);
+          loadData(); // Reload data to reflect change
+        } catch (err) {
+          alert("Erro ao remover inscrição.");
+        }
+      },
+    });
+  };
+
+  const handlePrint = () => {
+    const printContent = document.getElementById("print-area")?.innerHTML;
+    if (!printContent) return;
+    const printWindow = window.open("", "_blank");
+    if (printWindow) {
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Lista de Presença</title>
+            <style>
+              body { font-family: Arial, sans-serif; padding: 20px; font-size: 12px; }
+              table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+              th, td { border: 1px solid black; padding: 8px; text-align: left; }
+              th { background-color: #f3f4f6; }
+              .text-center { text-align: center; }
+              .font-bold { font-weight: bold; }
+              .uppercase { text-transform: uppercase; }
+              .tracking-widest { letter-spacing: 0.1em; }
+              .border-black { border-color: black; }
+              .border-b-2 { border-bottom-width: 2px; }
+              .border-dashed { border-style: dashed; border-color: black; opacity: 0.5; height: 30px; border-bottom-width: 1px; }
+              .mb-6 { margin-bottom: 24px; }
+              .mt-2 { margin-top: 8px; }
+              .mt-8 { margin-top: 32px; }
+              .pb-2 { padding-bottom: 8px; }
+              .text-xl { font-size: 20px; }
+              .text-sm { font-size: 14px; }
+              .text-xs { font-size: 12px; }
+            </style>
+          </head>
+          <body>
+            ${printContent}
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.focus();
+      // Allow images or styles to load briefly before printing
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 250);
     }
   };
 
@@ -116,7 +171,7 @@ export default function EventAttendeesModal({
             />
           </div>
           <button
-            onClick={() => window.print()}
+            onClick={handlePrint}
             className="print:hidden ml-4 flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold hover:bg-slate-700 transition-colors shrink-0"
           >
             <svg
@@ -232,7 +287,8 @@ export default function EventAttendeesModal({
 
       {/* --- ÁREA DE IMPRESSÃO (Oculta na tela, Visível apenas na impressora) --- */}
       <div
-        className="hidden print:block w-full text-black bg-white"
+        id="print-area"
+        className="hidden w-full text-black bg-white"
         style={{ fontFamily: "Arial, sans-serif" }}
       >
         <div className="text-center mb-6">
@@ -281,7 +337,6 @@ export default function EventAttendeesModal({
                   {sub.member?.diocese ? ` • ${sub.member?.diocese}` : ""}
                 </td>
                 <td className="border border-black p-2 align-bottom">
-                  {/* Linha pontilhada para assinar */}
                   <div className="w-full h-8 border-b border-black border-dashed opacity-50"></div>
                 </td>
               </tr>
@@ -293,6 +348,19 @@ export default function EventAttendeesModal({
           Documento Gerado pelo DAVVERO-ID • Faculdade João Paulo II (FAJOPA)
         </div>
       </div>
+
+      <Modal
+        isOpen={!!confirmModal?.isOpen}
+        onClose={() => setConfirmModal(null)}
+        title="Remover Inscrição"
+        confirmLabel="Confirmar"
+        confirmVariant="danger"
+        onConfirm={confirmModal?.onConfirm}
+      >
+        <p className="text-slate-600 dark:text-slate-400">
+          {confirmModal?.message}
+        </p>
+      </Modal>
     </div>
   );
 }
