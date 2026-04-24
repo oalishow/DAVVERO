@@ -68,7 +68,7 @@ export interface Attendance {
   id: string;
   eventId: string;
   studentId: string;
-  status: "inscrito" | "presente";
+  status: "inscrito" | "presente" | "apto_para_certificado" | "cancelado";
   timestamp: string;
   member?: Member;
 }

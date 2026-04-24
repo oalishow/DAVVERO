@@ -259,7 +259,8 @@ export default function StudentPortal({
       );
       const snapshot = await getDocs(q);
       if (!snapshot.empty) {
-        setMember(snapshot.docs[0].data() as Member);
+        const doc = snapshot.docs[0];
+        setMember({ ...doc.data(), id: doc.id } as Member);
         if (isOverride) {
           setIsOverrideMode(true);
           setBondedId(id);
@@ -314,10 +315,12 @@ export default function StudentPortal({
 
       const snapshot = await getDocs(q);
       if (!snapshot.empty) {
-        const data = snapshot.docs[0].data() as Member;
-        setMember(data);
-        setBondedId(data.alphaCode || null);
-        localStorage.setItem(STUDENT_BOND_KEY, data.alphaCode || "");
+        const doc = snapshot.docs[0];
+        const data = doc.data() as Member;
+        const memberData = { ...data, id: doc.id };
+        setMember(memberData);
+        setBondedId(memberData.alphaCode || null);
+        localStorage.setItem(STUDENT_BOND_KEY, memberData.alphaCode || "");
         setLinkMode(false);
         setPinMode("create");
       } else {
