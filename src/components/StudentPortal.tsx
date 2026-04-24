@@ -90,7 +90,18 @@ export default function StudentPortal({
         doc(db, `artifacts/${appId}/public/data/students`, "_events_global"),
         (docSnap) => {
           if (docSnap.exists()) {
-            const evts = (docSnap.data().list || []) as Event[];
+            let evts = (docSnap.data().list || []) as Event[];
+            evts = evts.filter(e => e.status !== "deleted");
+            const now = new Date().getTime();
+            evts.sort((a, b) => {
+              const timeA = new Date(a.startDate).getTime();
+              const timeB = new Date(b.startDate).getTime();
+              const aIsFuture = timeA >= now;
+              const bIsFuture = timeB >= now;
+              if (aIsFuture && bIsFuture) return timeA - timeB;
+              if (!aIsFuture && !bIsFuture) return timeB - timeA;
+              return aIsFuture ? -1 : 1;
+            });
             setAllEvents(evts);
             setAvailableEvents(evts.filter((e) => e.status === "aberto"));
           }
@@ -712,7 +723,7 @@ export default function StudentPortal({
                           {event.title}
                         </h4>
                         <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 mb-3">
-                          {event.hours} horas • {formatText} • {periodText}
+                          {event.hours ? `${event.hours} horas • ` : ""}{formatText} • {periodText}
                         </p>
                         <button
                           onClick={() => handleDownloadCertificate(event)}

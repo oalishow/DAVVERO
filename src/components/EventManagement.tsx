@@ -9,7 +9,10 @@ import {
   Search,
   Award,
   Image as ImageIcon,
-  Trash2,
+   Trash2,
+  User,
+  Download,
+  ExternalLink,
 } from "lucide-react";
 import ImageCropperModal from "./ImageCropperModal";
 import {
@@ -69,6 +72,8 @@ export default function EventManagement() {
   const [imageUrl, setImageUrl] = useState("");
   const [hours, setHours] = useState("");
   const [maxParticipants, setMaxParticipants] = useState("");
+  const [speaker, setSpeaker] = useState("");
+  const [schedulePdfUrl, setSchedulePdfUrl] = useState("");
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
   const [eventSearchQuery, setEventSearchQuery] = useState("");
   const [statusMsg, setStatusMsg] = useState<{
@@ -83,10 +88,16 @@ export default function EventManagement() {
         if (docSnap.exists()) {
           const data = docSnap.data();
           const evts = (data.list || []) as Event[];
-          evts.sort(
-            (a, b) =>
-              new Date(b.startDate).getTime() - new Date(a.startDate).getTime(),
-          );
+          const now = new Date().getTime();
+          evts.sort((a, b) => {
+            const timeA = new Date(a.startDate).getTime();
+            const timeB = new Date(b.startDate).getTime();
+            const aIsFuture = timeA >= now;
+            const bIsFuture = timeB >= now;
+            if (aIsFuture && bIsFuture) return timeA - timeB;
+            if (!aIsFuture && !bIsFuture) return timeB - timeA;
+            return aIsFuture ? -1 : 1;
+          });
           setEvents(evts);
         } else {
           setEvents([]);
@@ -125,6 +136,8 @@ export default function EventManagement() {
     setImageUrl(event.imageUrl || "");
     setHours(event.hours ? event.hours.toString() : "");
     setMaxParticipants(event.maxParticipants.toString());
+    setSpeaker(event.speaker || "");
+    setSchedulePdfUrl(event.schedulePdfUrl || "");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -139,6 +152,8 @@ export default function EventManagement() {
     setImageUrl("");
     setHours("");
     setMaxParticipants("");
+    setSpeaker("");
+    setSchedulePdfUrl("");
   };
 
   const handleSaveEvent = async () => {
@@ -161,7 +176,7 @@ export default function EventManagement() {
     });
 
     try {
-      const payload = {
+      const payload: any = {
         title,
         startDate,
         endDate,
@@ -169,9 +184,15 @@ export default function EventManagement() {
         locationOrLink,
         description,
         imageUrl,
-        hours: hours ? Number(hours) : undefined,
         maxParticipants: Number(maxParticipants),
+        speaker,
+        schedulePdfUrl,
       };
+      if (hours) {
+        payload.hours = Number(hours);
+      } else {
+        payload.hours = null;
+      }
 
       if (editingEventId) {
         await updateEvent(editingEventId, payload);
@@ -361,6 +382,30 @@ export default function EventManagement() {
           </div>
           <div className="space-y-1">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
+              Palestrante (Opcional)
+            </label>
+            <input
+              type="text"
+              value={speaker}
+              onChange={(e) => setSpeaker(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm outline-none focus:border-sky-500 dark:focus:border-sky-500"
+              placeholder="Ex: Pe. João"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
+              Link do Cronograma (Ex: Google Drive) (Opcional)
+            </label>
+            <input
+              type="text"
+              value={schedulePdfUrl}
+              onChange={(e) => setSchedulePdfUrl(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm outline-none focus:border-sky-500 dark:focus:border-sky-500"
+              placeholder="https://drive.google.com/..."
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
               Carga Horária (h)
             </label>
             <input
@@ -483,17 +528,47 @@ export default function EventManagement() {
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-1">
-                      {event.description}
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-1 whitespace-pre-wrap">
+                      {event.description.split(/(https?:\/\/[^\s]+|www\.[^\s]+)/g).map((part, i) => {
+                        if (part.match(/(https?:\/\/[^\s]+|www\.[^\s]+)/)) {
+                          const href = part.startsWith("http") ? part : `https://${part}`;
+                          // For a line-clamp element, rendering a link is totally fine.
+                          return <a key={i} href={href} target="_blank" rel="noopener noreferrer" className="text-sky-500 hover:text-sky-600 hover:underline inline-flex">{part}</a>;
+                        }
+                        return part;
+                      })}
                     </p>
                     <div className="flex flex-wrap gap-2 mt-2">
                       <span className="inline-flex items-center gap-1 text-[10px] font-bold text-sky-600 bg-sky-50 dark:bg-sky-500/10 px-2 py-0.5 rounded-full border border-sky-100 dark:border-sky-500/20">
                         <Clock className="w-3 h-3" />{" "}
                         {new Date(event.startDate).toLocaleString("pt-BR")}
                       </span>
-                      <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-100 dark:border-amber-500/20">
-                        <FileText className="w-3 h-3" /> {event.hours}h
-                      </span>
+                      {event.hours ? (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-amber-600 bg-amber-50 dark:bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-100 dark:border-amber-500/20">
+                          <FileText className="w-3 h-3" /> {event.hours}h
+                        </span>
+                      ) : null}
+                      {event.locationOrLink && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-pink-600 bg-pink-50 dark:bg-pink-500/10 px-2 py-0.5 rounded-full border border-pink-100 dark:border-pink-500/20">
+                          {(event.locationOrLink.startsWith("http") || event.locationOrLink.startsWith("www.")) ? (
+                            <a href={event.locationOrLink.startsWith("http") ? event.locationOrLink : `https://${event.locationOrLink}`} target="_blank" rel="noopener noreferrer" className="hover:underline flex items-center gap-1">
+                              Link <ExternalLink className="w-2.5 h-2.5" />
+                            </a>
+                          ) : (
+                            <span className="truncate max-w-[100px]">{event.locationOrLink}</span>
+                          )}
+                        </span>
+                      )}
+                      {event.speaker && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-indigo-600 bg-indigo-50 dark:bg-indigo-500/10 px-2 py-0.5 rounded-full border border-indigo-100 dark:border-indigo-500/20">
+                          <User className="w-3 h-3" /> {event.speaker}
+                        </span>
+                      )}
+                      {event.schedulePdfUrl && (
+                        <a href={event.schedulePdfUrl.startsWith("http") ? event.schedulePdfUrl : `https://${event.schedulePdfUrl}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-100 dark:border-emerald-500/20 hover:bg-emerald-100 transition-colors">
+                          <Download className="w-3 h-3" /> PDF
+                        </a>
+                      )}
                     </div>
                   </div>
 

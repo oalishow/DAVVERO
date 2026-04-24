@@ -31,6 +31,7 @@ interface AppSettings {
   customCourses: string[];
   customDioceses: string[];
   databaseName: string;
+  cardZoom?: number;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -75,7 +76,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   customRoles: [],
   customCourses: [],
   customDioceses: [],
-  databaseName: 'FAJOPA e SPSCJ'
+  databaseName: 'FAJOPA e SPSCJ',
+  cardZoom: 1
 };
 
 interface SettingsContextType {
@@ -143,7 +145,18 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     return () => unsubscribes.forEach(u => u());
   }, []);
 
+  useEffect(() => {
+    if (settings) {
+      localStorage.setItem('fajopa_settings', JSON.stringify(settings));
+      // Aplica o zoom visualmente no elemento raiz para persistência imediata
+      document.documentElement.style.setProperty('--card-zoom', settings.cardZoom?.toString() || '1');
+    }
+  }, [settings]);
+
   const updateSettings = async (newSettings: Partial<AppSettings>) => {
+    // Optimistic UI update
+    setSettings(prev => ({ ...prev, ...newSettings }));
+
     const docRef = doc(db, SETTINGS_DOC_PATH(appId));
     
     const heavyFields = ['instLogo', 'cardLogo', 'cardBackLogo', 'cardSecondaryBackLogo', 'cardBackImage', 'instSignature', 'rectorSignature'];

@@ -84,6 +84,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
   const [customCourses, setCustomCourses] = useState<string[]>(cloudSettings.customCourses || []);
   const [customRoles, setCustomRoles] = useState<string[]>(cloudSettings.customRoles || []);
   const [databaseName, setDatabaseName] = useState(cloudSettings.databaseName || '');
+  const [cardZoom, setCardZoom] = useState(cloudSettings.cardZoom || 1);
   const [activeTab, setActiveTab] = useState<'visual' | 'content' | 'database'>('visual');
   
   const [password, setPassword] = useState('');
@@ -136,7 +137,8 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
         customDioceses,
         customCourses,
         customRoles,
-        databaseName
+        databaseName,
+        cardZoom
       });
 
       // Legacy fallback
@@ -331,7 +333,8 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                   instName,
                   instColor,
                   url,
-                  visibleFields
+                  visibleFields,
+                  cardZoom
                 }}
              />
            </div>
@@ -524,6 +527,19 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                       <p className="text-[8px] text-center text-slate-400 mt-2 leading-tight">Esta logo aparecerá do lado direito do verso, espelhando a logo principal, exclusivamente para as dioceses: Assis, Presidente Prudente, Ourinhos, Araçatuba e Lins.</p>
                     </div>
                   </div>
+
+                  {/* Zoom do Cartão */}
+                  <div className="space-y-3 p-3 bg-white dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
+                    <label className="text-[10px] font-black text-amber-600 uppercase flex items-center gap-2">
+                      <div className="w-2 h-2 rounded-full bg-amber-500" /> Escala do Cartão (Zoom)
+                    </label>
+                    <div className="w-full">
+                       <label className="block text-[8px] font-bold text-slate-400 uppercase text-center mb-1">Zoom ({cardZoom}x)</label>
+                       <input type="range" min="0.5" max="1.5" step="0.05" value={cardZoom} onChange={(e) => setCardZoom(Number(e.target.value))} className="w-full accent-amber-500 h-1 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer" />
+                       <p className="text-[8px] text-center text-slate-400 mt-2 leading-tight">Ajusta o tamanho visual global do cartão na interface. Valores de 0.5 a 1.5.</p>
+                    </div>
+                  </div>
+
                 </div>
               </div>
             </div>

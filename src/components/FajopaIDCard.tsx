@@ -28,6 +28,7 @@ interface FajopaIDCardProps {
     instName?: string;
     instColor?: string;
     visibleFields?: Record<string, boolean>;
+    cardZoom?: number;
   };
 }
 
@@ -518,7 +519,7 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
       className="perspective-1000 w-full max-w-[600px] aspect-[1.586/1] max-sm:portrait:aspect-[1/1.586] mx-auto cursor-pointer focus:outline-none no-print transition-transform origin-center flex items-center justify-center max-sm:portrait:my-4 sm:portrait:my-0" 
       onClick={() => setFlipped(!flipped)}
     >
-      <div style={{ transform: `scale(${scale})`, transformOrigin: 'center center' }}>
+      <div style={{ transform: `scale(calc(${scale} * var(--card-zoom, 1)))`, transformOrigin: 'center center' }}>
         <div className="w-[600px] h-[378px] transition-transform duration-500 max-sm:portrait:rotate-90 origin-center">
            <div 
           className={`relative w-full h-full transition-transform duration-700 transform-style-3d ${flipped ? 'rotate-y-180' : ''}`}

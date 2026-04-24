@@ -12,8 +12,9 @@ import {
   addDoc,
   updateDoc,
   setDoc,
+  runTransaction,
 } from "firebase/firestore";
-import { Event, Attendance, Member } from "../types";
+import { Event, Attendance, Member, Availability, Appointment } from "../types";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAldUSOslWbr9sTvg0ePP-8K0A2eBOuHOg",
@@ -40,6 +41,14 @@ export const auth = getAuth(app);
 setLogLevel("error");
 
 export const appId = firebaseConfig.projectId;
+
+/**
+ * Helper to recursively remove undefined properties from an object/array
+ * so Firestore array updates do not fail with "invalid nested entity".
+ */
+const removeUndefined = (obj: any): any => {
+  return JSON.parse(JSON.stringify(obj));
+};
 
 /**
  * Ensures a reliable anonymous login, checking if already authenticated
@@ -109,7 +118,7 @@ export const updateEventStatus = async (eventId: string, status: string) => {
       const idx = list.findIndex((e) => e.id === eventId);
       if (idx !== -1) {
         list[idx].status = status;
-        await updateDoc(eventsRef, { list });
+        await updateDoc(eventsRef, { list: removeUndefined(list) });
       }
     }
   } catch (e) {
@@ -133,7 +142,7 @@ export const deleteEvent = async (eventId: string) => {
       if (idx > -1) {
         list[idx].status = "deleted";
         list[idx].deletedAt = new Date().toISOString();
-        await updateDoc(eventsRef, { list });
+        await updateDoc(eventsRef, { list: removeUndefined(list) });
       }
       console.log(`Event ${eventId} soft-deleted successfully.`);
     } else {
@@ -161,7 +170,7 @@ export const restoreEvent = async (eventId: string) => {
       if (idx > -1) {
         list[idx].status = "aberto";
         list[idx].deletedAt = null;
-        await updateDoc(eventsRef, { list });
+        await updateDoc(eventsRef, { list: removeUndefined(list) });
       }
     }
   } catch (e) {
@@ -182,7 +191,7 @@ export const permanentDeleteEvent = async (eventId: string) => {
       const data = docSnap.data();
       const list = data.list || [];
       const updatedList = list.filter((e: any) => e.id !== eventId);
-      await updateDoc(eventsRef, { list: updatedList });
+      await updateDoc(eventsRef, { list: removeUndefined(updatedList) });
     }
 
     const attendancesRef = doc(
@@ -196,7 +205,7 @@ export const permanentDeleteEvent = async (eventId: string) => {
       const attList = attData.list || [];
       const updatedAttList = attList.filter((a: any) => a.eventId !== eventId);
       if (attList.length !== updatedAttList.length) {
-        await updateDoc(attendancesRef, { list: updatedAttList });
+        await updateDoc(attendancesRef, { list: removeUndefined(updatedAttList) });
       }
     }
   } catch (e) {
@@ -227,7 +236,7 @@ export const closeEvent = async (eventId: string) => {
         return a;
       });
       if (count > 0) {
-        await updateDoc(attendancesRef, { list: updated });
+        await updateDoc(attendancesRef, { list: removeUndefined(updated) });
       }
     }
   } catch (e) {
@@ -244,16 +253,17 @@ export const createEvent = async (eventData: Omit<Event, "id">) => {
       "_events_global",
     );
     const eventId = "evt_" + Date.now().toString();
-    const eventItem = { ...eventData, id: eventId };
+    const cleanData = Object.fromEntries(Object.entries(eventData).filter(([_, v]) => v !== undefined));
+    const eventItem = { ...cleanData, id: eventId } as Event;
 
     const docSnap = await getDocFromServer(eventsRef).catch(() => null);
     if (docSnap && docSnap.exists()) {
       const data = docSnap.data();
       const list = data.list || [];
       list.push(eventItem);
-      await updateDoc(eventsRef, { list });
+      await updateDoc(eventsRef, { list: removeUndefined(list) });
     } else {
-      await setDoc(eventsRef, { list: [eventItem] });
+      await setDoc(eventsRef, { list: removeUndefined([eventItem]) });
     }
     return eventId;
   } catch (e) {
@@ -279,7 +289,7 @@ export const updateEvent = async (
       const idx = list.findIndex((e: Event) => e.id === eventId);
       if (idx !== -1) {
         list[idx] = { ...list[idx], ...eventData };
-        await updateDoc(eventsRef, { list });
+        await updateDoc(eventsRef, { list: removeUndefined(list) });
       }
     }
   } catch (e) {
@@ -303,7 +313,8 @@ export const enrollStudent = async (attendanceData: Omit<Attendance, "id">) => {
     );
     
     const attendanceId = "att_" + Date.now().toString();
-    const attendanceItem = { ...attendanceData, id: attendanceId };
+    const cleanData = Object.fromEntries(Object.entries(attendanceData).filter(([_, v]) => v !== undefined));
+    const attendanceItem = { ...cleanData, id: attendanceId } as Attendance;
 
     await runTransaction(db, async (transaction) => {
       const attendancesDoc = await transaction.get(attendancesRef);
@@ -343,9 +354,9 @@ export const enrollStudent = async (attendanceData: Omit<Attendance, "id">) => {
       const newList = [...attData, attendanceItem];
       
       if (!attendancesDoc.exists()) {
-        transaction.set(attendancesRef, { list: newList });
+        transaction.set(attendancesRef, { list: removeUndefined(newList) });
       } else {
-        transaction.update(attendancesRef, { list: newList });
+        transaction.update(attendancesRef, { list: removeUndefined(newList) });
       }
     });
 
@@ -373,7 +384,7 @@ export const updateAttendanceStatus = async (
       const idx = list.findIndex((a) => a.id === attendanceId);
       if (idx !== -1) {
         list[idx].status = status;
-        await updateDoc(attendancesRef, { list });
+        await updateDoc(attendancesRef, { list: removeUndefined(list) });
       }
     }
   } catch (e) {
@@ -397,7 +408,7 @@ export const unsubscribeFromEvent = async (eventId: string, studentId: string) =
       const filteredList = list.filter((a) => !(a.eventId === eventId && a.studentId === studentId));
 
       if (filteredList.length !== list.length) {
-        await updateDoc(attendancesRef, { list: filteredList });
+        await updateDoc(attendancesRef, { list: removeUndefined(filteredList) });
         return true;
       } else {
         console.warn("Inscrição não encontrada para cancelamento.");
@@ -515,3 +526,51 @@ export const getMemberByCPF = async (cpf: string): Promise<Member | null> => {
 };
 
 export const findMemberByCPF = getMemberByCPF;
+
+export const bookAppointment = async (
+  availabilityId: string,
+  memberId: string,
+  notes?: string
+): Promise<Appointment> => {
+  const availabilityRef = doc(db, `artifacts/${appId}/public/data/availabilities`, availabilityId);
+  const appointmentsRef = collection(db, `artifacts/${appId}/public/data/appointments`);
+  
+  return await runTransaction(db, async (transaction) => {
+    // 1. Ler a disponibilidade
+    const availabilityDoc = await transaction.get(availabilityRef);
+    if (!availabilityDoc.exists()) {
+      throw new Error("Disponibilidade não encontrada.");
+    }
+
+    const availability = availabilityDoc.data() as Availability;
+    
+    // 2. Verificar se está LIVRE
+    if (availability.status !== "LIVRE") {
+      throw new Error("Este horário já não está mais disponível.");
+    }
+
+    // 3. Marcar disponibilidade como OCUPADA
+    transaction.update(availabilityRef, { 
+      status: "OCUPADO",
+      updatedAt: new Date().toISOString()
+    });
+
+    // 4. Criar o agendamento (Appointment)
+    const appointmentDocRef = doc(appointmentsRef); // Gera um novo UUID
+    const newAppointment: Appointment = {
+      id: appointmentDocRef.id,
+      availabilityId: availabilityId,
+      memberId: memberId,
+      professionalId: availability.professionalId,
+      date: availability.date,
+      startTime: availability.startTime,
+      status: "CONFIRMADO",
+      notes: notes || "",
+      createdAt: new Date().toISOString(),
+    };
+
+    transaction.set(appointmentDocRef, newAppointment);
+    
+    return newAppointment;
+  });
+};

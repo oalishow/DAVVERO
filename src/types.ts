@@ -48,6 +48,8 @@ export interface Event {
   registrationDeadline?: string;
   isRegistrationPaused?: boolean;
   deletedAt?: string;
+  speaker?: string;
+  schedulePdfUrl?: string;
 }
 
 export interface Attendance {
@@ -57,4 +59,32 @@ export interface Attendance {
   status: "inscrito" | "presente";
   timestamp: string;
   member?: Member;
+}
+
+export type AvailabilityStatus = "LIVRE" | "OCUPADO" | "CANCELADO";
+
+export interface Availability {
+  id: string;
+  professionalId: string;
+  professionalName: string;
+  date: string;       // Formato YYYY-MM-DD
+  startTime: string;  // Formato HH:mm
+  endTime: string;    // Formato HH:mm
+  status: AvailabilityStatus;
+  location?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface Appointment {
+  id: string;
+  availabilityId: string; // Referência à Availability
+  memberId: string;       // Referência ao Member (Seminarian)
+  professionalId: string; // Desnormalizado para facilitar queries
+  date: string;           // Desnormalizado
+  startTime: string;      // Desnormalizado
+  status: "CONFIRMADO" | "CANCELADO";
+  notes?: string;
+  createdAt: string;
+  updatedAt?: string;
 }
