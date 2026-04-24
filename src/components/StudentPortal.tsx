@@ -225,9 +225,23 @@ export default function StudentPortal({
 
       pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210);
 
-      pdf.save(
-        `Certificado_${member.name.replace(/\s+/g, "_")}_${event.title.replace(/\s+/g, "_")}.pdf`,
-      );
+      const fileName = `Certificado_${member.name.replace(/\s+/g, "_")}_${event.title.replace(/\s+/g, "_")}.pdf`;
+      
+      // Save the file
+      pdf.save(fileName);
+
+      // On mobile devices, offer to open the certificate as well
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      if (isMobile) {
+        setTimeout(() => {
+          if (confirm("Certificado descarregado! Deseja tentar abrir o arquivo para visualização imediata?")) {
+            const blob = pdf.output('blob');
+            const blobUrl = URL.createObjectURL(blob);
+            window.open(blobUrl, '_blank');
+          }
+        }, 1000);
+      }
     } catch (e: any) {
       console.error("Download Error:", e);
       alert(`Erro ao descarregar: ${e.message || "Falha na geração do arquivo"}`);
