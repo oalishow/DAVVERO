@@ -70,6 +70,7 @@ export default function EventManagement() {
   const [hours, setHours] = useState("");
   const [maxParticipants, setMaxParticipants] = useState("");
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
+  const [eventSearchQuery, setEventSearchQuery] = useState("");
   const [statusMsg, setStatusMsg] = useState<{
     msg: string;
     type: "success" | "error" | "loading";
@@ -122,7 +123,7 @@ export default function EventManagement() {
     setLocationOrLink(event.locationOrLink || "");
     setDescription(event.description);
     setImageUrl(event.imageUrl || "");
-    setHours(event.hours.toString());
+    setHours(event.hours ? event.hours.toString() : "");
     setMaxParticipants(event.maxParticipants.toString());
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
@@ -146,7 +147,6 @@ export default function EventManagement() {
       !startDate ||
       !endDate ||
       !description ||
-      !hours ||
       !maxParticipants ||
       !locationOrLink
     ) {
@@ -169,7 +169,7 @@ export default function EventManagement() {
         locationOrLink,
         description,
         imageUrl,
-        hours: Number(hours),
+        hours: hours ? Number(hours) : undefined,
         maxParticipants: Number(maxParticipants),
       };
 
@@ -411,40 +411,58 @@ export default function EventManagement() {
               BETA
             </span>
           </h3>
-          <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-lg self-start sm:self-auto w-full sm:w-auto">
-            <button
-              onClick={() => setFilterStatus("todos")}
-              className={`flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-md transition-all ${filterStatus === "todos" ? "bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm" : "text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-800"}`}
-            >
-              Todos
-            </button>
-            <button
-              onClick={() => setFilterStatus("aberto")}
-              className={`flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-md transition-all ${filterStatus === "aberto" ? "bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm" : "text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-800"}`}
-            >
-              Abertos
-            </button>
-            <button
-              onClick={() => setFilterStatus("concluido")}
-              className={`flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-md transition-all ${filterStatus === "concluido" ? "bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm" : "text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-800"}`}
-            >
-              Concluídos
-            </button>
+          <div className="flex flex-col sm:flex-row gap-3 sm:items-center w-full sm:w-auto">
+            <div className="relative">
+              <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400" />
+              <input
+                type="text"
+                placeholder="Buscar evento..."
+                value={eventSearchQuery}
+                onChange={(e) => setEventSearchQuery(e.target.value)}
+                className="pl-9 pr-4 py-2 w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:border-sky-500"
+              />
+            </div>
+            <div className="flex bg-slate-100 dark:bg-slate-900 p-1 rounded-lg self-start sm:self-auto w-full sm:w-auto">
+              <button
+                onClick={() => setFilterStatus("todos")}
+                className={`flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-md transition-all ${filterStatus === "todos" ? "bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm" : "text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-800"}`}
+              >
+                Todos
+              </button>
+              <button
+                onClick={() => setFilterStatus("aberto")}
+                className={`flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-md transition-all ${filterStatus === "aberto" ? "bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm" : "text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-800"}`}
+              >
+                Abertos
+              </button>
+              <button
+                onClick={() => setFilterStatus("encerrado")}
+                className={`flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-md transition-all ${filterStatus === "encerrado" ? "bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm" : "text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-800"}`}
+              >
+                Concluídos
+              </button>
+            </div>
           </div>
         </div>
 
-        {events.filter(
-          (e) => filterStatus === "todos" || e.status === filterStatus,
-        ).length === 0 ? (
+        {events.filter((e) => {
+          const searchLower = eventSearchQuery.toLowerCase();
+          const matchesSearch = e.title.toLowerCase().includes(searchLower) || e.description.toLowerCase().includes(searchLower);
+          const matchesFilter = filterStatus === "todos" || e.status === filterStatus;
+          return matchesFilter && matchesSearch;
+        }).length === 0 ? (
           <p className="text-sm text-slate-500 dark:text-slate-400 text-center py-6">
             Nenhum evento encontrado.
           </p>
         ) : (
           <div className="space-y-3">
             {events
-              .filter(
-                (e) => filterStatus === "todos" || e.status === filterStatus,
-              )
+              .filter((e) => {
+                const searchLower = eventSearchQuery.toLowerCase();
+                const matchesSearch = e.title.toLowerCase().includes(searchLower) || e.description.toLowerCase().includes(searchLower);
+                const matchesFilter = filterStatus === "todos" || e.status === filterStatus;
+                return matchesFilter && matchesSearch;
+              })
               .map((event) => (
                 <div
                   key={event.id}

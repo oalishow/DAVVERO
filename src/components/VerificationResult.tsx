@@ -504,10 +504,10 @@ export default function VerificationResult({
         )}
       </div>
       <div className="flex flex-col w-full max-w-sm mt-2 no-print print:hidden space-y-2">
-        {isMyID && member?.alphaCode && (
+        {(isMyID || member?.roles?.includes("VISITANTE")) && member?.alphaCode && (
            <div className="flex flex-col items-center justify-center p-6 bg-white dark:bg-slate-900 rounded-3xl shadow-lg border-2 border-slate-200 dark:border-slate-800 mb-2 mt-2">
               <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest mb-4">
-                Escaneie-me
+                {member?.roles?.includes("VISITANTE") ? "QR Code Visitante" : "Escaneie-me"}
               </h3>
               <div className="bg-white p-2 rounded-xl border-2 border-slate-200">
                   <QRCodeSVG

@@ -70,13 +70,13 @@ export default function EventAttendeesModal({
     loadData();
   }, [event.id]);
 
-  const handleRemove = async (attendanceId: string) => {
+  const handleRemove = async (eventId: string, studentId: string) => {
     setConfirmModal({
       isOpen: true,
       message: "Tem a certeza que deseja remover esta inscrição?",
       onConfirm: async () => {
         try {
-          await unsubscribeFromEvent(attendanceId);
+          await unsubscribeFromEvent(eventId, studentId);
           loadData(); // Reload data to reflect change
         } catch (err) {
           alert("Erro ao remover inscrição.");
@@ -260,16 +260,25 @@ export default function EventAttendeesModal({
                   <div className="flex items-center justify-end gap-2 mt-2 sm:mt-0">
                     {a.status === "presente" ||
                     a.status === "apto_para_certificado" ? (
-                      <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-lg border border-emerald-200 dark:border-emerald-500/20">
-                        <CheckCircle className="w-3.5 h-3.5" /> Presente
-                      </span>
+                      <>
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-lg border border-emerald-200 dark:border-emerald-500/20">
+                          <CheckCircle className="w-3.5 h-3.5" /> Presente
+                        </span>
+                        <button
+                          onClick={() => handleRemove(event.id, a.studentId)}
+                          className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors border border-transparent hover:border-rose-200 dark:hover:border-rose-500/20"
+                          title="Remover inscrição/presença"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </>
                     ) : (
                       <>
                         <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-600">
                           <Clock className="w-3.5 h-3.5" /> Inscrito
                         </span>
                         <button
-                          onClick={() => handleRemove(a.id)}
+                          onClick={() => handleRemove(event.id, a.studentId)}
                           className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors border border-transparent hover:border-rose-200 dark:hover:border-rose-500/20"
                           title="Remover inscrição"
                         >

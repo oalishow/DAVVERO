@@ -39,7 +39,7 @@ export interface Event {
   format: "online" | "presencial";
   locationOrLink: string;
   description: string;
-  hours: number;
+  hours?: string | number;
   maxParticipants: number;
   status: string;
   imageUrl?: string;

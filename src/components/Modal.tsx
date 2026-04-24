@@ -10,6 +10,8 @@ interface ModalProps {
   confirmLabel?: string;
   onConfirm?: () => void;
   confirmVariant?: 'primary' | 'danger' | 'success';
+  hideFooter?: boolean;
+  isConfirmValid?: boolean;
 }
 
 export default function Modal({ 
@@ -19,7 +21,9 @@ export default function Modal({
   children, 
   confirmLabel, 
   onConfirm,
-  confirmVariant = 'primary'
+  confirmVariant = 'primary',
+  hideFooter = false,
+  isConfirmValid = true
 }: ModalProps) {
   return (
     <AnimatePresence>
@@ -56,30 +60,33 @@ export default function Modal({
                 {children}
               </div>
               
-              <div className="flex flex-col sm:flex-row gap-3">
-                <button 
-                  onClick={onClose}
-                  className="flex-1 py-3 px-4 rounded-xl text-sm font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                >
-                  {onConfirm ? 'Cancelar' : 'Fechar'}
-                </button>
-                
-                {onConfirm && (
+              {!hideFooter && (
+                <div className="flex flex-col sm:flex-row gap-3">
                   <button 
-                    onClick={() => {
-                      onConfirm();
-                      onClose();
-                    }}
-                    className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold text-white transition-all shadow-lg active:scale-95 ${
-                      confirmVariant === 'danger' ? 'bg-rose-600 hover:bg-rose-500 shadow-rose-600/20' : 
-                      confirmVariant === 'success' ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/20' : 
-                      'bg-slate-900 hover:bg-slate-800 dark:bg-sky-600 dark:hover:bg-sky-500 shadow-slate-900/20 dark:shadow-sky-600/20'
-                    }`}
+                    onClick={onClose}
+                    className="flex-1 py-3 px-4 rounded-xl text-sm font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                   >
-                    {confirmLabel || 'Confirmar'}
+                    {onConfirm ? 'Cancelar' : 'Fechar'}
                   </button>
-                )}
-              </div>
+                  
+                  {onConfirm && (
+                    <button 
+                      onClick={() => {
+                        onConfirm();
+                        onClose();
+                      }}
+                      disabled={!isConfirmValid}
+                      className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold text-white transition-all shadow-lg ${!isConfirmValid ? 'opacity-50 cursor-not-allowed' : 'active:scale-95'} ${
+                        confirmVariant === 'danger' ? 'bg-rose-600 hover:bg-rose-500 shadow-rose-600/20' : 
+                        confirmVariant === 'success' ? 'bg-emerald-600 hover:bg-emerald-500 shadow-emerald-600/20' : 
+                        'bg-slate-900 hover:bg-slate-800 dark:bg-sky-600 dark:hover:bg-sky-500 shadow-slate-900/20 dark:shadow-sky-600/20'
+                      }`}
+                    >
+                      {confirmLabel || 'Confirmar'}
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
           </motion.div>
         </div>

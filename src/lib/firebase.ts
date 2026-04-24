@@ -13,7 +13,7 @@ import {
   updateDoc,
   setDoc,
 } from "firebase/firestore";
-import { Event, Attendance } from "../types";
+import { Event, Attendance, Member } from "../types";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAldUSOslWbr9sTvg0ePP-8K0A2eBOuHOg",
@@ -301,7 +301,7 @@ export const updateAttendanceStatus = async (
   }
 };
 
-export const unsubscribeFromEvent = async (attendanceId: string) => {
+export const unsubscribeFromEvent = async (eventId: string, studentId: string) => {
   try {
     const attendancesRef = doc(
       db,
@@ -313,7 +313,7 @@ export const unsubscribeFromEvent = async (attendanceId: string) => {
       const data = docSnap.data();
       const list = (data.list || []) as Attendance[];
 
-      const filteredList = list.filter((a) => a.id !== attendanceId);
+      const filteredList = list.filter((a) => !(a.eventId === eventId && a.studentId === studentId));
 
       if (filteredList.length !== list.length) {
         await updateDoc(attendancesRef, { list: filteredList });
@@ -374,5 +374,49 @@ export const getEventSubscribers = async (
   } catch (e) {
     console.error("Error fetching event subscribers: ", e);
     return [];
+  }
+};
+
+export const registerVisitor = async (name: string, cpf?: string) => {
+  try {
+    const newVisitor: Omit<Member, "id"> = {
+      name,
+      cpf: cpf || "",
+      roles: ["VISITANTE"],
+      isActive: true,
+      alphaCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
+      createdAt: new Date().toISOString(),
+    };
+    
+    // We add and get the document
+    const { addDoc, collection } = await import("firebase/firestore");
+    const docRef = await addDoc(
+      collection(db, `artifacts/${appId}/public/data/students`),
+      newVisitor
+    );
+    return { ...newVisitor, id: docRef.id } as Member;
+  } catch (error) {
+    console.error("Erro ao registrar visitante:", error);
+    throw error;
+  }
+};
+
+export const findMemberByCPF = async (cpf: string): Promise<Member | null> => {
+  if (!cpf) return null;
+  try {
+    const { getDocs, query, collection, where } = await import("firebase/firestore");
+    const q = query(
+      collection(db, `artifacts/${appId}/public/data/students`),
+      where("cpf", "==", cpf)
+    );
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      const doc = snap.docs[0];
+      return { ...doc.data(), id: doc.id } as Member;
+    }
+    return null;
+  } catch (error) {
+    console.error("Erro ao buscar visitante por CPF:", error);
+    return null;
   }
 };

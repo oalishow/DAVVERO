@@ -126,14 +126,14 @@ export default function EventsPage() {
     }
   };
 
-  const handleUnenroll = async (attendanceId: string) => {
+  const handleUnenroll = async (eventId: string, studentId: string) => {
     setConfirmModal({
       isOpen: true,
       message:
         "Tem a certeza que deseja cancelar a sua inscrição neste evento?",
       onConfirm: async () => {
         try {
-          await unsubscribeFromEvent(attendanceId);
+          await unsubscribeFromEvent(eventId, studentId);
           alert("Inscrição cancelada com sucesso.");
         } catch (err) {
           console.error(err);
@@ -317,7 +317,7 @@ export default function EventsPage() {
                             </span>
                           </div>
                           <button
-                            onClick={() => handleUnenroll(enrolled.id)}
+                            onClick={() => handleUnenroll(event.id, member.id)}
                             className="w-full py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 rounded-lg text-[10px] font-bold uppercase transition-colors flex items-center justify-center gap-1 border border-rose-200 dark:border-rose-500/20"
                           >
                             <Ban className="w-3 h-3" /> Cancelar

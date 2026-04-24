@@ -7,12 +7,15 @@ import {
   updateAttendanceStatus,
   enrollStudent,
   auth,
+  registerVisitor,
+  findMemberByCPF,
 } from "../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import type { Member, Event, Attendance } from "../types";
 import VerificationResult from "./VerificationResult";
 import PublicRequestModal from "./PublicRequestModal";
 import SuggestEditModal from "./SuggestEditModal";
+import Modal from "./Modal";
 
 import { motion, AnimatePresence } from "motion/react";
 
@@ -32,9 +35,13 @@ export default function Verifier({
   const [membersCache, setMembersCache] = useState<Member[]>([]);
   const [eventsCache, setEventsCache] = useState<Event[]>([]);
   const [attendancesCache, setAttendancesCache] = useState<Attendance[]>([]);
-  const [verifyMode, setVerifyMode] = useState<"STANDARD" | "EVENT">(
+  const [verifyMode, setVerifyMode] = useState<"STANDARD" | "EVENT" | "VISITOR">(
     "STANDARD",
   );
+  const [visitorName, setVisitorName] = useState("");
+  const [visitorCPF, setVisitorCPF] = useState("");
+  const [visitorSearching, setVisitorSearching] = useState(false);
+  const [visitorRegistering, setVisitorRegistering] = useState(false);
   const [selectedEventId, setSelectedEventId] = useState<string>("");
   const [pendingCheckins, setPendingCheckins] = useState<
     { attendanceId: string }[]
@@ -52,6 +59,8 @@ export default function Verifier({
 
   const [showPublicReq, setShowPublicReq] = useState(false);
   const [showSuggestEdit, setShowSuggestEdit] = useState(false);
+  const [showRegisterTypeSelection, setShowRegisterTypeSelection] = useState(false);
+  const [showVisitorRegisterModal, setShowVisitorRegisterModal] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
   const [cacheLoaded, setCacheLoaded] = useState(false);
   const [initialVerifyChecked, setInitialVerifyChecked] = useState(false);
@@ -490,6 +499,47 @@ export default function Verifier({
     }, 600); // Reduced delay from 1500 to 600ms
   };
 
+  const handleSearchVisitorCPF = async () => {
+    if (!visitorCPF.trim()) {
+      alert("Preencha o CPF para buscar.");
+      return;
+    }
+    setVisitorSearching(true);
+    try {
+      const found = await findMemberByCPF(visitorCPF.trim());
+      if (found) {
+        setValidationResult({ member: found, status: "VALID" });
+        setSuccessMsg("Visitante encontrado.");
+      } else {
+        alert("Visitante não encontrado com este CPF.");
+      }
+    } catch (e: any) {
+      alert("Erro ao buscar visitante: " + e.message);
+    } finally {
+      setVisitorSearching(false);
+    }
+  };
+
+  const handleRegisterVisitor = async () => {
+    if (!visitorName.trim() || !visitorCPF.trim()) {
+      alert("Preencha o nome e o CPF.");
+      return;
+    }
+    setVisitorRegistering(true);
+    try {
+      const newMember = await registerVisitor(visitorName.trim(), visitorCPF.trim());
+      setSuccessMsg("Visitante cadastrado com sucesso!");
+      setValidationResult({ member: newMember, status: "VALID" });
+      setVisitorName("");
+      setVisitorCPF("");
+      setShowVisitorRegisterModal(false);
+    } catch (e: any) {
+      alert("Erro ao cadastrar visitante: " + e.message);
+    } finally {
+      setVisitorRegistering(false);
+    }
+  };
+
   if (isProcessing) {
     return (
       <div className="w-full flex flex-col items-center justify-center py-16 animated-fade-in relative overflow-hidden">
@@ -652,18 +702,24 @@ export default function Verifier({
       <div className="w-full text-center">
         {/* Verify Mode Selector */}
         {!isScanning && isAdminLogged && (
-          <div className="w-full max-w-sm mx-auto flex gap-2 no-print p-1 bg-slate-100 dark:bg-slate-800 rounded-xl mb-4 shadow-inner border border-slate-200 dark:border-slate-700">
+          <div className="w-full max-w-sm mx-auto flex gap-1 no-print p-1 bg-slate-100 dark:bg-slate-800 rounded-xl mb-4 shadow-inner border border-slate-200 dark:border-slate-700">
             <button
               onClick={() => setVerifyMode("STANDARD")}
-              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${verifyMode === "STANDARD" ? "bg-white dark:bg-slate-700 shadow-sm text-sky-600 dark:text-sky-400" : "text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-700/50"}`}
+              className={`flex-1 py-2 px-1 text-[10px] sm:text-xs font-bold rounded-lg transition-all ${verifyMode === "STANDARD" ? "bg-white dark:bg-slate-700 shadow-sm text-sky-600 dark:text-sky-400" : "text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-700/50"}`}
             >
-              Padrão
+              Verificar Identidade
             </button>
             <button
               onClick={() => setVerifyMode("EVENT")}
-              className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all ${verifyMode === "EVENT" ? "bg-white dark:bg-slate-700 shadow-sm text-sky-600 dark:text-sky-400" : "text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-700/50"}`}
+              className={`flex-1 py-2 px-1 text-[10px] sm:text-xs font-bold rounded-lg transition-all ${verifyMode === "EVENT" ? "bg-white dark:bg-slate-700 shadow-sm text-sky-600 dark:text-sky-400" : "text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-700/50"}`}
             >
               Check-in Evento
+            </button>
+            <button
+              onClick={() => setVerifyMode("VISITOR")}
+              className={`flex-1 py-2 px-1 text-[10px] sm:text-xs font-bold rounded-lg transition-all ${verifyMode === "VISITOR" ? "bg-white dark:bg-slate-700 shadow-sm text-sky-600 dark:text-sky-400" : "text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-700/50"}`}
+            >
+              Cadastro Visitante
             </button>
           </div>
         )}
@@ -690,87 +746,149 @@ export default function Verifier({
           </div>
         )}
 
-        {!isScanning ? (
-          <button
-            onClick={startScanner}
-            className="btn-modern w-full md:w-3/4 mx-auto flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl shadow-lg shadow-sky-600/30 text-sm sm:text-base font-bold text-white bg-gradient-to-r from-sky-500 via-teal-400 to-sky-500 hover:scale-[1.02] active:scale-95 transition-all"
-          >
-            <Camera className="w-5 h-5" />
-            Escanear QR Code
-          </button>
-        ) : (
-          <button
-            onClick={() => setIsScanning(false)}
-            className="btn-modern w-full md:w-3/4 mx-auto flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-rose-500 border border-rose-300 hover:bg-rose-500 hover:text-white transition-colors dark:bg-rose-500/10 dark:border-rose-500/30"
-          >
-            <XCircle className="w-5 h-5" />
-            Cancelar Escaneamento
-          </button>
+        {verifyMode !== "VISITOR" && (
+          <>
+            {!isScanning ? (
+              <button
+                onClick={startScanner}
+                className="btn-modern w-full md:w-3/4 mx-auto flex items-center justify-center gap-2 py-3.5 px-4 rounded-2xl shadow-lg shadow-sky-600/30 text-sm sm:text-base font-bold text-white bg-gradient-to-r from-sky-500 via-teal-400 to-sky-500 hover:scale-[1.02] active:scale-95 transition-all"
+              >
+                <Camera className="w-5 h-5" />
+                Escanear QR Code
+              </button>
+            ) : (
+               <button
+                onClick={() => setIsScanning(false)}
+                className="btn-modern w-full md:w-3/4 mx-auto flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-rose-500 border border-rose-300 hover:bg-rose-500 hover:text-white transition-colors dark:bg-rose-500/10 dark:border-rose-500/30"
+              >
+                <XCircle className="w-5 h-5" />
+                Cancelar Escaneamento
+              </button>
+            )}
+          </>
         )}
       </div>
 
-      <div
-        id="reader"
-        className={`w-full max-w-sm rounded-xl overflow-hidden shadow-2xl border-2 border-sky-400 dark:border-sky-500/30 aspect-square bg-black ${!isScanning && "hidden"}`}
-      ></div>
-      {isScanning && lastScannedDebug && (
-        <div className="mt-2 text-[10px] text-yellow-600 bg-yellow-50 p-2 rounded max-w-xs break-all">
-          Debug (Last Read): {lastScannedDebug}
-        </div>
-      )}
-
-      {isScanning && (
-        <div className="flex flex-col items-center">
-          <p className="mt-2 text-[10px] text-slate-500 font-medium animate-pulse text-center">
-            Dica: Aproxime ou afaste a câmera para focar no código.
-          </p>
-          {lastScannedDebug && (
+      {verifyMode !== "VISITOR" && (
+        <>
+          <div
+            id="reader"
+            className={`w-full max-w-sm rounded-xl overflow-hidden shadow-2xl border-2 border-sky-400 dark:border-sky-500/30 aspect-square bg-black ${!isScanning && "hidden"}`}
+          ></div>
+          {isScanning && lastScannedDebug && (
             <div className="mt-2 text-[10px] text-yellow-600 bg-yellow-50 p-2 rounded max-w-xs break-all">
               Debug (Last Read): {lastScannedDebug}
             </div>
           )}
-        </div>
-      )}
 
-      {/* Main Form Area */}
-      <div className="w-full max-w-md space-y-4">
-        <div className="relative flex items-center py-2 w-full max-w-md">
-          <div className="flex-grow border-t border-slate-300 dark:border-slate-700/80"></div>
-          <span className="mx-4 text-slate-500 text-[10px] sm:text-xs font-semibold uppercase tracking-widest">
-            Ou valide manualmente
-          </span>
-          <div className="flex-grow border-t border-slate-300 dark:border-slate-700/80"></div>
-        </div>
+          {isScanning && (
+            <div className="flex flex-col items-center">
+              <p className="mt-2 text-[10px] text-slate-500 font-medium animate-pulse text-center">
+                Dica: Aproxime ou afaste a câmera para focar no código.
+              </p>
+            </div>
+          )}
 
-        <div className="bg-white/80 dark:bg-slate-800/40 backdrop-blur-sm p-4 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-sm">
-          <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 text-center">
-            Código de Identificação ou RA
-          </label>
-          <div className="flex flex-col sm:flex-row gap-3">
-            <input
-              type="text"
-              value={codeInput}
-              onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
-              onKeyDown={(e) => e.key === "Enter" && handleVerifyManual()}
-              placeholder="EX: A1B2C3 OU 123456"
-              className="input-modern flex-grow rounded-xl py-2.5 px-4 text-center font-mono tracking-widest uppercase text-sm sm:text-lg"
-            />
+          {/* Main Form Area */}
+          <div className="w-full max-w-md space-y-4">
+            <div className="relative flex items-center py-2 w-full max-w-md">
+              <div className="flex-grow border-t border-slate-300 dark:border-slate-700/80"></div>
+              <span className="mx-4 text-slate-500 text-[10px] sm:text-xs font-semibold uppercase tracking-widest">
+                Ou valide manualmente
+              </span>
+              <div className="flex-grow border-t border-slate-300 dark:border-slate-700/80"></div>
+            </div>
+
+            <div className="bg-white/80 dark:bg-slate-800/40 backdrop-blur-sm p-4 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-sm">
+              <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2 text-center">
+                Código de Identificação ou RA
+              </label>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  type="text"
+                  value={codeInput}
+                  onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
+                  onKeyDown={(e) => e.key === "Enter" && handleVerifyManual()}
+                  placeholder="EX: A1B2C3 OU 123456"
+                  className="input-modern flex-grow rounded-xl py-2.5 px-4 text-center font-mono tracking-widest uppercase text-sm sm:text-lg"
+                />
+                <button
+                  onClick={handleVerifyManual}
+                  className="btn-modern py-2.5 px-6 rounded-xl text-white font-bold bg-slate-800 hover:bg-sky-600 flex items-center justify-center gap-2 shadow-lg shadow-slate-800/20 dark:shadow-none transition-all"
+                >
+                  <Search className="w-4 h-4" /> Verificar
+                </button>
+              </div>
+            </div>
+
             <button
-              onClick={handleVerifyManual}
-              className="btn-modern py-2.5 px-6 rounded-xl text-white font-bold bg-slate-800 hover:bg-sky-600 flex items-center justify-center gap-2 shadow-lg shadow-slate-800/20 dark:shadow-none transition-all"
+              onClick={() => setShowRegisterTypeSelection(true)}
+              className="w-full btn-modern py-3.5 rounded-xl border border-sky-300 dark:border-sky-500/30 text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-500/10 hover:bg-sky-100 dark:hover:bg-sky-500/20 text-sm font-semibold transition-all"
             >
-              <Search className="w-4 h-4" /> Verificar
+              Primeiro Acesso? Solicitar/Cadastrar
             </button>
           </div>
-        </div>
+        </>
+      )}
 
-        <button
-          onClick={() => setShowPublicReq(true)}
-          className="w-full btn-modern py-3.5 rounded-xl border border-sky-300 dark:border-sky-500/30 text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-500/10 hover:bg-sky-100 dark:hover:bg-sky-500/20 text-sm font-semibold transition-all"
-        >
-          Primeiro Acesso? Solicitar Identidade Digital
-        </button>
-      </div>
+      {verifyMode === "VISITOR" && (
+        <div className="w-full flex justify-center text-center max-w-md mx-auto space-y-6">
+           <div className="w-full bg-white dark:bg-slate-800/40 p-5 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-lg text-left relative overflow-hidden flex flex-col gap-6">
+              
+              <div className="space-y-4 pb-4 border-b border-slate-200 dark:border-slate-700">
+                <div className="text-center">
+                   <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">Buscar Visitante</h3>
+                   <p className="text-xs text-slate-500 mb-2">Busque por CPF se o visitante já foi cadastrado no sistema antes, para gerar o QR Code de acesso.</p>
+                </div>
+                <div className="flex flex-col sm:flex-row gap-3">
+                  <input
+                    type="text"
+                    value={visitorCPF}
+                    onChange={(e) => setVisitorCPF(e.target.value)}
+                    placeholder="CPF do visitante"
+                    className="flex-grow rounded-xl py-2.5 px-4 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 outline-none focus:border-sky-500"
+                  />
+                  <button
+                    onClick={handleSearchVisitorCPF}
+                    disabled={visitorSearching}
+                    className="py-2.5 px-6 rounded-xl text-white font-bold bg-slate-800 hover:bg-sky-600 transition-colors disabled:opacity-50"
+                  >
+                    {visitorSearching ? "Buscando..." : "Buscar CPF"}
+                  </button>
+                </div>
+              </div>
+              
+              <div className="space-y-4">
+                 <div className="text-center">
+                    <h3 className="text-lg font-black text-slate-800 dark:text-slate-100">Novo Visitante</h3>
+                    <p className="text-[10px] text-slate-500 mt-1 uppercase tracking-wider font-bold">Nota: Visitantes não geram a carteirinha.</p>
+                 </div>
+                 
+                 <div className="space-y-3">
+                   <div>
+                     <label className="block text-xs font-bold text-slate-500 uppercase ml-1 mb-1">Nome Completo</label>
+                     <input
+                        type="text"
+                        value={visitorName}
+                        onChange={(e) => setVisitorName(e.target.value)}
+                        placeholder="Nome do Visitante"
+                        className="w-full rounded-xl py-2.5 px-4 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 outline-none focus:border-sky-500"
+                      />
+                   </div>
+                   
+                   <button
+                    onClick={handleRegisterVisitor}
+                    disabled={visitorRegistering}
+                    className="w-full py-3.5 rounded-xl text-white font-bold bg-emerald-600 hover:bg-emerald-500 transition-colors shadow-lg shadow-emerald-500/20 disabled:opacity-50"
+                   >
+                     {visitorRegistering ? "Cadastrando..." : "Cadastrar e Visualizar QR"}
+                   </button>
+                 </div>
+              </div>
+              
+           </div>
+        </div>
+      )}
 
       {showPublicReq && (
         <PublicRequestModal
@@ -781,6 +899,74 @@ export default function Verifier({
             setTimeout(() => setSuccessMsg(""), 4000);
           }}
         />
+      )}
+
+      {showRegisterTypeSelection && (
+        <Modal
+          isOpen={showRegisterTypeSelection}
+          onClose={() => setShowRegisterTypeSelection(false)}
+          title="Tipo de Cadastro"
+          hideFooter
+        >
+          <div className="flex flex-col gap-4 py-4">
+            <button
+              onClick={() => {
+                setShowRegisterTypeSelection(false);
+                setShowPublicReq(true);
+              }}
+              className="p-4 rounded-2xl border-2 border-sky-100 dark:border-sky-500/30 bg-white dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-sky-500/10 text-left transition-all group"
+            >
+              <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 group-hover:text-sky-600 dark:group-hover:text-sky-400">Sou Aluno/Colaborador</h3>
+              <p className="text-xs text-slate-500 mt-1">Solicitar identidade digital institucional e carteirinha da FAJOPA.</p>
+            </button>
+            <button
+              onClick={() => {
+                setShowRegisterTypeSelection(false);
+                setShowVisitorRegisterModal(true);
+              }}
+              className="p-4 rounded-2xl border-2 border-emerald-100 dark:border-emerald-500/30 bg-white dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-left transition-all group"
+            >
+              <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400">Sou Visitante</h3>
+              <p className="text-xs text-slate-500 mt-1">Cadastrar para entrada em eventos. (Não gera carteirinha física).</p>
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {showVisitorRegisterModal && (
+        <Modal
+          isOpen={showVisitorRegisterModal}
+          onClose={() => setShowVisitorRegisterModal(false)}
+          title="Cadastro de Visitante"
+          confirmLabel="Cadastrar e Visualizar QR"
+          onConfirm={handleRegisterVisitor}
+          isConfirmValid={!visitorRegistering}
+        >
+          <div className="space-y-4 py-4 w-full">
+            <p className="text-[10px] text-slate-500 text-center uppercase tracking-wider font-bold mb-4">Nota: Visitantes não geram a carteirinha.</p>
+            <div className="w-full text-left">
+              <label className="block text-xs font-bold text-slate-500 uppercase ml-1 mb-1">Nome Completo *</label>
+              <input
+                type="text"
+                value={visitorName}
+                onChange={(e) => setVisitorName(e.target.value)}
+                placeholder="Nome do Visitante"
+                className="w-full rounded-xl py-3 px-4 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 outline-none focus:border-sky-500"
+              />
+            </div>
+            <div className="w-full text-left">
+              <label className="block text-xs font-bold text-slate-500 uppercase ml-1 mb-1">CPF *</label>
+              <input
+                type="text"
+                value={visitorCPF}
+                onChange={(e) => setVisitorCPF(e.target.value)}
+                placeholder="000.000.000-00"
+                className="w-full rounded-xl py-3 px-4 text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 outline-none focus:border-sky-500"
+              />
+            </div>
+            {visitorRegistering && <p className="text-sm text-sky-600 font-bold text-center">Cadastrando...</p>}
+          </div>
+        </Modal>
       )}
 
       <div className="mt-8 text-center text-[10px] sm:text-xs text-slate-400 dark:text-slate-500 max-w-sm px-4 space-y-4">

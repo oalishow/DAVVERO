@@ -269,3 +269,9 @@ body {
     display: none !important;
   }
 }
+
+@media print {
+  html, body {
+    overflow: visible !important;
+  }
+}
