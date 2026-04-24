@@ -1,5 +1,11 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, signInAnonymously, onAuthStateChanged } from "firebase/auth";
+import { 
+  getAuth, 
+  signInAnonymously, 
+  onAuthStateChanged,
+  setPersistence,
+  browserLocalPersistence 
+} from "firebase/auth";
 import { getMessaging } from "firebase/messaging";
 import {
   initializeFirestore,
@@ -39,6 +45,10 @@ export const db = initializeFirestore(app, {
 });
 
 export const auth = getAuth(app);
+// Garantir que o login persista no navegador mesmo após fechar a aba
+if (typeof window !== "undefined") {
+  setPersistence(auth, browserLocalPersistence).catch(console.error);
+}
 export const messaging = typeof window !== "undefined" ? getMessaging(app) : null;
 setLogLevel("error");
 
