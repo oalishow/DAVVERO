@@ -1,7 +1,13 @@
 import { useState, useEffect } from "react";
 import { Camera, XCircle, Search, ScanLine } from "lucide-react";
 import { collection, query, getDocs } from "firebase/firestore";
-import { db, appId, updateAttendanceStatus, auth } from "../lib/firebase";
+import {
+  db,
+  appId,
+  updateAttendanceStatus,
+  enrollStudent,
+  auth,
+} from "../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
 import type { Member, Event, Attendance } from "../types";
 import VerificationResult from "./VerificationResult";
@@ -576,6 +582,38 @@ export default function Verifier({
             setValidationResult(null);
             setCodeInput("");
             setSuccessMsg("");
+          }}
+          onEnrollAndCheckIn={async () => {
+            if (!validationResult.member || !selectedEventId) return;
+            try {
+              setIsProcessing(true);
+              await enrollStudent({
+                eventId: selectedEventId,
+                studentId: validationResult.member.id,
+                status: "presente",
+                enrolledAt: new Date().toISOString(),
+              });
+              // Add to cache to prevent second time
+              setAttendancesCache((prev) => [
+                ...prev,
+                {
+                  id: "att_local_" + Date.now(),
+                  eventId: selectedEventId,
+                  studentId: validationResult.member!.id,
+                  status: "presente",
+                  enrolledAt: new Date().toISOString(),
+                },
+              ]);
+              setSuccessMsg("Inscrição e check-in realizados com sucesso!");
+              setValidationResult({
+                member: validationResult.member,
+                status: "ALREADY_PRESENT",
+              });
+            } catch (e: any) {
+              alert("Erro ao realizar inscrição: " + e.message);
+            } finally {
+              setIsProcessing(false);
+            }
           }}
         />
         {validationResult.member && validationResult.status !== "NOT_FOUND" && (
