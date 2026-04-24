@@ -14,6 +14,7 @@ import {
 import { motion, AnimatePresence } from "motion/react";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
+import { toCanvas } from "html-to-image";
 import {
   collection,
   query,
@@ -199,27 +200,37 @@ export default function StudentPortal({
     setIsDownloading(true);
 
     try {
+      // Find the node
       const node = document.getElementById(`cert-node-${event.id}`);
       if (!node) {
-        throw new Error("Certificado não encontrado na página.");
+        throw new Error("Certificado não encontrado no DOM.");
       }
-      const canvas = await html2canvas(node, { scale: 2 });
-      const imgData = canvas.toDataURL('image/jpeg', 0.9);
 
-      const doc = new jsPDF({
+      // Ensure images are loaded. We can wait a bit or use a more robust way.
+      // html-to-image handles most cases better than html2canvas.
+      
+      const canvas = await toCanvas(node, {
+        pixelRatio: 2,
+        skipFonts: false,
+        cacheBust: true,
+      });
+
+      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+
+      const pdf = new jsPDF({
         orientation: "landscape",
         unit: "mm",
         format: "a4",
       });
 
-      doc.addImage(imgData, 'JPEG', 0, 0, 297, 210);
+      pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210);
 
-      doc.save(
+      pdf.save(
         `Certificado_${member.name.replace(/\s+/g, "_")}_${event.title.replace(/\s+/g, "_")}.pdf`,
       );
     } catch (e: any) {
-      console.error(e);
-      alert("Erro ao descarregar o certificado.");
+      console.error("Download Error:", e);
+      alert(`Erro ao descarregar: ${e.message || "Falha na geração do arquivo"}`);
     } finally {
       setIsDownloading(false);
     }
@@ -671,13 +682,16 @@ export default function StudentPortal({
           encerrará sua sessão segura.
         </Modal>
 
-        {/* Hidden nodes for Certificate rendering */}
-        <div className="absolute top-[-20000px] left-[-20000px]">
-          {allEvents.map((e) => e.certificateTemplate && (
-            <div key={e.id} id={`cert-node-${e.id}`}>
-              <AsyncCertificateRenderer event={e} member={member} />
-            </div>
-          ))}
+        {/* Hidden nodes for Certificate rendering - using visibility hidden instead of massive offset if possible, 
+            but absolute off-screen is safer for capture tools */}
+        <div className="absolute top-[-10000px] left-[-10000px] pointer-events-none" aria-hidden="true">
+          {allEvents
+            .filter(e => e.certificateTemplate)
+            .map((e) => (
+              <div key={e.id} id={`cert-node-${e.id}`} className="bg-white">
+                <AsyncCertificateRenderer event={e} member={member} />
+              </div>
+            ))}
         </div>
 
         <div className="w-full flex flex-col items-center animate-fade-in mt-10 max-w-sm sm:max-w-[600px] mx-auto">
