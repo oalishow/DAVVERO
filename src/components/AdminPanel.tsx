@@ -1,5 +1,4 @@
 import { useState, useEffect } from "react";
-import { useFcm } from "../hooks/useFcm";
 import {
   Settings,
   UserPlus,
@@ -47,10 +46,6 @@ import { Calendar } from "lucide-react";
 
 export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const { settings, updateSettings } = useSettings();
-  
-  // Initialize FCM for admin notifications
-  useFcm(auth.currentUser?.uid || "master-admin");
-
   const [activeTab, setActiveTab] = useState<"members" | "events" | "events_trash">("members");
   const [name, setName] = useState("");
   const [ra, setRa] = useState("");

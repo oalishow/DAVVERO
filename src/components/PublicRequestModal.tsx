@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom';
 import { X, Save, ShieldCheck, Image as ImageIcon } from 'lucide-react';
 import { collection, addDoc, query, where, getDocs } from 'firebase/firestore';
 import { db, appId } from '../lib/firebase';
-import { sendPushNotification } from '../lib/pushNotifications';
 import { useSettings } from '../context/SettingsContext';
 import type { Member } from '../types';
 import ImageCropperModal from './ImageCropperModal';
@@ -129,13 +128,6 @@ export default function PublicRequestModal({ onClose, onSubmitSuccess }: PublicR
       };
 
       await addDoc(collection(db, `artifacts/${appId}/public/data/students`), payload);
-
-      // Notify admins via push
-      sendPushNotification({
-        title: "Novo Pedido de Cadastro",
-        body: `O aluno ${name.trim()} solicitou uma nova identidade estudantil.`,
-        topic: 'admin'
-      }).catch(console.error);
 
       if (email.trim()) {
         try {

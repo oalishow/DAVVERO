@@ -3,7 +3,6 @@ import { createPortal } from 'react-dom';
 import { X, CheckCircle, Search, Image as ImageIcon } from 'lucide-react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db, appId, createNotification } from '../lib/firebase';
-import { sendPushNotification } from '../lib/pushNotifications';
 import { resizeAndConvertToBase64 } from '../lib/imageUtils';
 import { useSettings } from '../context/SettingsContext';
 import type { Member } from '../types';
@@ -108,13 +107,6 @@ export default function SuggestEditModal({ member, onClose, onSubmitSuccess }: S
         message: `${member.name} enviou uma sugestão de edição de perfil.`,
         type: "edicao"
       });
-
-      // Notify admins via push
-      sendPushNotification({
-        title: "Sugestão de Edição",
-        body: `${member.name} enviou uma sugestão de edição de perfil.`,
-        topic: 'admin'
-      }).catch(console.error);
 
       // Local onde entra notificação EmailJS extendida
       onSubmitSuccess();
