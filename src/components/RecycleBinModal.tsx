@@ -70,7 +70,7 @@ export default function RecycleBinModal({ onClose }: { onClose: () => void }) {
         {errorMessage}
       </Modal>
 
-      <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-200 dark:border-rose-900/50 rounded-3xl shadow-[0_30px_60px_rgba(0,0,0,0.12)] p-6 w-full max-w-lg animated-scale-in">
+      <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-200 dark:border-rose-900/50 rounded-3xl shadow-[0_30px_60px_rgba(0,0,0,0.12)] p-6 w-full max-w-lg animated-scale-in my-auto max-h-[95vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-100 dark:border-slate-700/60 font-bold">
           <h2 className="text-xl font-bold text-rose-600 dark:text-rose-400 flex items-center gap-2">
             <Trash2 className="w-5 h-5" /> Lixeira (30 dias)

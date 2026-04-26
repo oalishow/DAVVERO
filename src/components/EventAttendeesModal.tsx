@@ -251,8 +251,8 @@ export default function EventAttendeesModal({
   });
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm px-4 print:static print:bg-transparent print:p-0">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden border border-slate-200 dark:border-slate-700/50 flex flex-col max-h-[95vh] print:hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm px-4 print:static print:bg-transparent print:p-0 overflow-y-auto">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden border border-slate-200 dark:border-slate-700/50 flex flex-col max-h-[95vh] print:hidden my-auto">
         <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/20">
           <div>
             <h3 className="text-xl font-black text-slate-800 dark:text-white">

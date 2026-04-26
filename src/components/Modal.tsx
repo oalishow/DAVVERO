@@ -28,14 +28,14 @@ export default function Modal({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 no-print">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 no-print overflow-y-auto">
           {/* Backdrop */}
           <motion.div 
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm"
           />
           
           {/* Modal Content */}
@@ -43,10 +43,10 @@ export default function Modal({
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800"
+            className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-[2rem] shadow-2xl overflow-hidden border border-slate-200 dark:border-slate-800 my-auto flex flex-col max-h-[90vh] min-h-0"
           >
-            <div className="p-6 sm:p-8">
-              <div className="flex items-start justify-between mb-6 gap-4">
+            <div className="p-6 sm:p-8 flex flex-col overflow-hidden max-h-full min-h-0">
+              <div className="flex items-start justify-between mb-6 gap-4 shrink-0">
                 <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter leading-tight flex-1 break-words">{title}</h3>
                 <button 
                   onClick={onClose}
@@ -56,12 +56,12 @@ export default function Modal({
                 </button>
               </div>
               
-              <div className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-8 break-words overflow-hidden">
+              <div className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed mb-8 break-words overflow-y-auto shrink pb-2 -mr-2 pr-2">
                 {children}
               </div>
               
               {!hideFooter && (
-                <div className="flex flex-col sm:flex-row gap-3">
+                <div className="flex flex-col sm:flex-row gap-3 shrink-0 pt-2">
                   <button 
                     onClick={onClose}
                     className="flex-1 py-3 px-4 rounded-xl text-sm font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"

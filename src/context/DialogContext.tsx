@@ -63,39 +63,43 @@ export function DialogProvider({ children }: { children: ReactNode }) {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 no-print"
+              className="fixed inset-0 z-[9999] bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 no-print overflow-y-auto"
             >
               <motion.div
                 initial={{ scale: 0.95, opacity: 0, y: 10 }}
                 animate={{ scale: 1, opacity: 1, y: 0 }}
                 exit={{ scale: 0.95, opacity: 0, y: 10 }}
-                className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm border border-slate-200 dark:border-slate-800 overflow-hidden"
+                className="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-sm border border-slate-200 dark:border-slate-800 overflow-hidden flex flex-col max-h-[90vh] min-h-0 relative my-auto"
               >
-                <div className="p-5 sm:p-6 pb-0 flex gap-4">
-                  <div className="shrink-0 mt-0.5">
-                    {dialog.type === 'error' ? (
-                      <AlertCircle className="w-8 h-8 text-red-500" />
-                    ) : dialog.type === 'success' ? (
-                      <CheckCircle2 className="w-8 h-8 text-emerald-500" />
-                    ) : dialog.type === 'warning' ? (
-                      <AlertTriangle className="w-8 h-8 text-amber-500" />
-                    ) : (
-                      <Info className="w-8 h-8 text-sky-500" />
-                    )}
+                <div className="p-5 sm:p-6 pb-0 flex gap-4 shrink overflow-hidden flex-col max-h-full min-h-0">
+                  <div className="flex gap-4 shrink-0">
+                    <div className="shrink-0 mt-0.5">
+                      {dialog.type === 'error' ? (
+                        <AlertCircle className="w-8 h-8 text-red-500" />
+                      ) : dialog.type === 'success' ? (
+                        <CheckCircle2 className="w-8 h-8 text-emerald-500" />
+                      ) : dialog.type === 'warning' ? (
+                        <AlertTriangle className="w-8 h-8 text-amber-500" />
+                      ) : (
+                        <Info className="w-8 h-8 text-sky-500" />
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      {dialog.title && (
+                        <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1 leading-tight">
+                          {dialog.title}
+                        </h3>
+                      )}
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0">
-                    {dialog.title && (
-                      <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-1 leading-tight">
-                        {dialog.title}
-                      </h3>
-                    )}
-                    <p className="text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap leading-relaxed">
+                  <div className="flex-1 min-w-0 overflow-y-auto shrink mb-4 pl-12 -ml-12 mt-2 pr-2">
+                    <p className="text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap leading-relaxed ml-12">
                       {dialog.message}
                     </p>
                   </div>
                 </div>
                 
-                <div className="p-4 sm:p-6 pt-5 mt-4 flex justify-end gap-3 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800">
+                <div className="p-4 sm:p-6 pt-5 flex justify-end gap-3 bg-slate-50 dark:bg-slate-800/50 border-t border-slate-100 dark:border-slate-800 shrink-0">
                   {dialog.isConfirm && (
                     <button
                       onClick={() => closeDialog(dialog.id, false)}

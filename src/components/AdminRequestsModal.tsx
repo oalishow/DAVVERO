@@ -172,7 +172,7 @@ export default function AdminRequestsModal({ onClose }: { onClose: () => void })
         {errorMessage}
       </Modal>
 
-      <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-200 dark:border-slate-700/50 rounded-3xl shadow-[0_30px_60px_rgba(0,0,0,0.12)] p-6 w-full max-w-2xl animated-scale-in">
+      <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-200 dark:border-slate-700/50 rounded-3xl shadow-[0_30px_60px_rgba(0,0,0,0.12)] p-6 w-full max-w-2xl animated-scale-in my-auto max-h-[95vh] overflow-y-auto">
         <div className="flex justify-between items-center mb-6 pb-4 border-b border-slate-100 dark:border-slate-700/60">
           <h2 className="text-xl font-bold text-amber-600 dark:text-amber-400 flex items-center gap-2">
             Aprovações Pendentes
