@@ -14,7 +14,14 @@ import {
   setDoc,
   runTransaction,
 } from "firebase/firestore";
-import { Event, Attendance, Member, Availability, Appointment, Notification } from "../types";
+import {
+  Event,
+  Attendance,
+  Member,
+  Availability,
+  Appointment,
+  Notification,
+} from "../types";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAldUSOslWbr9sTvg0ePP-8K0A2eBOuHOg",
@@ -146,8 +153,12 @@ export const deleteEvent = async (eventId: string) => {
       }
       console.log(`Event ${eventId} soft-deleted successfully.`);
     } else {
-      console.log(`Failed to delete event ${eventId}: global document does not exist.`);
-      throw new Error(`Failed to delete event: Document does not exist. (Id: ${eventId})`);
+      console.log(
+        `Failed to delete event ${eventId}: global document does not exist.`,
+      );
+      throw new Error(
+        `Failed to delete event: Document does not exist. (Id: ${eventId})`,
+      );
     }
   } catch (e) {
     console.error("Error deleting event: ", e);
@@ -205,7 +216,9 @@ export const permanentDeleteEvent = async (eventId: string) => {
       const attList = attData.list || [];
       const updatedAttList = attList.filter((a: any) => a.eventId !== eventId);
       if (attList.length !== updatedAttList.length) {
-        await updateDoc(attendancesRef, { list: removeUndefined(updatedAttList) });
+        await updateDoc(attendancesRef, {
+          list: removeUndefined(updatedAttList),
+        });
       }
     }
   } catch (e) {
@@ -231,13 +244,13 @@ export const closeEvent = async (eventId: string) => {
       const updated = list.map((a) => {
         if (a.eventId === eventId && a.status === "presente") {
           count++;
-          
+
           // Notificar o aluno sobre o certificado disponível (disparado em background)
           createNotification({
             recipientId: a.studentId,
             title: "Certificado Disponível",
             message: `Seu certificado está pronto para download.`,
-            type: "certificado"
+            type: "certificado",
           }).catch(console.error);
 
           return { ...a, status: "apto_para_certificado" as any };
@@ -262,7 +275,9 @@ export const createEvent = async (eventData: Omit<Event, "id">) => {
       "_events_global",
     );
     const eventId = "evt_" + Date.now().toString();
-    const cleanData = Object.fromEntries(Object.entries(eventData).filter(([_, v]) => v !== undefined));
+    const cleanData = Object.fromEntries(
+      Object.entries(eventData).filter(([_, v]) => v !== undefined),
+    );
     const eventItem = { ...cleanData, id: eventId } as Event;
 
     const docSnap = await getDocFromServer(eventsRef).catch(() => null);
@@ -307,7 +322,9 @@ export const updateEvent = async (
         console.log("Event updated successfully.");
       } else {
         console.error(`Event ${eventId} not found in global list.`);
-        throw new Error(`Evento não encontrado para atualização (ID: ${eventId})`);
+        throw new Error(
+          `Evento não encontrado para atualização (ID: ${eventId})`,
+        );
       }
     } else {
       console.error("Global events document does not exist.");
@@ -332,9 +349,11 @@ export const enrollStudent = async (attendanceData: Omit<Attendance, "id">) => {
       `artifacts/${appId}/public/data/students`,
       "_events_global",
     );
-    
+
     const attendanceId = "att_" + Date.now().toString();
-    const cleanData = Object.fromEntries(Object.entries(attendanceData).filter(([_, v]) => v !== undefined));
+    const cleanData = Object.fromEntries(
+      Object.entries(attendanceData).filter(([_, v]) => v !== undefined),
+    );
     const attendanceItem = { ...cleanData, id: attendanceId } as Attendance;
 
     await runTransaction(db, async (transaction) => {
@@ -342,38 +361,46 @@ export const enrollStudent = async (attendanceData: Omit<Attendance, "id">) => {
       const eventsDoc = await transaction.get(eventsRef);
 
       const eventsData = eventsDoc.data()?.list || [];
-      const eventInfo = eventsData.find((e: any) => e.id === attendanceData.eventId);
+      const eventInfo = eventsData.find(
+        (e: any) => e.id === attendanceData.eventId,
+      );
 
       if (!eventInfo) {
-         throw new Error("EVENTO_NAO_ENCONTRADO");
+        throw new Error("EVENTO_NAO_ENCONTRADO");
       }
-      
+
       const isPastDeadline = eventInfo.registrationDeadline
         ? new Date() > new Date(eventInfo.registrationDeadline)
         : false;
 
       if (eventInfo.status === "deleted") {
-         throw new Error("EVENTO_EXCLUIDO");
+        throw new Error("EVENTO_EXCLUIDO");
       }
       if (eventInfo.isRegistrationPaused) {
-         throw new Error("INSCRICOES_PAUSADAS");
+        throw new Error("INSCRICOES_PAUSADAS");
       }
       if (isPastDeadline) {
-         throw new Error("INSCRICOES_ENCERRADAS");
+        throw new Error("INSCRICOES_ENCERRADAS");
       }
       if (eventInfo.status !== "aberto") {
-         throw new Error("EVENTO_FECHADO");
+        throw new Error("EVENTO_FECHADO");
       }
 
       const attData = attendancesDoc.data()?.list || [];
-      const currentEnrolledCount = attData.filter((a: any) => a.eventId === attendanceData.eventId && a.status !== "cancelado").length;
+      const currentEnrolledCount = attData.filter(
+        (a: any) =>
+          a.eventId === attendanceData.eventId && a.status !== "cancelado",
+      ).length;
 
-      if (eventInfo?.maxParticipants && currentEnrolledCount >= eventInfo.maxParticipants) {
-         throw new Error("LIMITE_EXCEDIDO");
+      if (
+        eventInfo?.maxParticipants &&
+        currentEnrolledCount >= eventInfo.maxParticipants
+      ) {
+        throw new Error("LIMITE_EXCEDIDO");
       }
-      
+
       const newList = [...attData, attendanceItem];
-      
+
       if (!attendancesDoc.exists()) {
         transaction.set(attendancesRef, { list: removeUndefined(newList) });
       } else {
@@ -386,7 +413,7 @@ export const enrollStudent = async (attendanceData: Omit<Attendance, "id">) => {
       recipientId: attendanceData.studentId,
       title: "Inscrição Confirmada",
       message: `Sua inscrição no evento foi confirmada com sucesso!`,
-      type: "inscricao"
+      type: "inscricao",
     });
 
     return attendanceId;
@@ -422,7 +449,11 @@ export const updateAttendanceStatus = async (
   }
 };
 
-export const updateAttendanceDetails = async (eventId: string, studentId: string, updates: Partial<Attendance>) => {
+export const updateAttendanceDetails = async (
+  eventId: string,
+  studentId: string,
+  updates: Partial<Attendance>,
+) => {
   try {
     const attendancesRef = doc(
       db,
@@ -433,39 +464,46 @@ export const updateAttendanceDetails = async (eventId: string, studentId: string
     if (docSnap && docSnap.exists()) {
       const data = docSnap.data();
       const list = (data.list || []) as Attendance[];
-      const idx = list.findIndex((a) => a.eventId === eventId && a.studentId === studentId);
+      const idx = list.findIndex(
+        (a) => a.eventId === eventId && a.studentId === studentId,
+      );
       if (idx !== -1) {
         list[idx] = { ...list[idx], ...updates };
         await updateDoc(attendancesRef, { list: removeUndefined(list) });
         return true;
       } else {
         // Attendance doesn't exist. Create it!
-        const attendanceId = "att_" + Date.now().toString() + "_" + Math.floor(Math.random() * 1000);
+        const attendanceId =
+          "att_" +
+          Date.now().toString() +
+          "_" +
+          Math.floor(Math.random() * 1000);
         const newAttendance: Attendance = {
           id: attendanceId,
           eventId,
           studentId,
           status: "inscrito",
           timestamp: new Date().toISOString(),
-          ...updates
+          ...updates,
         };
         list.push(newAttendance);
         await updateDoc(attendancesRef, { list: removeUndefined(list) });
         return true;
       }
     } else {
-       // Doc completely doesn't exist, highly unlikely here since it's global, but just in case
-       const attendanceId = "att_" + Date.now().toString() + "_" + Math.floor(Math.random() * 1000);
-       const newAttendance: Attendance = {
-         id: attendanceId,
-         eventId,
-         studentId,
-         status: "inscrito",
-         timestamp: new Date().toISOString(),
-         ...updates
-       };
-       await setDoc(attendancesRef, { list: removeUndefined([newAttendance]) });
-       return true;
+      // Doc completely doesn't exist, highly unlikely here since it's global, but just in case
+      const attendanceId =
+        "att_" + Date.now().toString() + "_" + Math.floor(Math.random() * 1000);
+      const newAttendance: Attendance = {
+        id: attendanceId,
+        eventId,
+        studentId,
+        status: "inscrito",
+        timestamp: new Date().toISOString(),
+        ...updates,
+      };
+      await setDoc(attendancesRef, { list: removeUndefined([newAttendance]) });
+      return true;
     }
   } catch (e) {
     console.error("Error updating attendance details: ", e);
@@ -473,7 +511,10 @@ export const updateAttendanceDetails = async (eventId: string, studentId: string
   }
 };
 
-export const unsubscribeFromEvent = async (eventId: string, studentId: string) => {
+export const unsubscribeFromEvent = async (
+  eventId: string,
+  studentId: string,
+) => {
   try {
     const attendancesRef = doc(
       db,
@@ -485,10 +526,14 @@ export const unsubscribeFromEvent = async (eventId: string, studentId: string) =
       const data = docSnap.data();
       const list = (data.list || []) as Attendance[];
 
-      const filteredList = list.filter((a) => !(a.eventId === eventId && a.studentId === studentId));
+      const filteredList = list.filter(
+        (a) => !(a.eventId === eventId && a.studentId === studentId),
+      );
 
       if (filteredList.length !== list.length) {
-        await updateDoc(attendancesRef, { list: removeUndefined(filteredList) });
+        await updateDoc(attendancesRef, {
+          list: removeUndefined(filteredList),
+        });
         return true;
       } else {
         console.warn("Inscrição não encontrada para cancelamento.");
@@ -568,20 +613,20 @@ export const registerVisitor = async (name: string, cpf?: string) => {
       alphaCode: Math.random().toString(36).substring(2, 8).toUpperCase(),
       createdAt: new Date().toISOString(),
     };
-    
+
     // We add and get the document
     const { addDoc, collection } = await import("firebase/firestore");
     const docRef = await addDoc(
       collection(db, `artifacts/${appId}/public/data/students`),
-      newVisitor
+      newVisitor,
     );
-    
+
     // Notify admins
     await createNotification({
       recipientId: "admin",
       title: "Novo Visitante",
       message: `O visitante ${name} foi cadastrado.`,
-      type: "visitante"
+      type: "visitante",
     });
 
     return { ...newVisitor, id: docRef.id } as Member;
@@ -595,19 +640,39 @@ export const getMemberByCPF = async (cpf: string): Promise<Member | null> => {
   if (!cpf) return null;
   const cleanCPF = cpf.replace(/\D/g, "");
   if (!cleanCPF) return null;
-  const formattedCPF = cleanCPF.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
-  
+  const formattedCPF = cleanCPF.replace(
+    /(\d{3})(\d{3})(\d{3})(\d{2})/,
+    "$1.$2.$3-$4",
+  );
+
   try {
-    const { getDocs, query, collection, where } = await import("firebase/firestore");
-    const q = query(
+    const { getDocs, query, collection, where } =
+      await import("firebase/firestore");
+
+    // First try standard CPF and RA concurrently
+    const qCpf = query(
       collection(db, `artifacts/${appId}/public/data/students`),
-      where("cpf", "in", [cleanCPF, formattedCPF])
+      where("cpf", "in", [cleanCPF, formattedCPF]),
     );
-    const snap = await getDocs(q);
-    if (!snap.empty) {
-      const doc = snap.docs[0];
+
+    // Fallback: Check if they stored CPF in the RA field
+    const qRa = query(
+      collection(db, `artifacts/${appId}/public/data/students`),
+      where("ra", "in", [cleanCPF, formattedCPF]),
+    );
+
+    const [snapCpf, snapRa] = await Promise.all([getDocs(qCpf), getDocs(qRa)]);
+
+    if (!snapCpf.empty) {
+      const doc = snapCpf.docs[0];
       return { ...doc.data(), id: doc.id } as Member;
     }
+    
+    if (!snapRa.empty) {
+      const doc = snapRa.docs[0];
+      return { ...doc.data(), id: doc.id } as Member;
+    }
+
     return null;
   } catch (error) {
     console.error("Erro ao buscar visitante por CPF:", error);
@@ -617,18 +682,27 @@ export const getMemberByCPF = async (cpf: string): Promise<Member | null> => {
 
 export const findMemberByCPF = getMemberByCPF;
 
-export const createNotification = async (notification: Omit<Notification, "id" | "createdAt" | "read">) => {
+export const createNotification = async (
+  notification: Omit<Notification, "id" | "createdAt" | "read">,
+) => {
   try {
-    const { collection, addDoc, serverTimestamp } = await import("firebase/firestore");
-    const notificationsRef = collection(db, `artifacts/${appId}/public/data/notifications`);
-    
+    const { collection, addDoc, serverTimestamp } =
+      await import("firebase/firestore");
+    const notificationsRef = collection(
+      db,
+      `artifacts/${appId}/public/data/notifications`,
+    );
+
     await addDoc(notificationsRef, {
       ...notification,
       read: false,
-      createdAt: new Date().toISOString()
+      createdAt: new Date().toISOString(),
     });
   } catch (error: any) {
-    if (error?.code !== 'permission-denied' && !error?.message?.includes('Missing or insufficient permissions')) {
+    if (
+      error?.code !== "permission-denied" &&
+      !error?.message?.includes("Missing or insufficient permissions")
+    ) {
       console.error("Erro ao criar notificação:", error);
     }
   }
@@ -637,10 +711,17 @@ export const createNotification = async (notification: Omit<Notification, "id" |
 export const markNotificationAsRead = async (notificationId: string) => {
   try {
     const { doc, updateDoc } = await import("firebase/firestore");
-    const notificationRef = doc(db, `artifacts/${appId}/public/data/notifications`, notificationId);
+    const notificationRef = doc(
+      db,
+      `artifacts/${appId}/public/data/notifications`,
+      notificationId,
+    );
     await updateDoc(notificationRef, { read: true });
   } catch (error: any) {
-    if (error?.code !== 'permission-denied' && !error?.message?.includes('Missing or insufficient permissions')) {
+    if (
+      error?.code !== "permission-denied" &&
+      !error?.message?.includes("Missing or insufficient permissions")
+    ) {
       console.error("Erro ao marcar notificação como lida:", error);
     }
   }
@@ -648,10 +729,18 @@ export const markNotificationAsRead = async (notificationId: string) => {
 
 export const markAllNotificationsAsRead = async (recipientId: string) => {
   try {
-    const { collection, query, where, getDocs, writeBatch } = await import("firebase/firestore");
-    const notificationsRef = collection(db, `artifacts/${appId}/public/data/notifications`);
-    const q = query(notificationsRef, where("recipientId", "==", recipientId), where("read", "==", false));
-    
+    const { collection, query, where, getDocs, writeBatch } =
+      await import("firebase/firestore");
+    const notificationsRef = collection(
+      db,
+      `artifacts/${appId}/public/data/notifications`,
+    );
+    const q = query(
+      notificationsRef,
+      where("recipientId", "==", recipientId),
+      where("read", "==", false),
+    );
+
     const snap = await getDocs(q);
     if (snap.empty) return;
 
@@ -661,7 +750,10 @@ export const markAllNotificationsAsRead = async (recipientId: string) => {
     });
     await batch.commit();
   } catch (error: any) {
-    if (error?.code !== 'permission-denied' && !error?.message?.includes('Missing or insufficient permissions')) {
+    if (
+      error?.code !== "permission-denied" &&
+      !error?.message?.includes("Missing or insufficient permissions")
+    ) {
       console.error("Erro ao marcar todas notificações como lidas:", error);
     }
   }
@@ -669,11 +761,18 @@ export const markAllNotificationsAsRead = async (recipientId: string) => {
 export const bookAppointment = async (
   availabilityId: string,
   memberId: string,
-  notes?: string
+  notes?: string,
 ): Promise<Appointment> => {
-  const availabilityRef = doc(db, `artifacts/${appId}/public/data/availabilities`, availabilityId);
-  const appointmentsRef = collection(db, `artifacts/${appId}/public/data/appointments`);
-  
+  const availabilityRef = doc(
+    db,
+    `artifacts/${appId}/public/data/availabilities`,
+    availabilityId,
+  );
+  const appointmentsRef = collection(
+    db,
+    `artifacts/${appId}/public/data/appointments`,
+  );
+
   return await runTransaction(db, async (transaction) => {
     // 1. Ler a disponibilidade
     const availabilityDoc = await transaction.get(availabilityRef);
@@ -682,16 +781,16 @@ export const bookAppointment = async (
     }
 
     const availability = availabilityDoc.data() as Availability;
-    
+
     // 2. Verificar se está LIVRE
     if (availability.status !== "LIVRE") {
       throw new Error("Este horário já não está mais disponível.");
     }
 
     // 3. Marcar disponibilidade como OCUPADA
-    transaction.update(availabilityRef, { 
+    transaction.update(availabilityRef, {
       status: "OCUPADO",
-      updatedAt: new Date().toISOString()
+      updatedAt: new Date().toISOString(),
     });
 
     // 4. Criar o agendamento (Appointment)
@@ -709,7 +808,7 @@ export const bookAppointment = async (
     };
 
     transaction.set(appointmentDocRef, newAppointment);
-    
+
     return newAppointment;
   });
 };

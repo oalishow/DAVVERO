@@ -34,48 +34,93 @@ import Modal from "./Modal";
 import { ASSETS_DOC_PATH } from "../lib/constants";
 import { CertificateRenderer } from "./CertificateRenderer";
 
-const AsyncCertificateRenderer = memo(({ event, member, isOrganizer }: { event: Event, member: Member, isOrganizer?: boolean }) => {
-  const [template, setTemplate] = useState(event.certificateTemplate);
+const AsyncCertificateRenderer = memo(
+  ({
+    event,
+    member,
+    isOrganizer,
+  }: {
+    event: Event;
+    member: Member;
+    isOrganizer?: boolean;
+  }) => {
+    const [template, setTemplate] = useState(event.certificateTemplate);
 
-  useEffect(() => {
-    let isMounted = true;
-    if (!template) return;
+    useEffect(() => {
+      let isMounted = true;
+      if (!template) return;
 
-    const needsAssets = template.hasCustomBg || template.hasFajopaSignature || template.hasRectorSignature;
-    if (!needsAssets) return;
+      const needsAssets =
+        template.hasCustomBg ||
+        template.hasFajopaSignature ||
+        template.hasRectorSignature;
+      if (!needsAssets) return;
 
-    const fetchAssets = async () => {
-      try {
-        const assetDocId = isOrganizer ? `cert_assets_org_${event.id}` : `cert_assets_${event.id}`;
-        const snap = await getDoc(doc(db, ASSETS_DOC_PATH(appId, assetDocId)));
-        if (!isMounted) return;
-        
-        if (snap.exists() && snap.data().data) {
-          const assets = snap.data().data;
-          setTemplate(prev => prev ? {
-            ...prev,
-            ...(assets.backgroundImageUrl && { backgroundImageUrl: assets.backgroundImageUrl }),
-            ...(assets.fajopaDirectorSignatureUrl && { fajopaDirectorSignatureUrl: assets.fajopaDirectorSignatureUrl }),
-            ...(assets.seminarRectorSignatureUrl && { seminarRectorSignatureUrl: assets.seminarRectorSignatureUrl }),
-          } : prev);
-        } else if ((template as any).hasCustomBg && !isOrganizer) { // Fallback to old bg doc
-          const oldBgSnap = await getDoc(doc(db, ASSETS_DOC_PATH(appId, `cert_bg_${event.id}`)));
+      const fetchAssets = async () => {
+        try {
+          const assetDocId = isOrganizer
+            ? `cert_assets_org_${event.id}`
+            : `cert_assets_${event.id}`;
+          const snap = await getDoc(
+            doc(db, ASSETS_DOC_PATH(appId, assetDocId)),
+          );
           if (!isMounted) return;
-          if (oldBgSnap.exists() && oldBgSnap.data().data) {
-             setTemplate(prev => prev ? { ...prev, backgroundImageUrl: oldBgSnap.data().data } : prev);
-          }
-        }
-      } catch (err) {
-        console.error("Failed to load cert assets for portal", err);
-      }
-    };
-    fetchAssets();
-    return () => { isMounted = false; };
-  }, [event.id, isOrganizer]);
 
-  if (!template) return null;
-  return <CertificateRenderer event={event} template={template} member={member} isOrganizer={isOrganizer} />;
-});
+          if (snap.exists() && snap.data().data) {
+            const assets = snap.data().data;
+            setTemplate((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    ...(assets.backgroundImageUrl && {
+                      backgroundImageUrl: assets.backgroundImageUrl,
+                    }),
+                    ...(assets.fajopaDirectorSignatureUrl && {
+                      fajopaDirectorSignatureUrl:
+                        assets.fajopaDirectorSignatureUrl,
+                    }),
+                    ...(assets.seminarRectorSignatureUrl && {
+                      seminarRectorSignatureUrl:
+                        assets.seminarRectorSignatureUrl,
+                    }),
+                  }
+                : prev,
+            );
+          } else if ((template as any).hasCustomBg && !isOrganizer) {
+            // Fallback to old bg doc
+            const oldBgSnap = await getDoc(
+              doc(db, ASSETS_DOC_PATH(appId, `cert_bg_${event.id}`)),
+            );
+            if (!isMounted) return;
+            if (oldBgSnap.exists() && oldBgSnap.data().data) {
+              setTemplate((prev) =>
+                prev
+                  ? { ...prev, backgroundImageUrl: oldBgSnap.data().data }
+                  : prev,
+              );
+            }
+          }
+        } catch (err) {
+          console.error("Failed to load cert assets for portal", err);
+        }
+      };
+      fetchAssets();
+      return () => {
+        isMounted = false;
+      };
+    }, [event.id, isOrganizer]);
+
+    if (!template) return null;
+    return (
+      <CertificateRenderer
+        event={event}
+        template={template}
+        member={member}
+        isOrganizer={isOrganizer}
+      />
+    );
+  },
+);
 
 const STUDENT_BOND_KEY = "davveroId_student_identity";
 const STUDENT_TRACK_KEY = "davveroId_student_track_ra";
@@ -103,8 +148,12 @@ export default function StudentPortal({
   const [alphaCode, setAlphaCode] = useState("");
   const [isPrePinAnimation, setIsPrePinAnimation] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [activeTab, setActiveTab] = useState<"id" | "events" | "certificates">("id");
-  const [eventsSubTab, setEventsSubTab] = useState<"upcoming" | "past">("upcoming");
+  const [activeTab, setActiveTab] = useState<"id" | "events" | "certificates">(
+    "id",
+  );
+  const [eventsSubTab, setEventsSubTab] = useState<"upcoming" | "past">(
+    "upcoming",
+  );
 
   // Modal States
   const [modalUnlinkOpen, setModalUnlinkOpen] = useState(false);
@@ -142,7 +191,7 @@ export default function StudentPortal({
         (docSnap) => {
           if (docSnap.exists()) {
             let evts = (docSnap.data().list || []) as Event[];
-            evts = evts.filter(e => e.status !== "deleted");
+            evts = evts.filter((e) => e.status !== "deleted");
             const now = new Date().getTime();
             evts.sort((a, b) => {
               const timeA = new Date(a.startDate).getTime();
@@ -183,7 +232,9 @@ export default function StudentPortal({
 
   const handleEnroll = async (eventId: string) => {
     if (!member) {
-      alert("Ação Necessária: Por favor, vincule sua carteirinha ou faça login no portal 'MINHA ID' para se inscrever neste evento.");
+      alert(
+        "Ação Necessária: Por favor, vincule sua carteirinha ou faça login no portal 'MINHA ID' para se inscrever neste evento.",
+      );
       return;
     }
     setIsEnrollingInProgress(eventId);
@@ -202,27 +253,32 @@ export default function StudentPortal({
     }
   };
 
-  const handleDownloadCertificate = async (event: Event, type: "participant" | "organizer") => {
+  const handleDownloadCertificate = async (
+    event: Event,
+    type: "participant" | "organizer",
+  ) => {
     if (!member) return;
     setIsDownloading(true);
 
     try {
       // Find the node
-      const node = document.getElementById(`cert-node-${type === "participant" ? "part" : "org"}-${event.id}`);
+      const node = document.getElementById(
+        `cert-node-${type === "participant" ? "part" : "org"}-${event.id}`,
+      );
       if (!node) {
         throw new Error("Certificado não encontrado no DOM.");
       }
 
       // Ensure images are loaded. We can wait a bit or use a more robust way.
       // html-to-image handles most cases better than html2canvas.
-      
+
       const canvas = await toCanvas(node, {
         pixelRatio: 2,
         skipFonts: false,
         cacheBust: true,
       });
 
-      const imgData = canvas.toDataURL('image/jpeg', 0.95);
+      const imgData = canvas.toDataURL("image/jpeg", 0.95);
 
       const pdf = new jsPDF({
         orientation: "landscape",
@@ -230,28 +286,37 @@ export default function StudentPortal({
         format: "a4",
       });
 
-      pdf.addImage(imgData, 'JPEG', 0, 0, 297, 210);
+      pdf.addImage(imgData, "JPEG", 0, 0, 297, 210);
 
       const fileName = `Certificado_${member.name.replace(/\s+/g, "_")}_${event.title.replace(/\s+/g, "_")}.pdf`;
-      
+
       // Save the file
       pdf.save(fileName);
 
       // On mobile devices, offer to open the certificate as well
-      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-      
+      const isMobile =
+        /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+          navigator.userAgent,
+        );
+
       if (isMobile) {
         setTimeout(() => {
-          if (confirm("Certificado descarregado! Deseja tentar abrir o arquivo para visualização imediata?")) {
-            const blob = pdf.output('blob');
+          if (
+            confirm(
+              "Certificado descarregado! Deseja tentar abrir o arquivo para visualização imediata?",
+            )
+          ) {
+            const blob = pdf.output("blob");
             const blobUrl = URL.createObjectURL(blob);
-            window.open(blobUrl, '_blank');
+            window.open(blobUrl, "_blank");
           }
         }, 1000);
       }
     } catch (e: any) {
       console.error("Download Error:", e);
-      alert(`Erro ao descarregar: ${e.message || "Falha na geração do arquivo"}`);
+      alert(
+        `Erro ao descarregar: ${e.message || "Falha na geração do arquivo"}`,
+      );
     } finally {
       setIsDownloading(false);
     }
@@ -322,45 +387,78 @@ export default function StudentPortal({
     setError(null);
 
     try {
-      let q;
       const cleanInput = alphaCode.trim();
       const onlyNumbers = cleanInput.replace(/\D/g, "");
       const isCPF = /^\d{11}$/.test(onlyNumbers);
 
+      let foundMember = null;
+      let usedField = "";
+
       if (isCPF) {
-        const formattedCPF = onlyNumbers.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
-        q = query(
+        const formattedCPF = onlyNumbers.replace(
+          /(\d{3})(\d{3})(\d{3})(\d{2})/,
+          "$1.$2.$3-$4",
+        );
+
+        // Try searching in CPF and RA fields concurrently for faster lookup
+        const qCpf = query(
           collection(db, `artifacts/${appId}/public/data/students`),
           where("cpf", "in", [onlyNumbers, formattedCPF]),
-          limit(1),
         );
+        const qRa = query(
+          collection(db, `artifacts/${appId}/public/data/students`),
+          where("ra", "in", [onlyNumbers, formattedCPF]),
+        );
+
+        const [snapCpf, snapRa] = await Promise.all([
+          getDocs(qCpf),
+          getDocs(qRa),
+        ]);
+
+        if (!snapCpf.empty) {
+          // find active / non-deleted first
+          const docs = snapCpf.docs;
+          const active = docs.find((d) => !d.data().deletedAt) || docs[0];
+          foundMember = { id: active.id, ...active.data() };
+        } else if (!snapRa.empty) {
+          const docs = snapRa.docs;
+          const active = docs.find((d) => !d.data().deletedAt) || docs[0];
+          foundMember = { id: active.id, ...active.data() };
+        }
       } else {
-        q = query(
+        const qAlpha = query(
           collection(db, `artifacts/${appId}/public/data/students`),
           where("alphaCode", "==", cleanInput.toUpperCase()),
-          limit(1),
         );
+        const snapAlpha = await getDocs(qAlpha);
+        if (!snapAlpha.empty) {
+          const docs = snapAlpha.docs;
+          const active = docs.find((d) => !d.data().deletedAt) || docs[0];
+          foundMember = { id: active.id, ...active.data() };
+        }
       }
 
-      const snapshot = await getDocs(q);
-      
-      if (!snapshot.empty) {
-        const doc = snapshot.docs[0];
-        const data = doc.data() as Member;
-        const memberData = { ...data, id: doc.id };
-        setMember(memberData);
-        setBondedId(memberData.alphaCode || null);
-        
-        // Start PrePinAnimation
+      if (foundMember) {
+        setMember(foundMember as Member);
+        setBondedId(foundMember.alphaCode || null);
+
+        setIsLoading(false); // Make sure the Acessando dados loading screen disappears
+
+        // Start PrePinAnimation with slower progression bar
         setLinkMode(false);
         setPinMode("create");
         setIsPrePinAnimation(true);
-        await new Promise((resolve) => setTimeout(resolve, 800));
+        // We will manage the loading bar in the UI during this 3000ms delay
+        await new Promise((resolve) => setTimeout(resolve, 3000));
         setIsPrePinAnimation(false);
 
-        localStorage.setItem(STUDENT_BOND_KEY, memberData.alphaCode || "");
+        localStorage.setItem(STUDENT_BOND_KEY, foundMember.alphaCode || "");
       } else {
-        setError(isCPF ? "CPF não encontrado na base de dados." : "Código não encontrado na base de dados.");
+        setError(
+          isCPF
+            ? "Identificação não encontrada. Verifique se o CPF ou RA estão corretos."
+            : "Código não encontrado na base de dados.",
+        );
       }
     } catch (err) {
       setError("Erro ao vincular identidade.");
@@ -445,7 +543,7 @@ export default function StudentPortal({
         } else if (pinInput === pinConfirm) {
           localStorage.setItem(STUDENT_FALLBACK_PIN, pinInput);
           setIsGenerating(true);
-          await new Promise((resolve) => setTimeout(resolve, 800));
+          await new Promise((resolve) => setTimeout(resolve, 3000));
           setIsUnlocked(true);
           setIsGenerating(false);
           setPinMode("none");
@@ -462,7 +560,7 @@ export default function StudentPortal({
       const savedPin = localStorage.getItem(STUDENT_FALLBACK_PIN);
       if (pinInput === savedPin) {
         setIsGenerating(true);
-        await new Promise((resolve) => setTimeout(resolve, 800));
+        await new Promise((resolve) => setTimeout(resolve, 3000));
         setIsUnlocked(true);
         setIsGenerating(false);
         setPinMode("none");
@@ -523,7 +621,7 @@ export default function StudentPortal({
             <div className="space-y-4">
               <div className="space-y-1">
                 <h3 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-tighter">
-                  Acedendo aos seus dados
+                  Acessando seus dados
                 </h3>
               </div>
               <div className="space-y-2">
@@ -531,13 +629,17 @@ export default function StudentPortal({
                   <motion.div
                     initial={{ width: "0%" }}
                     animate={{ width: "100%" }}
-                    transition={{ duration: 1.5, ease: "easeInOut", repeat: Infinity }}
+                    transition={{
+                      duration: 1.0,
+                      ease: "easeInOut",
+                      repeat: Infinity,
+                    }}
                     className="h-full bg-sky-500 relative"
                   >
                     <div className="absolute top-0 right-0 bottom-0 left-0 bg-white/20 animate-pulse" />
                   </motion.div>
                 </div>
-                <p className="text-xs font-bold text-sky-600 dark:text-sky-400 tracking-wider">
+                <p className="text-[10px] sm:text-xs font-bold text-sky-600 dark:text-sky-400 tracking-wider leading-relaxed">
                   Carregando...
                 </p>
               </div>
@@ -560,7 +662,7 @@ export default function StudentPortal({
                   <div className="mx-auto w-16 h-16 bg-emerald-100 dark:bg-emerald-500/20 rounded-2xl flex items-center justify-center">
                     <User className="w-8 h-8 text-emerald-600 dark:text-emerald-400 animate-pulse" />
                   </div>
-                  
+
                   <div className="space-y-4">
                     <div className="space-y-1">
                       <motion.h3
@@ -591,13 +693,15 @@ export default function StudentPortal({
                           <div className="absolute top-0 right-0 bottom-0 left-0 bg-white/20 animate-pulse" />
                         </motion.div>
                       </div>
-                      <motion.p 
+                      <motion.p
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         transition={{ delay: 0.2 }}
                         className="text-[10px] sm:text-xs font-bold text-emerald-600 dark:text-emerald-400 tracking-wider leading-relaxed"
                       >
-                        Preparando ambiente seguro e <br className="hidden sm:block" /> aplicando camadas de segurança...
+                        Preparando ambiente seguro e{" "}
+                        <br className="hidden sm:block" /> aplicando camadas de
+                        segurança...
                       </motion.p>
                     </div>
                   </div>
@@ -787,7 +891,10 @@ export default function StudentPortal({
 
         {/* Hidden nodes for Certificate rendering - using visibility hidden instead of massive offset if possible, 
             but absolute off-screen is safer for capture tools */}
-        <div className="absolute top-[-10000px] left-[-10000px] pointer-events-none" aria-hidden="true">
+        <div
+          className="absolute top-[-10000px] left-[-10000px] pointer-events-none"
+          aria-hidden="true"
+        >
           {allEvents.map((e) => {
             const hasPart = Boolean(e.certificateTemplate);
             const hasOrg = Boolean(e.organizationCertificateTemplate);
@@ -795,12 +902,25 @@ export default function StudentPortal({
               <div key={e.id} className="contents">
                 {hasPart && (
                   <div id={`cert-node-part-${e.id}`} className="bg-white">
-                    <AsyncCertificateRenderer event={{ ...e, certificateTemplate: e.certificateTemplate }} member={member} />
+                    <AsyncCertificateRenderer
+                      event={{
+                        ...e,
+                        certificateTemplate: e.certificateTemplate,
+                      }}
+                      member={member}
+                    />
                   </div>
                 )}
                 {hasOrg && (
                   <div id={`cert-node-org-${e.id}`} className="bg-white">
-                    <AsyncCertificateRenderer event={{ ...e, certificateTemplate: e.organizationCertificateTemplate }} member={member} isOrganizer={true} />
+                    <AsyncCertificateRenderer
+                      event={{
+                        ...e,
+                        certificateTemplate: e.organizationCertificateTemplate,
+                      }}
+                      member={member}
+                      isOrganizer={true}
+                    />
                   </div>
                 )}
               </div>
@@ -899,18 +1019,20 @@ export default function StudentPortal({
               >
                 <div className="px-4 py-6 bg-blue-50/50 dark:bg-blue-900/10 rounded-3xl border border-blue-100 dark:border-blue-900/30">
                   <p className="text-xs text-blue-700 dark:text-blue-400 font-medium leading-relaxed">
-                    Esta é a sua Identidade Estudantil oficial. Use o QR Code acima para validar sua presença em eventos e garantir seu acesso aos benefícios estudantis.
+                    Esta é a sua Identidade Estudantil oficial. Use o QR Code
+                    acima para validar sua presença em eventos e garantir seu
+                    acesso aos benefícios estudantis.
                   </p>
                 </div>
-                
+
                 <div className="px-4 py-6 bg-slate-50 dark:bg-slate-800/50 rounded-3xl border border-slate-200 dark:border-slate-700/50 text-center no-print print:hidden">
                   <h3 className="text-sm font-black text-slate-800 dark:text-white uppercase tracking-widest mb-3 leading-tight">
                     Validade Nacional
                   </h3>
                   <p className="text-[10px] text-slate-500 mb-4 px-4 leading-relaxed font-medium">
-                    O DAVVERO-ID é seu documento institucional. Para eventos nacionais
-                    que exijam o padrão ITI com certificação ICP-Brasil, você pode
-                    solicitar o DNE oficial.
+                    O DAVVERO-ID é seu documento institucional. Para eventos
+                    nacionais que exijam o padrão ITI com certificação
+                    ICP-Brasil, você pode solicitar o DNE oficial.
                   </p>
                   <button
                     onClick={() => setModalDNEOpen(true)}
@@ -956,23 +1078,33 @@ export default function StudentPortal({
                   <>
                     <div className="flex items-center justify-between mb-2 px-1">
                       <h3 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-widest flex items-center gap-2">
-                        <QrCode className="w-4 h-4 text-sky-500" /> Próximos Eventos
+                        <QrCode className="w-4 h-4 text-sky-500" /> Próximos
+                        Eventos
                       </h3>
                     </div>
 
                     {availableEvents.length > 0 ? (
                       <div className="space-y-4">
                         {availableEvents.map((event) => {
-                          const isEnrolled = myAttendances.some(a => a.eventId === event.id);
+                          const isEnrolled = myAttendances.some(
+                            (a) => a.eventId === event.id,
+                          );
                           return (
-                            <div key={event.id} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-3xl p-5 shadow-sm">
+                            <div
+                              key={event.id}
+                              className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-3xl p-5 shadow-sm"
+                            >
                               <div className="flex justify-between items-start mb-3">
-                                <span className={`text-[9px] font-black uppercase px-2 py-1 rounded-full ${
-                                  event.format === "presencial" 
-                                    ? "bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400"
-                                    : "bg-sky-100 dark:bg-sky-500/20 text-sky-700 dark:text-sky-400"
-                                }`}>
-                                  {event.format === "presencial" ? "Presencial" : "Online"}
+                                <span
+                                  className={`text-[9px] font-black uppercase px-2 py-1 rounded-full ${
+                                    event.format === "presencial"
+                                      ? "bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400"
+                                      : "bg-sky-100 dark:bg-sky-500/20 text-sky-700 dark:text-sky-400"
+                                  }`}
+                                >
+                                  {event.format === "presencial"
+                                    ? "Presencial"
+                                    : "Online"}
                                 </span>
                                 {isEnrolled && (
                                   <span className="text-[9px] font-black uppercase px-2 py-1 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 rounded-full flex items-center gap-1">
@@ -980,20 +1112,26 @@ export default function StudentPortal({
                                   </span>
                                 )}
                               </div>
-                              <h4 className="font-bold text-slate-800 dark:text-white text-sm mb-1 leading-tight">{event.title}</h4>
-                              <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 line-clamp-2">{event.description}</p>
-                              
+                              <h4 className="font-bold text-slate-800 dark:text-white text-sm mb-1 leading-tight">
+                                {event.title}
+                              </h4>
+                              <p className="text-xs text-slate-500 dark:text-slate-400 mb-4 line-clamp-2">
+                                {event.description}
+                              </p>
+
                               <div className="flex items-center gap-4 text-[10px] text-slate-500 dark:text-slate-400 font-bold uppercase tracking-tight mb-4">
-                                 <div className="flex items-center gap-1.5">
-                                   <Clock className="w-3.5 h-3.5" />
-                                   {new Date(event.startDate).toLocaleDateString("pt-BR")}
-                                 </div>
-                                 {event.hours && (
-                                   <div className="flex items-center gap-1.5">
-                                     <LogOut className="w-3.5 h-3.5 rotate-180" />
-                                     {event.hours}H
-                                   </div>
-                                 )}
+                                <div className="flex items-center gap-1.5">
+                                  <Clock className="w-3.5 h-3.5" />
+                                  {new Date(event.startDate).toLocaleDateString(
+                                    "pt-BR",
+                                  )}
+                                </div>
+                                {event.hours && (
+                                  <div className="flex items-center gap-1.5">
+                                    <LogOut className="w-3.5 h-3.5 rotate-180" />
+                                    {event.hours}H
+                                  </div>
+                                )}
                               </div>
 
                               {!isEnrolled ? (
@@ -1004,7 +1142,9 @@ export default function StudentPortal({
                                 >
                                   {isEnrollingInProgress === event.id ? (
                                     <Loader2 className="w-4 h-4 animate-spin" />
-                                  ) : "Inscrever-se Agora"}
+                                  ) : (
+                                    "Inscrever-se Agora"
+                                  )}
                                 </button>
                               ) : (
                                 <div className="w-full py-3 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-500 rounded-2xl font-bold border border-emerald-100 dark:border-emerald-900/30 text-center text-xs">
@@ -1017,8 +1157,13 @@ export default function StudentPortal({
                       </div>
                     ) : (
                       <div className="bg-slate-50 dark:bg-slate-800/30 p-10 rounded-3xl border border-dashed border-slate-200 dark:border-slate-700 text-center">
-                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-2">Nenhum evento aberto</p>
-                        <p className="text-xs text-slate-500">No momento não há inscrições abertas para novos eventos.</p>
+                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-2">
+                          Nenhum evento aberto
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          No momento não há inscrições abertas para novos
+                          eventos.
+                        </p>
                       </div>
                     )}
                   </>
@@ -1026,29 +1171,51 @@ export default function StudentPortal({
                   <>
                     <div className="flex items-center justify-between mb-2 px-1">
                       <h3 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-widest flex items-center gap-2">
-                        <History className="w-4 h-4 text-slate-500" /> Eventos Encerrados
+                        <History className="w-4 h-4 text-slate-500" /> Eventos
+                        Encerrados
                       </h3>
                     </div>
 
-                    {pastEvents.filter(e => myAttendances.some(a => a.eventId === e.id)).length > 0 ? (
+                    {pastEvents.filter((e) =>
+                      myAttendances.some((a) => a.eventId === e.id),
+                    ).length > 0 ? (
                       <div className="space-y-4">
                         {pastEvents
-                          .filter(e => myAttendances.some(a => a.eventId === e.id))
+                          .filter((e) =>
+                            myAttendances.some((a) => a.eventId === e.id),
+                          )
                           .map((event) => (
-                            <div key={event.id} className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-3xl p-5 shadow-sm">
-                              <h4 className="font-bold text-slate-700 dark:text-white text-sm mb-1 leading-tight">{event.title}</h4>
+                            <div
+                              key={event.id}
+                              className="bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700/50 rounded-3xl p-5 shadow-sm"
+                            >
+                              <h4 className="font-bold text-slate-700 dark:text-white text-sm mb-1 leading-tight">
+                                {event.title}
+                              </h4>
                               <p className="text-[10px] text-slate-500 dark:text-slate-400 mb-3 uppercase font-bold">
-                                {new Date(event.startDate).toLocaleDateString("pt-BR")} • {event.format === "presencial" ? "Presencial" : "Online"}
+                                {new Date(event.startDate).toLocaleDateString(
+                                  "pt-BR",
+                                )}{" "}
+                                •{" "}
+                                {event.format === "presencial"
+                                  ? "Presencial"
+                                  : "Online"}
                               </p>
                               <div className="flex items-center gap-2">
-                                {myAttendances.find(a => a.eventId === event.id)?.status === "presente" || 
-                                 myAttendances.find(a => a.eventId === event.id)?.status === "apto_para_certificado" ? (
+                                {myAttendances.find(
+                                  (a) => a.eventId === event.id,
+                                )?.status === "presente" ||
+                                myAttendances.find(
+                                  (a) => a.eventId === event.id,
+                                )?.status === "apto_para_certificado" ? (
                                   <span className="text-[10px] font-black uppercase text-emerald-600 dark:text-emerald-500 flex items-center gap-1">
-                                    <CheckCircle className="w-3 h-3" /> Presença Confirmada
+                                    <CheckCircle className="w-3 h-3" /> Presença
+                                    Confirmada
                                   </span>
                                 ) : (
                                   <span className="text-[10px] font-black uppercase text-slate-400 flex items-center gap-1 font-medium">
-                                    <LogOut className="w-3 h-3" /> Evento Finalizado
+                                    <LogOut className="w-3 h-3" /> Evento
+                                    Finalizado
                                   </span>
                                 )}
                               </div>
@@ -1057,8 +1224,13 @@ export default function StudentPortal({
                       </div>
                     ) : (
                       <div className="bg-slate-50 dark:bg-slate-800/30 p-10 rounded-3xl border border-dashed border-slate-200 dark:border-slate-700 text-center">
-                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-2">Sem histórico</p>
-                        <p className="text-xs text-slate-500">Você ainda não participou ou não possui histórico em eventos encerrados.</p>
+                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-2">
+                          Sem histórico
+                        </p>
+                        <p className="text-xs text-slate-500">
+                          Você ainda não participou ou não possui histórico em
+                          eventos encerrados.
+                        </p>
                       </div>
                     )}
                   </>
@@ -1074,7 +1246,8 @@ export default function StudentPortal({
               >
                 <div className="flex items-center justify-between mb-4 px-1">
                   <h3 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-widest flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-emerald-500" /> Meus Certificados
+                    <ShieldCheck className="w-4 h-4 text-emerald-500" /> Meus
+                    Certificados
                   </h3>
                 </div>
 
@@ -1092,24 +1265,47 @@ export default function StudentPortal({
                   <div className="space-y-3">
                     {allEvents
                       .filter((e) => {
-                        if (e.status !== "encerrado" && e.status !== "aberto") return false;
-                        const attendance = myAttendances.find((a) => a.eventId === e.id);
+                        if (e.status !== "encerrado" && e.status !== "aberto")
+                          return false;
+                        const attendance = myAttendances.find(
+                          (a) => a.eventId === e.id,
+                        );
                         if (!attendance) return false;
-                        
-                        const hasPartCert = e.certificateTemplate?.isApproved === true && (attendance.status === "presente" || attendance.status === "apto_para_certificado");
-                        const hasOrgCert = e.organizationCertificateTemplate?.isApproved === true && attendance.isOrganizer === true;
-                        
+
+                        const hasPartCert =
+                          e.certificateTemplate?.isApproved === true &&
+                          (attendance.status === "presente" ||
+                            attendance.status === "apto_para_certificado");
+                        const hasOrgCert =
+                          e.organizationCertificateTemplate?.isApproved ===
+                            true && attendance.isOrganizer === true;
+
                         return hasPartCert || hasOrgCert;
                       })
                       .map((event) => {
-                        const startStr = new Date(event.startDate).toLocaleDateString("pt-BR");
-                        const endStr = event.endDate ? new Date(event.endDate).toLocaleDateString("pt-BR") : startStr;
-                        const periodText = startStr === endStr ? startStr : `${startStr} a ${endStr}`;
-                        const formatText = event.format === "online" ? "Online" : "Presencial";
-                        
-                        const attendance = myAttendances.find((a) => a.eventId === event.id);
-                        const hasPartCert = event.certificateTemplate?.isApproved === true && (attendance?.status === "presente" || attendance?.status === "apto_para_certificado");
-                        const hasOrgCert = event.organizationCertificateTemplate?.isApproved === true && attendance?.isOrganizer === true;
+                        const startStr = new Date(
+                          event.startDate,
+                        ).toLocaleDateString("pt-BR");
+                        const endStr = event.endDate
+                          ? new Date(event.endDate).toLocaleDateString("pt-BR")
+                          : startStr;
+                        const periodText =
+                          startStr === endStr
+                            ? startStr
+                            : `${startStr} a ${endStr}`;
+                        const formatText =
+                          event.format === "online" ? "Online" : "Presencial";
+
+                        const attendance = myAttendances.find(
+                          (a) => a.eventId === event.id,
+                        );
+                        const hasPartCert =
+                          event.certificateTemplate?.isApproved === true &&
+                          (attendance?.status === "presente" ||
+                            attendance?.status === "apto_para_certificado");
+                        const hasOrgCert =
+                          event.organizationCertificateTemplate?.isApproved ===
+                            true && attendance?.isOrganizer === true;
 
                         return (
                           <div
@@ -1127,10 +1323,15 @@ export default function StudentPortal({
                                 {periodText}
                               </span>
                             </div>
-                            
+
                             {hasPartCert && (
                               <button
-                                onClick={() => handleDownloadCertificate(event, "participant")}
+                                onClick={() =>
+                                  handleDownloadCertificate(
+                                    event,
+                                    "participant",
+                                  )
+                                }
                                 className="w-full py-3 bg-sky-600 hover:bg-sky-500 text-white rounded-2xl text-xs font-bold transition-all active:scale-95 shadow-md flex items-center justify-center gap-2"
                               >
                                 {isDownloading ? (
@@ -1143,10 +1344,12 @@ export default function StudentPortal({
                                 )}
                               </button>
                             )}
-                            
+
                             {hasOrgCert && (
                               <button
-                                onClick={() => handleDownloadCertificate(event, "organizer")}
+                                onClick={() =>
+                                  handleDownloadCertificate(event, "organizer")
+                                }
                                 className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-white rounded-2xl text-xs font-bold transition-all active:scale-95 shadow-md flex items-center justify-center gap-2"
                               >
                                 {isDownloading ? (
@@ -1169,7 +1372,8 @@ export default function StudentPortal({
                       Nenhum certificado disponível
                     </p>
                     <p className="text-xs text-slate-500">
-                      Os certificados aparecem aqui após a confirmação da sua participação em eventos.
+                      Os certificados aparecem aqui após a confirmação da sua
+                      participação em eventos.
                     </p>
                   </div>
                 )}
@@ -1361,47 +1565,48 @@ export default function StudentPortal({
               exit={{ opacity: 0, y: -10 }}
               className="w-full max-w-[320px] sm:max-w-sm mx-auto flex flex-col items-center bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 p-6 rounded-3xl shadow-2xl relative overflow-hidden"
             >
-                <QrCode className="w-12 h-12 text-slate-400 mb-6" />
-                <h3 className="text-lg font-black uppercase tracking-tight text-slate-800 dark:text-white mb-2">
-                  Código de Uso ou CPF
-                </h3>
-                <p className="text-xs text-slate-500 text-center mb-6">
-                  Digite o seu código alfanumérico ou os 11 dígitos numéricos do seu CPF para carregar seus dados no dispositivo.
+              <QrCode className="w-12 h-12 text-slate-400 mb-6" />
+              <h3 className="text-lg font-black uppercase tracking-tight text-slate-800 dark:text-white mb-2">
+                Código de Uso ou CPF
+              </h3>
+              <p className="text-xs text-slate-500 text-center mb-6">
+                Digite o seu código alfanumérico ou os 11 dígitos numéricos do
+                seu CPF para carregar seus dados no dispositivo.
+              </p>
+
+              <input
+                type="text"
+                autoCapitalize="characters"
+                placeholder="Ex: XXXX-YYYY ou CPF"
+                value={alphaCode}
+                onChange={(e) => setAlphaCode(e.target.value.toUpperCase())}
+                className="text-center text-xl tracking-widest font-bold w-full py-4 px-6 rounded-xl bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 outline-none text-slate-900 dark:text-white uppercase focus:border-sky-500 transition-colors"
+              />
+
+              {error && (
+                <p className="text-xs font-bold text-rose-500 uppercase mt-4 mb-2">
+                  {error}
                 </p>
+              )}
 
-                  <input
-                    type="text"
-                    autoCapitalize="characters"
-                    placeholder="Ex: XXXX-YYYY ou CPF"
-                    value={alphaCode}
-                    onChange={(e) => setAlphaCode(e.target.value.toUpperCase())}
-                    className="text-center text-xl tracking-widest font-bold w-full py-4 px-6 rounded-xl bg-slate-50 dark:bg-slate-800 border-2 border-slate-200 dark:border-slate-700 outline-none text-slate-900 dark:text-white uppercase focus:border-sky-500 transition-colors"
-                  />
-
-                  {error && (
-                    <p className="text-xs font-bold text-rose-500 uppercase mt-4 mb-2">
-                      {error}
-                    </p>
+              <div className="flex gap-3 w-full mt-6">
+                <button
+                  onClick={() => setLinkMode(false)}
+                  className="flex-1 py-3 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
+                >
+                  Voltar
+                </button>
+                <button
+                  onClick={linkIdentity}
+                  className="flex-1 py-3 text-sm font-bold text-white bg-sky-600 hover:bg-sky-500 rounded-xl shadow-lg transition-colors flex items-center justify-center"
+                >
+                  {isLoading ? (
+                    <Loader2 className="w-4 h-4 animate-spin text-white" />
+                  ) : (
+                    "Buscar"
                   )}
-
-                  <div className="flex gap-3 w-full mt-6">
-                    <button
-                      onClick={() => setLinkMode(false)}
-                      className="flex-1 py-3 text-sm font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
-                    >
-                      Voltar
-                    </button>
-                    <button
-                      onClick={linkIdentity}
-                      className="flex-1 py-3 text-sm font-bold text-white bg-sky-600 hover:bg-sky-500 rounded-xl shadow-lg transition-colors flex items-center justify-center"
-                    >
-                      {isLoading ? (
-                        <Loader2 className="w-4 h-4 animate-spin text-white" />
-                      ) : (
-                        "Buscar"
-                      )}
-                    </button>
-                  </div>
+                </button>
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
