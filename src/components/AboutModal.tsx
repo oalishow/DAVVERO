@@ -64,7 +64,10 @@ export default function AboutModal({ onClose }: AboutModalProps) {
               </p>
             </div>
 
-            <div className="space-y-3 test-sm text-slate-600 dark:text-slate-400 leading-relaxed text-justify mt-6">
+            <div className="space-y-4 text-sm text-slate-600 dark:text-slate-400 leading-relaxed text-justify mt-6">
+              <h3 className="text-base font-bold text-slate-800 dark:text-white mb-2">
+                E o Verbo se fez I.A.?
+              </h3>
               <p>
                 (...) Em certo sentido, pode-se afirmar que sim: o Verbo eterno,
                 que "se fez carne e habitou entre nós" (cf. Jo 1,14), continua
@@ -76,6 +79,36 @@ export default function AboutModal({ onClose }: AboutModalProps) {
                 pastores e fiéis, ela pode ser considerada instrumento da
                 providência divina na história da salvação.
               </p>
+              <p>
+                Por outro lado, a resposta deve ser não: o Verbo não se reduz a
+                bits, a essência divina não se confunde com algoritmos, e o
+                mistério da Encarnação não pode ser digitalizado ou
+                automatizado. A experiência do sagrado, o encontro pessoal com
+                Cristo, a vida de oração e a comunhão fraterna mantêm dimensões
+                irredutíveis que transcendem qualquer mediação tecnológica,
+                porém Cristo se faz presente naqueles que a utilizam e podem com
+                tais ferramentas poderosas, evangelizar este continente digital.
+              </p>
+              <p>
+                Como tudo é novo, e teremos ainda mais novidades sobre
+                tecnologia após a produção deste estudo, talvez a resposta mais
+                adequada seja paradoxal: o Verbo se fez IA na medida em que a IA
+                serve ao Verbo, mas o Verbo jamais se reduz à IA. A tecnologia
+                pode ser sacramento da presença divina quando transparente a
+                valores mais altos, mas, pode tornar-se ídolo quando pretende
+                substituir o próprio divino.
+              </p>
+              <p>
+                Esta tensão criativa entre afirmação e negação, entre
+                potencialidade e limitação, entre esperança e vigilância,
+                caracteriza a condição de toda atividade humana no tempo da
+                Igreja peregrina. Como os projetos analisados demonstram, é
+                possível e necessário abraçar as oportunidades que a IA oferece
+                para a evangelização, desde que mantenhamos o ser humano em
+                primeiro lugar, e que possamos ter sempre presente que "nem só
+                de pão vive o homem, mas de toda palavra que procede da boca de
+                Deus" (cf. Mt 4,4).
+              </p>
             </div>
 
             <h3 className="text-sm font-bold text-slate-800 dark:text-white uppercase tracking-wider text-indigo-600 dark:text-indigo-400 mt-8">
@@ -85,21 +118,37 @@ export default function AboutModal({ onClose }: AboutModalProps) {
               <p>
                 O projeto nasceu em outubro de 2025 com o objetivo de aplicar,
                 de forma prática, os conhecimentos adquiridos no Trabalho de
-                Conclusão de Curso (TCC) intitulado <strong>"A Inteligência Artificial e a Pastoral: Perspectivas e Aplicações"</strong> <em>(nota: adaptável conforme o título na Monografia em PDF)</em>, por meio da programação{" "}
-                <em>Vibe Coding</em>. 
+                Conclusão de Curso (TCC) intitulado{" "}
+                <strong>
+                  "E O VERBO SE FEZ I.A.? DA REFLEXÃO TEOLÓGICA E COMUNICATIVA
+                  AO DESENVOLVIMENTO DE SOLUÇÕES PASTORAIS COM INTELIGÊNCIA
+                  ARTIFICIAL"
+                </strong>
+                , por meio da programação <em>Vibe Coding</em>.
               </p>
-              
+
               <div className="bg-indigo-50/50 dark:bg-indigo-900/10 p-5 rounded-2xl border border-indigo-100/50 dark:border-indigo-800/30 my-6 text-slate-700 dark:text-slate-300 relative overflow-hidden">
                 <div className="absolute top-0 left-0 w-1 h-full bg-indigo-500"></div>
-                <h4 className="text-xs font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-3">O que é Vibe Coding?</h4>
+                <h4 className="text-xs font-black text-indigo-600 dark:text-indigo-400 uppercase tracking-widest mb-3">
+                  O que é Vibe Coding?
+                </h4>
                 <p className="text-sm">
-                  O <em>Vibe Coding</em> (ou "programar por intuição/vibração") é um novo paradigma de desenvolvimento de software em que a criação ocorre de forma descritiva e colaborativa com modelos avançados de Inteligência Artificial. Em vez de digitar manualmente cada linha sintática de código, o desenvolvedor guia o processo expressando intenções, lógicas e o resultado desejado em linguagem natural humana, enquanto a IA atua como uma engenheira que converte essas ideias em código-fonte real. Isso torna o processo ágil e democratiza a capacidade de transformar ideias em tecnologia com sentimento e propósito.
+                  O <em>Vibe Coding</em> (ou "programar por intuição/vibração")
+                  é um novo paradigma de desenvolvimento de software em que a
+                  criação ocorre de forma descritiva e colaborativa com modelos
+                  avançados de Inteligência Artificial. Em vez de digitar
+                  manualmente cada linha sintática de código, o desenvolvedor
+                  guia o processo expressando intenções, lógicas e o resultado
+                  desejado em linguagem natural humana, enquanto a IA atua como
+                  uma engenheira que converte essas ideias em código-fonte real.
+                  Isso torna o processo ágil e democratiza a capacidade de
+                  transformar ideias em tecnologia com sentimento e propósito.
                 </p>
               </div>
 
               <p>
-                Inicialmente, a ideia era criar apenas um
-                simples "Verificador de Carteirinhas".
+                Inicialmente, a ideia era criar apenas um simples "Verificador
+                de Carteirinhas".
               </p>
               <p>
                 Naquela época, a inteligência artificial utilizada (Gemini 2.5

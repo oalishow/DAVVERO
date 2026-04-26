@@ -26,12 +26,16 @@ export const INSTITUTION_DESCRIPTION_KEY = "davveroId_institution_description";
 export const CARD_DESCRIPTION_KEY = "davveroId_card_description";
 export const CUSTOM_ROLES_KEY = "davveroId_custom_roles";
 export const CUSTOM_COURSES_KEY = "davveroId_custom_courses";
-export const APP_VERSION = "4.8.0";
+export const APP_VERSION = "4.9.0";
 export const SETTINGS_DOC_PATH = (appId: string) =>
   `artifacts/${appId}/public/data/students/_settings_global`;
 export const ASSETS_DOC_PATH = (appId: string, assetType: string) =>
   `artifacts/${appId}/public/data/students/_asset_${assetType}`;
 export const CHANGELOG = [
+  "Versão 4.9.0 - Reforços Teológicos e Históricos",
+  "Sobre: Inclusão do nome oficial do TCC ('E O VERBO SE FEZ I.A.?'), explicação do conceito de Vibe Coding, e expansão da reflexão teológica sobre a Inteligência Artificial e a pastoral.",
+  "Versão 4.8.0 - Atualização da Identidade e História",
+  "Sobre: Reformulação completa da seção da história do aplicativo, destacando a evolução desde o TCC até o DAVVERO-ID de forma colaborativa, além das referências e agradecimentos especiais detalhados.",
   "Versão 4.7.1 - Segurança e LGPD",
   "Privacidade: Implementação de máscara de PII para proteção de CPFs e informações de contato na listagem pública e cache offline.",
   "Segurança: Otimização das Regras do banco de dados para acesso estritamente anonimizado.",
