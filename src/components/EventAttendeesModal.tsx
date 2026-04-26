@@ -4,6 +4,7 @@ import type { Event, Attendance, Member } from "../types";
 import { db, appId, unsubscribeFromEvent, updateAttendanceDetails } from "../lib/firebase";
 import { doc, getDoc, collection, getDocs, query } from "firebase/firestore";
 import Modal from "./Modal";
+import { useDialog } from "../context/DialogContext";
 
 interface EventAttendeesModalProps {
   event: Event;
@@ -14,6 +15,7 @@ export default function EventAttendeesModal({
   event,
   onClose,
 }: EventAttendeesModalProps) {
+  const { showAlert } = useDialog();
   const [attendees, setAttendees] = useState<
     (Attendance & { member?: Member })[]
   >([]);
@@ -86,7 +88,7 @@ export default function EventAttendeesModal({
           await unsubscribeFromEvent(eventId, studentId);
           loadData(); // Reload data to reflect change
         } catch (err) {
-          alert("Erro ao remover inscrição.");
+          showAlert("Erro ao remover inscrição.", { type: 'error' });
         }
       },
     });
@@ -97,7 +99,7 @@ export default function EventAttendeesModal({
       await updateAttendanceDetails(eventId, studentId, { isOrganizer: !currentStatus });
       loadData();
     } catch (err) {
-      alert("Erro ao atualizar status de organização.");
+      showAlert("Erro ao atualizar status de organização.", { type: 'error' });
     }
   };
 

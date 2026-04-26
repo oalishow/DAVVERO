@@ -29,8 +29,10 @@ import {
 import type { Event, Attendance, Member } from "../types";
 import PublicAttendeesModal from "./PublicAttendeesModal";
 import Modal from "./Modal";
+import { useDialog } from "../context/DialogContext";
 
 export default function EventsPage({ onNavigateToStudent }: { onNavigateToStudent?: () => void }) {
+  const { showAlert } = useDialog();
   const [events, setEvents] = useState<Event[]>([]);
   const [subTab, setSubTab] = useState<"upcoming" | "past">("upcoming");
   const [myAttendances, setMyAttendances] = useState<Attendance[]>([]);
@@ -128,21 +130,21 @@ export default function EventsPage({ onNavigateToStudent }: { onNavigateToStuden
         status: "inscrito",
         timestamp: new Date().toISOString(),
       });
-      alert("Inscrição realizada com sucesso!");
+      showAlert("Inscrição realizada com sucesso!", { type: 'success' });
     } catch (err: any) {
       console.error(err);
       if (err.message === "LIMITE_EXCEDIDO") {
-        alert("Desculpe, a lotação para este evento está esgotada.");
+        showAlert("Desculpe, a lotação para este evento está esgotada.", { type: 'warning' });
       } else if (err.message === "INSCRICOES_PAUSADAS") {
-        alert("Desculpe, as inscrições para este evento estão pausadas.");
+        showAlert("Desculpe, as inscrições para este evento estão pausadas.", { type: 'warning' });
       } else if (err.message === "INSCRICOES_ENCERRADAS") {
-        alert("Desculpe, as inscrições para este evento já foram encerradas (prazo expirou).");
+        showAlert("Desculpe, as inscrições para este evento já foram encerradas (prazo expirou).", { type: 'warning' });
       } else if (err.message === "EVENTO_FECHADO") {
-        alert("Desculpe, este evento já está fechado ou encerrado.");
+        showAlert("Desculpe, este evento já está fechado ou encerrado.", { type: 'warning' });
       } else if (err.message === "EVENTO_EXCLUIDO") {
-        alert("Desculpe, este evento não existe mais.");
+        showAlert("Desculpe, este evento não existe mais.", { type: 'error' });
       } else {
-        alert("Erro ao realizar inscrição.");
+        showAlert("Erro ao realizar inscrição.", { type: 'error' });
       }
     } finally {
       setIsEnrollingInProgress(null);
@@ -157,10 +159,10 @@ export default function EventsPage({ onNavigateToStudent }: { onNavigateToStuden
       onConfirm: async () => {
         try {
           await unsubscribeFromEvent(eventId, studentId);
-          alert("Inscrição cancelada com sucesso.");
+          showAlert("Inscrição cancelada com sucesso.", { type: 'success' });
         } catch (err) {
           console.error(err);
-          alert("Erro ao cancelar inscrição.");
+          showAlert("Erro ao cancelar inscrição.", { type: 'error' });
         }
       },
     });

@@ -38,8 +38,10 @@ import type { Event, Attendance } from "../types";
 import EventAttendeesModal from "./EventAttendeesModal";
 import CertificateEditor from "./CertificateEditor";
 import Modal from "./Modal";
+import { useDialog } from "../context/DialogContext";
 
 export default function EventManagement() {
+  const { showAlert } = useDialog();
   const [events, setEvents] = useState<Event[]>([]);
   const [attendancesCount, setAttendancesCount] = useState<
     Record<string, number>
@@ -651,7 +653,7 @@ export default function EventManagement() {
                             variant: "danger",
                             onConfirm: () => {
                               deleteEvent(event.id)
-                                .catch((e) => alert(e.message));
+                                .catch((e) => showAlert(e.message, { type: 'error' }));
                             },
                           });
                         }}
@@ -673,7 +675,7 @@ export default function EventManagement() {
                             variant: "primary",
                             onConfirm: () => {
                               closeEvent(event.id).catch((e) =>
-                                alert(e.message),
+                                showAlert(e.message, { type: 'error' }),
                               );
                             },
                           });
@@ -695,7 +697,7 @@ export default function EventManagement() {
                             variant: "primary",
                             onConfirm: () => {
                               updateEventStatus(event.id, "aberto").catch((e) =>
-                                alert(e.message),
+                                showAlert(e.message, { type: 'error' }),
                               );
                             },
                           });

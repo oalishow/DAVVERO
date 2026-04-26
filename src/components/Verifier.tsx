@@ -16,6 +16,7 @@ import VerificationResult from "./VerificationResult";
 import PublicRequestModal from "./PublicRequestModal";
 import SuggestEditModal from "./SuggestEditModal";
 import Modal from "./Modal";
+import { useDialog } from "../context/DialogContext";
 
 import { motion, AnimatePresence } from "motion/react";
 
@@ -28,6 +29,7 @@ export default function Verifier({
   externalCode,
   onExternalVerified,
 }: VerifierProps) {
+  const { showAlert } = useDialog();
   const [isScanning, setIsScanning] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [codeInput, setCodeInput] = useState("");
@@ -127,8 +129,9 @@ export default function Verifier({
           JSON.stringify(remaining),
         );
         setPendingCheckins(remaining);
-        alert(
+        showAlert(
           `${successes} check-in(s) sincronizado(s) com sucesso com o servidor.`,
+          { type: 'success' }
         );
       }
     };
@@ -302,12 +305,14 @@ export default function Verifier({
                 err?.toString().includes("NotAllowedError") ||
                 err?.toString().includes("Permission")
               ) {
-                alert(
+                showAlert(
                   "Por favor, permita o acesso à câmera nas configurações do seu navegador para escanear.",
+                  { type: 'warning' }
                 );
               } else {
-                alert(
+                showAlert(
                   "Não foi possível acessar a câmera. Certifique-se de que não está sendo usada por outro app.",
+                  { type: 'error' }
                 );
               }
               setIsScanning(false);
@@ -411,7 +416,7 @@ export default function Verifier({
           try {
             const byCpf = await findMemberByCPF(onlyNumbers);
             if (byCpf) {
-              const { cpf, birthDate, phone, address, email, ...safeMember } = byCpf;
+              const { cpf, birthDate, phone, address, email, ...safeMember } = byCpf as any;
               finalMember = safeMember as Member;
             }
           } catch (e) {
@@ -428,7 +433,7 @@ export default function Verifier({
 
       if (verifyMode === "EVENT") {
         if (!selectedEventId) {
-          alert("Selecione um evento para fazer o check-in.");
+          showAlert("Selecione um evento para fazer o check-in.", { type: 'warning' });
           setIsProcessing(false);
           return;
         }
@@ -520,7 +525,7 @@ export default function Verifier({
 
   const handleSearchVisitorCPF = async () => {
     if (!visitorCPF.trim()) {
-      alert("Preencha o CPF para buscar.");
+      showAlert("Preencha o CPF para buscar.", { type: 'warning' });
       return;
     }
     setVisitorSearching(true);
@@ -528,16 +533,16 @@ export default function Verifier({
       const found = await findMemberByCPF(visitorCPF.trim());
       if (found) {
         if (!found.roles?.includes("VISITANTE")) {
-          alert(`Encontramos um membro (${found.name}) que já possui cadastro como Aluno/Colaborador. Sugerimos a verificação via QR Code padrão.`);
+          showAlert(`Encontramos um membro (${found.name}) que já possui cadastro como Aluno/Colaborador. Sugerimos a verificação via QR Code padrão.`, { type: 'info' });
         } else {
           setValidationResult({ member: found, status: "VALID" });
           setSuccessMsg("Visitante encontrado.");
         }
       } else {
-        alert("Visitante não encontrado com este CPF.");
+        showAlert("Visitante não encontrado com este CPF.", { type: 'warning' });
       }
     } catch (e: any) {
-      alert("Erro ao buscar visitante: " + e.message);
+      showAlert("Erro ao buscar visitante: " + e.message, { type: 'error' });
     } finally {
       setVisitorSearching(false);
     }
@@ -545,20 +550,20 @@ export default function Verifier({
 
   const handleRegisterVisitor = async () => {
     if (!visitorName.trim() || !visitorCPF.trim()) {
-      alert("Preencha o nome e o CPF.");
+      showAlert("Preencha o nome e o CPF.", { type: 'warning' });
       return;
     }
     setVisitorRegistering(true);
     try {
       const newMember = await registerVisitor(visitorName.trim(), visitorCPF.trim());
       setSuccessMsg("Visitante cadastrado com sucesso!");
-      alert(`Visitante cadastrado com sucesso!\n\nCódigo de Uso (AlphaCode): ${newMember?.alphaCode}`);
+      showAlert(`Visitante cadastrado com sucesso!\n\nCódigo de Uso (AlphaCode): ${newMember?.alphaCode}`, { type: 'success' });
       setValidationResult({ member: newMember || null, status: "VALID" });
       setVisitorName("");
       setVisitorCPF("");
       setShowVisitorRegisterModal(false);
     } catch (e: any) {
-      alert("Erro ao cadastrar visitante: " + e.message);
+      showAlert("Erro ao cadastrar visitante: " + e.message, { type: 'error' });
     } finally {
       setVisitorRegistering(false);
     }
@@ -684,7 +689,7 @@ export default function Verifier({
                 status: "JUST_CHECKED_IN",
               });
             } catch (e: any) {
-              alert("Erro ao realizar inscrição: " + e.message);
+              showAlert("Erro ao realizar inscrição: " + e.message, { type: 'error' });
             } finally {
               setIsProcessing(false);
             }

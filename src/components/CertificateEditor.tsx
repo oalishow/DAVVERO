@@ -8,6 +8,7 @@ import { CertificateRenderer } from "./CertificateRenderer";
 import { GoogleGenAI } from "@google/genai";
 import { resizeAndConvertToBase64 } from "../lib/imageUtils";
 import { useSettings } from "../context/SettingsContext";
+import { useDialog } from "../context/DialogContext";
 
 interface CertificateEditorProps {
   event: Event;
@@ -30,6 +31,7 @@ export default function CertificateEditor({
   type = "participant",
 }: CertificateEditorProps) {
   const { settings } = useSettings();
+  const { showAlert, showConfirm } = useDialog();
   
   const [template, setTemplate] = useState<CertificateTemplate>(
     (type === "organizer" ? event.organizationCertificateTemplate : event.certificateTemplate) || {
@@ -122,7 +124,7 @@ Instruções RIGOROSAS:
       setTemplate({ ...template, bodyText: text.trim().replace(/^"|"$/g, '') });
     } catch (e: any) {
       console.error(e);
-      alert("Erro ao gerar texto: " + e.message);
+      showAlert("Erro ao gerar texto: " + e.message, { type: 'error' });
     } finally {
       setIsGenerating(false);
     }
@@ -148,12 +150,12 @@ Instruções RIGOROSAS:
       setTemplate({ ...template, [fieldName]: base64 });
     } catch (err) {
       console.error(err);
-      alert("Erro ao carregar imagem.");
+      showAlert("Erro ao carregar imagem.", { type: 'error' });
     }
   };
 
   const handleSave = async (shouldApprove: boolean = false) => {
-    if (shouldApprove && !confirm("Ao conferir e liberar, os alunos poderão baixar o certificado. Deseja continuar?")) return;
+    if (shouldApprove && !(await showConfirm("Ao conferir e liberar, os alunos poderão baixar o certificado. Deseja continuar?", { type: 'warning' }))) return;
     setIsSaving(true);
     console.log(`Start handleSave (approve: ${shouldApprove})...`);
     
@@ -212,10 +214,10 @@ Instruções RIGOROSAS:
         onSaved({ ...event, certificateTemplate: finalTemplate });
       }
       
-      alert(shouldApprove ? "Configurações do certificado liberadas com sucesso!" : "Alterações salvas com sucesso!");
+      showAlert(shouldApprove ? "Configurações do certificado liberadas com sucesso!" : "Alterações salvas com sucesso!", { type: 'success' });
     } catch (e: any) {
       console.error("Error saving certificate:", e);
-      alert("Erro ao salvar: " + (e.message || "Tente novamente."));
+      showAlert("Erro ao salvar: " + (e.message || "Tente novamente."), { type: 'error' });
     } finally {
       setIsSaving(false);
       console.log("handleSave finished.");

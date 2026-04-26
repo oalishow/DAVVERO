@@ -3,9 +3,11 @@ import { Trash2, RefreshCcw } from "lucide-react";
 import { onSnapshot, doc } from "firebase/firestore";
 import { db, appId, restoreEvent, permanentDeleteEvent } from "../lib/firebase";
 import type { Event } from "../types";
+import { useDialog } from "../context/DialogContext";
 
 export default function EventsRecycleBin() {
   const [deletedEvents, setDeletedEvents] = useState<Event[]>([]);
+  const { showConfirm } = useDialog();
 
   useEffect(() => {
     const unsub = onSnapshot(
@@ -45,13 +47,13 @@ export default function EventsRecycleBin() {
   }, []);
 
   const handleRestore = async (id: string) => {
-    if (confirm("Tem certeza que deseja restaurar este evento?")) {
+    if (await showConfirm("Tem certeza que deseja restaurar este evento?", { type: 'warning' })) {
       await restoreEvent(id).catch(console.error);
     }
   };
 
   const handlePermanentDelete = async (id: string) => {
-    if (confirm("Tem certeza que deseja apagar este evento permanentemente? Esta ação NÃO pode ser desfeita.")) {
+    if (await showConfirm("Tem certeza que deseja apagar este evento permanentemente? Esta ação NÃO pode ser desfeita.", { type: 'error' })) {
       await permanentDeleteEvent(id).catch(console.error);
     }
   };

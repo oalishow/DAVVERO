@@ -6,6 +6,7 @@ import { URL_STORAGE_KEY, DEFAULT_PUBLIC_URL } from "../lib/constants";
 import FajopaIDCard from "./FajopaIDCard";
 import Modal from "./Modal";
 import { motion } from "motion/react";
+import { useDialog } from "../context/DialogContext";
 
 interface VerificationResultProps {
   member: Member | null;
@@ -31,6 +32,7 @@ export default function VerificationResult({
   isMyID = false,
   onEnrollAndCheckIn,
 }: VerificationResultProps) {
+  const { showAlert } = useDialog();
   const [exporting, setExporting] = useState(false);
   const [modalResetOpen, setModalResetOpen] = useState(false);
   const [showExportSuccess, setShowExportSuccess] = useState(false);
@@ -214,7 +216,7 @@ export default function VerificationResult({
       }
     } catch (err) {
       console.error("Export erro:", err);
-      alert("Falha ao gerar o PDF. Verifique sua conexão e tente novamente.");
+      showAlert("Falha ao gerar o PDF. Verifique sua conexão e tente novamente.", { type: 'error' });
     } finally {
       setExporting(false);
     }

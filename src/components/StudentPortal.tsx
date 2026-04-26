@@ -33,6 +33,7 @@ import VerificationResult from "./VerificationResult";
 import Modal from "./Modal";
 import { ASSETS_DOC_PATH } from "../lib/constants";
 import { CertificateRenderer } from "./CertificateRenderer";
+import { useDialog } from "../context/DialogContext";
 
 const AsyncCertificateRenderer = memo(
   ({
@@ -135,6 +136,7 @@ export default function StudentPortal({
   overrideCode,
   onOverrideConsumed,
 }: StudentPortalProps) {
+  const { showAlert, showConfirm } = useDialog();
   const [bondedId, setBondedId] = useState<string | null>(
     localStorage.getItem(STUDENT_BOND_KEY),
   );
@@ -232,8 +234,9 @@ export default function StudentPortal({
 
   const handleEnroll = async (eventId: string) => {
     if (!member) {
-      alert(
+      showAlert(
         "Ação Necessária: Por favor, vincule sua carteirinha ou faça login no portal 'MINHA ID' para se inscrever neste evento.",
+        { type: 'warning' }
       );
       return;
     }
@@ -247,7 +250,7 @@ export default function StudentPortal({
       });
     } catch (err) {
       console.error(err);
-      alert("Erro ao realizar inscrição.");
+      showAlert("Erro ao realizar inscrição.", { type: 'error' });
     } finally {
       setIsEnrollingInProgress(null);
     }
@@ -300,10 +303,11 @@ export default function StudentPortal({
         );
 
       if (isMobile) {
-        setTimeout(() => {
+        setTimeout(async () => {
           if (
-            confirm(
+            await showConfirm(
               "Certificado descarregado! Deseja tentar abrir o arquivo para visualização imediata?",
+              { type: 'success' }
             )
           ) {
             const blob = pdf.output("blob");
@@ -314,8 +318,9 @@ export default function StudentPortal({
       }
     } catch (e: any) {
       console.error("Download Error:", e);
-      alert(
+      showAlert(
         `Erro ao descarregar: ${e.message || "Falha na geração do arquivo"}`,
+        { type: 'error' }
       );
     } finally {
       setIsDownloading(false);
