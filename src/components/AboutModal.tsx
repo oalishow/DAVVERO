@@ -171,9 +171,13 @@ export default function AboutModal({ onClose }: AboutModalProps) {
                 sugestões de quem usava o sistema no dia a dia.
               </p>
               <p>
-                Assim, surgiu o <strong>DAVVERO-ID</strong>: um sistema que tem
-                como objetivo auxiliar no processo de identificação e na
-                organização de eventos da FAJOPA. Foram diversos passos para
+                Assim, surgiu o <strong>DAVVERO-ID</strong>. O nome "Davvero"
+                vem do italiano e significa <em>"Verdadeiro"</em>, ou expressa
+                uma surpresa como: <em>"Sério?"</em>. Foi exatamente assim que
+                me senti quando pude perceber que a ferramenta podia ir muito
+                além do que eu imaginava. Por isso, essa homenagem. O sistema
+                hoje tem como objetivo auxiliar no processo de identificação e
+                na organização de eventos da FAJOPA. Foram diversos passos para
                 chegar a este resultado, que não foi fácil e exigiu muito tempo,
                 mas deixo aqui como um presente meu para a faculdade, para o
                 seminário e para as futuras gerações: de que nada é impossível

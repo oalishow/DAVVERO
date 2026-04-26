@@ -3,11 +3,13 @@ import { Mail, FileText, ExternalLink } from 'lucide-react';
 import { APP_VERSION } from '../lib/constants';
 import ChangelogModal from './ChangelogModal';
 import AboutModal from './AboutModal';
+import ContactModal from './ContactModal';
 import InstallPWA from './InstallPWA';
 
 export default function Footer() {
   const [showChangelog, setShowChangelog] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
+  const [showContact, setShowContact] = useState(false);
 
   return (
     <footer className="text-center text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-slate-300 dark:border-slate-700/60 space-y-4 animated-fade-in no-print print:hidden">
@@ -56,6 +58,16 @@ export default function Footer() {
             >
               Sobre
             </button>
+            <span className="text-slate-300 dark:text-slate-700">•</span>
+            <button 
+              onClick={() => {
+                setShowContact(true);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
+              className="text-[10px] sm:text-[11px] text-pink-600 dark:text-pink-400 hover:text-pink-500 dark:hover:text-pink-300 underline underline-offset-2 transition-colors font-bold uppercase tracking-widest"
+            >
+              Contato
+            </button>
           </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 text-[8px] text-emerald-600 dark:text-emerald-400 font-black uppercase">
@@ -65,17 +77,21 @@ export default function Footer() {
             <span className="text-[7px] font-bold text-slate-400 uppercase tracking-tighter opacity-70">Build: 26.04.26</span>
           </div>
         </div>
-        <p className="text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-500 text-center md:text-left">
-          ©2025 - Alison Fernando Rodrigues dos Santos - DAVVERO-ID
-        </p>
         <a href="mailto:oalison.rodrigues@gmail.com" className="flex items-center gap-1.5 hover:text-sky-600 dark:hover:text-sky-400 transition-colors border-b border-transparent hover:border-sky-600 dark:hover:border-sky-400 pb-0.5 text-[10px] sm:text-xs text-slate-600 dark:text-slate-400">
           <Mail className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
           Reportar erro
         </a>
       </div>
 
+      <div className="text-center pt-2">
+        <p className="text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-500">
+          ©2025 - Alison Fernando Rodrigues dos Santos - DAVVERO-ID
+        </p>
+      </div>
+
       {showChangelog && <ChangelogModal onClose={() => setShowChangelog(false)} />}
       {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
+      {showContact && <ContactModal onClose={() => setShowContact(false)} />}
     </footer>
   );
 }
