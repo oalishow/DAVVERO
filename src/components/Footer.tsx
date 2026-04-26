@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { Mail, FileText, ExternalLink } from 'lucide-react';
 import { APP_VERSION } from '../lib/constants';
 import ChangelogModal from './ChangelogModal';
+import AboutModal from './AboutModal';
 import InstallPWA from './InstallPWA';
 
 export default function Footer() {
   const [showChangelog, setShowChangelog] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
 
   return (
     <footer className="text-center text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-slate-300 dark:border-slate-700/60 space-y-4 animated-fade-in no-print print:hidden">
@@ -47,6 +49,13 @@ export default function Footer() {
             >
               Novidades
             </button>
+            <span className="text-slate-300 dark:text-slate-700">•</span>
+            <button 
+              onClick={() => setShowAbout(true)}
+              className="text-[10px] sm:text-[11px] text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 dark:hover:text-indigo-300 underline underline-offset-2 transition-colors font-bold uppercase tracking-widest"
+            >
+              Sobre
+            </button>
           </div>
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 text-[8px] text-emerald-600 dark:text-emerald-400 font-black uppercase">
@@ -66,6 +75,7 @@ export default function Footer() {
       </div>
 
       {showChangelog && <ChangelogModal onClose={() => setShowChangelog(false)} />}
+      {showAbout && <AboutModal onClose={() => setShowAbout(false)} />}
     </footer>
   );
 }
