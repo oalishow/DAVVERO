@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Printer, CheckCircle } from "lucide-react";
+import { Printer, CheckCircle, QrCode } from "lucide-react";
 import type { Member } from "../types";
 import { QRCodeSVG } from "qrcode.react";
 import { URL_STORAGE_KEY, DEFAULT_PUBLIC_URL } from "../lib/constants";
@@ -18,6 +18,7 @@ interface VerificationResultProps {
     | "ALREADY_PRESENT"
     | "JUST_CHECKED_IN";
   onReset: () => void;
+  onScanNext?: () => void;
   isMyID?: boolean;
   onEnrollAndCheckIn?: () => void;
 }
@@ -26,6 +27,7 @@ export default function VerificationResult({
   member,
   status,
   onReset,
+  onScanNext,
   isMyID = false,
   onEnrollAndCheckIn,
 }: VerificationResultProps) {
@@ -229,18 +231,28 @@ export default function VerificationResult({
            initial={{ scale: 0.8, opacity: 0 }}
            animate={{ scale: 1, opacity: 1 }}
            transition={{ type: "spring", stiffness: 200, damping: 10 }}
-           className="w-full max-w-sm flex flex-col items-center justify-center p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-emerald-500/20 border-2 border-emerald-400 mb-4 pointer-events-none"
+           className="w-full max-w-sm flex flex-col items-center justify-center p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-emerald-500/20 border-2 border-emerald-400 mb-4 pointer-events-none overflow-hidden relative"
         >
+           {/* QR Code flying in from bottom animation */}
+           <motion.div
+             initial={{ y: 50, scale: 0, opacity: 0, rotateX: 45 }}
+             animate={{ y: -60, scale: 2, opacity: [0, 1, 0], rotateX: 0 }}
+             transition={{ duration: 1.5, ease: "easeInOut" }}
+             className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"
+           >
+             <QrCode className="w-16 h-16 text-emerald-300 dark:text-emerald-700/30" />
+           </motion.div>
+
            <motion.div 
              initial={{ rotate: -90, scale: 0 }}
              animate={{ rotate: 0, scale: 1 }}
              transition={{ type: "spring", delay: 0.1, duration: 0.5 }}
-             className="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(16,185,129,0.5)] mb-4"
+             className="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(16,185,129,0.5)] mb-4 z-10"
            >
               <CheckCircle className="w-10 h-10 text-white" />
            </motion.div>
-           <h2 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-white text-center">Tudo Certo!</h2>
-           <p className="text-sm font-medium text-slate-500 dark:text-slate-400 text-center mt-2">O check-in e a inscrição de <b>{member?.name?.split(' ')[0]}</b> foram realizados com sucesso.</p>
+           <h2 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-white text-center z-10">Tudo Certo!</h2>
+           <p className="text-sm font-medium text-slate-500 dark:text-slate-400 text-center mt-2 z-10">O check-in e a inscrição de <b>{member?.name?.split(' ')[0]}</b> foram realizados com sucesso.</p>
         </motion.div>
       )}
 
@@ -552,6 +564,14 @@ export default function VerificationResult({
           </button>
         )}
         <div className="flex flex-col sm:flex-row gap-2 w-full">
+          {onScanNext && (
+            <button
+              onClick={onScanNext}
+              className="flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-black text-white bg-sky-600 hover:bg-sky-500 transition-colors shadow-lg"
+            >
+              Ler Próximo
+            </button>
+          )}
           <button
             onClick={() => setModalResetOpen(true)}
             className="flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold text-slate-700 bg-slate-200 hover:bg-slate-300 transition-colors"
@@ -559,13 +579,15 @@ export default function VerificationResult({
             Nova Consulta
           </button>
           <div className="flex gap-2 flex-1">
-            <button
-              onClick={handlePrint}
-              className="p-2.5 rounded-xl bg-slate-800 text-white hover:bg-slate-700 transition-colors"
-              title="Imprimir"
-            >
-              <Printer className="w-4 h-4 sm:w-5 sm:h-5" />
-            </button>
+            {!isMyID && (
+              <button
+                onClick={handlePrint}
+                className="p-2.5 rounded-xl bg-slate-800 text-white hover:bg-slate-700 transition-colors"
+                title="Imprimir"
+              >
+                <Printer className="w-4 h-4 sm:w-5 sm:h-5" />
+              </button>
+            )}
             <button
               onClick={handleExport}
               disabled={exporting}

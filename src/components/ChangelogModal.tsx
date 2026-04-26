@@ -8,6 +8,34 @@ interface ChangelogModalProps {
 export default function ChangelogModal({ onClose }: ChangelogModalProps) {
   const versions = [
     {
+      version: 'v4.8.0',
+      title: 'Performance e Experiência',
+      changes: [
+        'Animações de Carregamento: Nova barra de progresso responsiva ao vincular sua conta.',
+        'Privacidade Aprimorada: Exibição focada nas funcionalidades de baixar PDF e nova consulta ao acessar sua carteirinha de estudante.',
+        'Otimização: Maior fluidez de acesso ao painel do aluno.'
+      ],
+      current: true,
+    },
+    {
+      version: 'v4.7.1',
+      title: 'Segurança e LGPD',
+      changes: [
+        'Privacidade: Implementação de máscara de PII para proteção de CPFs e informações sensíveis no sistema.',
+        'Segurança: Regras do painel reescritas de ponta a ponta garantindo o acesso confidencial unicamente para administradores autorizados.'
+      ],
+      current: false
+    },
+    {
+      version: 'v4.7.0',
+      title: 'Organização de Eventos',
+      changes: [
+        'Navegação: Implementação de sub-abas (Próximos e Histórico)',
+        'Check-in facilitado local'
+      ],
+      current: false
+    },
+    {
       version: 'v4.5.0',
       title: 'Padronização Legal e UX',
       changes: [
@@ -19,7 +47,7 @@ export default function ChangelogModal({ onClose }: ChangelogModalProps) {
         'Persistência: Cache local otimizado e correção do seletor de tema manual.',
         'Estabilidade: Correção de bugs de exportação PDF em dispositivos móveis e Safari.'
       ],
-      current: true
+      current: false
     },
     {
       version: 'v4.2.5',

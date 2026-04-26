@@ -595,12 +595,13 @@ export const getMemberByCPF = async (cpf: string): Promise<Member | null> => {
   if (!cpf) return null;
   const cleanCPF = cpf.replace(/\D/g, "");
   if (!cleanCPF) return null;
+  const formattedCPF = cleanCPF.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
   
   try {
     const { getDocs, query, collection, where } = await import("firebase/firestore");
     const q = query(
       collection(db, `artifacts/${appId}/public/data/students`),
-      where("cpf", "==", cleanCPF)
+      where("cpf", "in", [cleanCPF, formattedCPF])
     );
     const snap = await getDocs(q);
     if (!snap.empty) {

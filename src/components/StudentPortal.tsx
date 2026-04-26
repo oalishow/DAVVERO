@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, memo } from "react";
 import {
   User,
   CreditCard,
@@ -34,7 +34,7 @@ import Modal from "./Modal";
 import { ASSETS_DOC_PATH } from "../lib/constants";
 import { CertificateRenderer } from "./CertificateRenderer";
 
-const AsyncCertificateRenderer = ({ event, member, isOrganizer }: { event: Event, member: Member, isOrganizer?: boolean }) => {
+const AsyncCertificateRenderer = memo(({ event, member, isOrganizer }: { event: Event, member: Member, isOrganizer?: boolean }) => {
   const [template, setTemplate] = useState(event.certificateTemplate);
 
   useEffect(() => {
@@ -75,7 +75,7 @@ const AsyncCertificateRenderer = ({ event, member, isOrganizer }: { event: Event
 
   if (!template) return null;
   return <CertificateRenderer event={event} template={template} member={member} isOrganizer={isOrganizer} />;
-};
+});
 
 const STUDENT_BOND_KEY = "davveroId_student_identity";
 const STUDENT_TRACK_KEY = "davveroId_student_track_ra";
@@ -101,7 +101,7 @@ export default function StudentPortal({
 
   const [linkMode, setLinkMode] = useState(false);
   const [alphaCode, setAlphaCode] = useState("");
-  const [isProcessingAnimation, setIsProcessingAnimation] = useState(false);
+  const [isPrePinAnimation, setIsPrePinAnimation] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [activeTab, setActiveTab] = useState<"id" | "events" | "certificates">("id");
   const [eventsSubTab, setEventsSubTab] = useState<"upcoming" | "past">("upcoming");
@@ -319,11 +319,7 @@ export default function StudentPortal({
   const linkIdentity = async () => {
     if (!alphaCode.trim()) return;
     setIsLoading(true);
-    setIsProcessingAnimation(true);
     setError(null);
-
-    // Wait for 3 seconds of animation as requested
-    await new Promise((resolve) => setTimeout(resolve, 3000));
 
     try {
       let q;
@@ -332,9 +328,10 @@ export default function StudentPortal({
       const isCPF = /^\d{11}$/.test(onlyNumbers);
 
       if (isCPF) {
+        const formattedCPF = onlyNumbers.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4");
         q = query(
           collection(db, `artifacts/${appId}/public/data/students`),
-          where("cpf", "==", onlyNumbers),
+          where("cpf", "in", [onlyNumbers, formattedCPF]),
           limit(1),
         );
       } else {
@@ -346,15 +343,22 @@ export default function StudentPortal({
       }
 
       const snapshot = await getDocs(q);
+      
       if (!snapshot.empty) {
         const doc = snapshot.docs[0];
         const data = doc.data() as Member;
         const memberData = { ...data, id: doc.id };
         setMember(memberData);
         setBondedId(memberData.alphaCode || null);
-        localStorage.setItem(STUDENT_BOND_KEY, memberData.alphaCode || "");
+        
+        // Start PrePinAnimation
         setLinkMode(false);
         setPinMode("create");
+        setIsPrePinAnimation(true);
+        await new Promise((resolve) => setTimeout(resolve, 800));
+        setIsPrePinAnimation(false);
+
+        localStorage.setItem(STUDENT_BOND_KEY, memberData.alphaCode || "");
       } else {
         setError(isCPF ? "CPF não encontrado na base de dados." : "Código não encontrado na base de dados.");
       }
@@ -362,7 +366,6 @@ export default function StudentPortal({
       setError("Erro ao vincular identidade.");
     } finally {
       setIsLoading(false);
-      setIsProcessingAnimation(false);
     }
   };
 
@@ -442,7 +445,7 @@ export default function StudentPortal({
         } else if (pinInput === pinConfirm) {
           localStorage.setItem(STUDENT_FALLBACK_PIN, pinInput);
           setIsGenerating(true);
-          await new Promise((resolve) => setTimeout(resolve, 3000));
+          await new Promise((resolve) => setTimeout(resolve, 800));
           setIsUnlocked(true);
           setIsGenerating(false);
           setPinMode("none");
@@ -459,7 +462,7 @@ export default function StudentPortal({
       const savedPin = localStorage.getItem(STUDENT_FALLBACK_PIN);
       if (pinInput === savedPin) {
         setIsGenerating(true);
-        await new Promise((resolve) => setTimeout(resolve, 3000));
+        await new Promise((resolve) => setTimeout(resolve, 800));
         setIsUnlocked(true);
         setIsGenerating(false);
         setPinMode("none");
@@ -511,13 +514,36 @@ export default function StudentPortal({
     window.location.reload();
   };
 
-  if (isLoading && !isProcessingAnimation && !isGenerating) {
+  if (isLoading && !isGenerating) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 gap-4">
-        <Loader2 className="w-10 h-10 text-sky-500 animate-spin" />
-        <p className="text-sm font-medium text-slate-500">
-          Acedendo aos seus dados...
-        </p>
+      <div className="flex flex-col items-center justify-center py-24 px-4 text-center space-y-8 animate-in fade-in zoom-in duration-500">
+        <div className="relative w-full max-w-[240px]">
+          <div className="absolute -inset-4 bg-sky-500/20 dark:bg-sky-500/10 rounded-[2rem] blur-xl animate-pulse z-0" />
+          <div className="relative bg-white dark:bg-slate-900 border-2 border-sky-100 dark:border-sky-900/40 rounded-3xl p-6 shadow-xl shadow-sky-500/10 z-10 space-y-6">
+            <div className="space-y-4">
+              <div className="space-y-1">
+                <h3 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-tighter">
+                  Acedendo aos seus dados
+                </h3>
+              </div>
+              <div className="space-y-2">
+                <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                  <motion.div
+                    initial={{ width: "0%" }}
+                    animate={{ width: "100%" }}
+                    transition={{ duration: 1.5, ease: "easeInOut", repeat: Infinity }}
+                    className="h-full bg-sky-500 relative"
+                  >
+                    <div className="absolute top-0 right-0 bottom-0 left-0 bg-white/20 animate-pulse" />
+                  </motion.div>
+                </div>
+                <p className="text-xs font-bold text-sky-600 dark:text-sky-400 tracking-wider">
+                  Carregando...
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -525,6 +551,62 @@ export default function StudentPortal({
   if (bondedId && member) {
     if (!isUnlocked) {
       if (pinMode !== "none") {
+        if (isPrePinAnimation && member) {
+          return (
+            <div className="flex flex-col items-center justify-center py-24 px-4 text-center space-y-8 animate-in fade-in zoom-in duration-500">
+              <div className="relative w-full max-w-[240px]">
+                <div className="absolute -inset-4 bg-emerald-500/20 dark:bg-emerald-500/10 rounded-[2rem] blur-xl animate-pulse z-0" />
+                <div className="relative bg-white dark:bg-slate-900 border-2 border-emerald-100 dark:border-emerald-900/40 rounded-3xl p-6 shadow-xl shadow-emerald-500/10 z-10 space-y-6">
+                  <div className="mx-auto w-16 h-16 bg-emerald-100 dark:bg-emerald-500/20 rounded-2xl flex items-center justify-center">
+                    <User className="w-8 h-8 text-emerald-600 dark:text-emerald-400 animate-pulse" />
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <motion.h3
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-tighter"
+                      >
+                        Identidade Localizada
+                      </motion.h3>
+                      <motion.p
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.1 }}
+                        className="text-sm text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest leading-tight"
+                      >
+                        {member.name.split(" ")[0]}
+                      </motion.p>
+                    </div>
+
+                    <div className="space-y-2">
+                      <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                        <motion.div
+                          initial={{ width: "0%" }}
+                          animate={{ width: "100%" }}
+                          transition={{ duration: 1.5, ease: "easeInOut" }}
+                          className="h-full bg-emerald-500 relative"
+                        >
+                          <div className="absolute top-0 right-0 bottom-0 left-0 bg-white/20 animate-pulse" />
+                        </motion.div>
+                      </div>
+                      <motion.p 
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ delay: 0.2 }}
+                        className="text-[10px] sm:text-xs font-bold text-emerald-600 dark:text-emerald-400 tracking-wider leading-relaxed"
+                      >
+                        Preparando ambiente seguro e <br className="hidden sm:block" /> aplicando camadas de segurança...
+                      </motion.p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          );
+        }
+
         if (isGenerating) {
           return (
             <div className="flex flex-col items-center justify-center py-24 px-4 text-center space-y-8 animate-in fade-in duration-500">
@@ -760,7 +842,14 @@ export default function StudentPortal({
           <VerificationResult
             member={member}
             status={member.isActive ? "VALID" : "INACTIVE"}
-            onReset={() => {}}
+            onReset={() => {
+              localStorage.removeItem(STUDENT_BOND_KEY);
+              localStorage.removeItem(STUDENT_FALLBACK_PIN);
+              setMember(null);
+              setBondedId(null);
+              setIsUnlocked(false);
+              setPinMode("none");
+            }}
             isMyID={true}
           />
 
@@ -1272,40 +1361,13 @@ export default function StudentPortal({
               exit={{ opacity: 0, y: -10 }}
               className="w-full max-w-[320px] sm:max-w-sm mx-auto flex flex-col items-center bg-white dark:bg-slate-900 border-2 border-slate-100 dark:border-slate-800 p-6 rounded-3xl shadow-2xl relative overflow-hidden"
             >
-              {isProcessingAnimation ? (
-                <div className="py-12 flex flex-col items-center space-y-8 animate-in fade-in duration-500">
-                  <div className="relative w-24 h-24 bg-slate-50 dark:bg-slate-800 rounded-2xl border-2 border-slate-200 dark:border-slate-700 flex items-center justify-center overflow-hidden shadow-inner">
-                    <QrCode className="w-16 h-16 text-slate-300 dark:text-slate-600" />
-                    <motion.div
-                      className="absolute left-0 right-0 h-1 bg-sky-500 shadow-[0_0_15px_rgba(14,165,233,0.8)] z-10"
-                      initial={{ top: "0%" }}
-                      animate={{ top: ["0%", "100%", "0%"] }}
-                      transition={{
-                        duration: 1.5,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                      }}
-                    />
-                    <div className="absolute inset-0 bg-sky-500/5 animate-pulse" />
-                  </div>
-                  <div className="space-y-2 text-center">
-                    <h3 className="text-base font-black text-slate-800 dark:text-white uppercase tracking-widest">
-                      Validando Código...
-                    </h3>
-                    <p className="text-[10px] text-slate-500 font-bold uppercase tracking-tight">
-                      Sincronizando com a base institucional
-                    </p>
-                  </div>
-                </div>
-              ) : (
-                <>
-                  <QrCode className="w-12 h-12 text-slate-400 mb-6" />
-                  <h3 className="text-lg font-black uppercase tracking-tight text-slate-800 dark:text-white mb-2">
-                    Código de Uso ou CPF
-                  </h3>
-                  <p className="text-xs text-slate-500 text-center mb-6">
-                    Digite o seu código alfanumérico ou os 11 dígitos numéricos do seu CPF para carregar seus dados no dispositivo.
-                  </p>
+                <QrCode className="w-12 h-12 text-slate-400 mb-6" />
+                <h3 className="text-lg font-black uppercase tracking-tight text-slate-800 dark:text-white mb-2">
+                  Código de Uso ou CPF
+                </h3>
+                <p className="text-xs text-slate-500 text-center mb-6">
+                  Digite o seu código alfanumérico ou os 11 dígitos numéricos do seu CPF para carregar seus dados no dispositivo.
+                </p>
 
                   <input
                     type="text"
@@ -1340,8 +1402,6 @@ export default function StudentPortal({
                       )}
                     </button>
                   </div>
-                </>
-              )}
             </motion.div>
           )}
         </AnimatePresence>

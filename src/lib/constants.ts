@@ -26,12 +26,15 @@ export const INSTITUTION_DESCRIPTION_KEY = "davveroId_institution_description";
 export const CARD_DESCRIPTION_KEY = "davveroId_card_description";
 export const CUSTOM_ROLES_KEY = "davveroId_custom_roles";
 export const CUSTOM_COURSES_KEY = "davveroId_custom_courses";
-export const APP_VERSION = "4.7.0";
+export const APP_VERSION = "4.8.0";
 export const SETTINGS_DOC_PATH = (appId: string) =>
   `artifacts/${appId}/public/data/students/_settings_global`;
 export const ASSETS_DOC_PATH = (appId: string, assetType: string) =>
   `artifacts/${appId}/public/data/students/_asset_${assetType}`;
 export const CHANGELOG = [
+  "Versão 4.7.1 - Segurança e LGPD",
+  "Privacidade: Implementação de máscara de PII para proteção de CPFs e informações de contato na listagem pública e cache offline.",
+  "Segurança: Otimização das Regras do banco de dados para acesso estritamente anonimizado.",
   "Versão 4.7.0 - Organização de Eventos",
   "Navegação: Implementação de sub-abas (Próximos e Histórico) tanto no Portal do Aluno quanto na página principal de Eventos para facilitar a localização de atividades encerradas e futuras.",
   "Versão 4.6.10 - Ajuste de Performance",

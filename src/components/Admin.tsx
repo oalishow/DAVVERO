@@ -8,19 +8,11 @@ export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
 
   useEffect(() => {
-    const isMasterLogged =
-      sessionStorage.getItem("adminMasterLogged") === "true";
-    if (isMasterLogged) {
-      setIsAuthenticated(true);
-      // Wait for auth to settle but don't force logout
-      const unsub = onAuthStateChanged(auth, () => {});
-      return () => unsub();
-    }
-
     const unsub = onAuthStateChanged(auth, (user) => {
+      // For LGPD security, we only allow explicit non-anonymous users
       if (user && !user.isAnonymous) {
         setIsAuthenticated(true);
-      } else if (isAuthenticated === null) {
+      } else {
         setIsAuthenticated(false);
       }
     });

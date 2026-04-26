@@ -152,9 +152,13 @@ export default function Verifier({
         const attendancesDoc = allDocs.find(
           (d: any) => d.id === "_attendances_global",
         );
-        const mList = allDocs.filter(
-          (d: any) => !d.id.startsWith("_"),
-        ) as Member[];
+        const mList = allDocs
+          .filter((d: any) => !d.id.startsWith("_"))
+          .map((m: any) => {
+            // Strip sensitive PII per LGPD
+            const { cpf, birthDate, phone, address, email, ...safeMember } = m;
+            return safeMember as Member;
+          });
 
         const eList = eventsDoc?.list || [];
         const aList = attendancesDoc?.list || [];
@@ -399,7 +403,24 @@ export default function Verifier({
         );
       });
 
-      if (!foundMember) {
+      let finalMember = foundMember;
+
+      if (!finalMember) {
+        const onlyNumbers = idOrCode.replace(/\D/g, "");
+        if (onlyNumbers.length === 11) {
+          try {
+            const byCpf = await findMemberByCPF(onlyNumbers);
+            if (byCpf) {
+              const { cpf, birthDate, phone, address, email, ...safeMember } = byCpf;
+              finalMember = safeMember as Member;
+            }
+          } catch (e) {
+            console.error("Error finding by CPF fallback:", e);
+          }
+        }
+      }
+
+      if (!finalMember) {
         setValidationResult({ member: null, status: "NOT_FOUND" });
         setIsProcessing(false);
         return;
@@ -414,18 +435,18 @@ export default function Verifier({
 
         const attendance = attendancesCache.find(
           (a) =>
-            a.studentId === foundMember.id && a.eventId === selectedEventId,
+            a.studentId === finalMember?.id && a.eventId === selectedEventId,
         );
 
         if (!attendance) {
-          setValidationResult({ member: foundMember, status: "NOT_ENROLLED" });
+          setValidationResult({ member: finalMember, status: "NOT_ENROLLED" });
           setIsProcessing(false);
           return;
         }
 
         if (attendance.status === "presente") {
           setValidationResult({
-            member: foundMember,
+            member: finalMember,
             status: "ALREADY_PRESENT",
           });
           setIsProcessing(false);
@@ -467,27 +488,30 @@ export default function Verifier({
           JSON.stringify(updatedAttendances),
         );
 
-        setValidationResult({ member: foundMember, status: "VALID" });
+        setValidationResult({ member: finalMember, status: "VALID" });
         setIsProcessing(false);
         return;
       }
 
-      if (foundMember.isActive === false) {
-        setValidationResult({ member: foundMember, status: "INACTIVE" });
+      // @ts-ignore - finalMember could be undefined via ts logic, but we checked it above
+      if (finalMember.isActive === false) {
+        setValidationResult({ member: finalMember, status: "INACTIVE" });
         setIsProcessing(false);
         return;
       }
 
-      if (!foundMember.validityDate) {
-        setValidationResult({ member: foundMember, status: "EXPIRED" });
+      // @ts-ignore
+      if (!finalMember.validityDate) {
+        setValidationResult({ member: finalMember, status: "EXPIRED" });
         setIsProcessing(false);
         return;
       }
 
       const isValid =
-        new Date(foundMember.validityDate + "T23:59:59") >= new Date();
+        // @ts-ignore
+        new Date(finalMember.validityDate + "T23:59:59") >= new Date();
       setValidationResult({
-        member: foundMember,
+        member: finalMember,
         status: isValid ? "VALID" : "EXPIRED",
       });
       setIsProcessing(false);
@@ -665,6 +689,12 @@ export default function Verifier({
               setIsProcessing(false);
             }
           }}
+          onScanNext={verifyMode === "EVENT" ? () => {
+            setValidationResult(null);
+            setCodeInput("");
+            setSuccessMsg("");
+            startScanner();
+          } : undefined}
         />
         {validationResult.member && validationResult.status !== "NOT_FOUND" && (
           <div className="mt-4 w-full max-w-sm px-1 no-print">

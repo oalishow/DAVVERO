@@ -53,7 +53,7 @@ export default function Footer() {
               <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
               DB Conectado
             </div>
-            <span className="text-[7px] font-bold text-slate-400 uppercase tracking-tighter opacity-70">Build: 24.04.26</span>
+            <span className="text-[7px] font-bold text-slate-400 uppercase tracking-tighter opacity-70">Build: 26.04.26</span>
           </div>
         </div>
         <p className="text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-500 text-center md:text-left">
