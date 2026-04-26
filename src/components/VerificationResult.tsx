@@ -126,7 +126,7 @@ export default function VerificationResult({
 
       let targetNodeId = "validation-card-capture";
       if (isMyID && status === "VALID") {
-        targetNodeId = "export-card-node";
+        targetNodeId = "export-card-node-internal";
       }
 
       const card = document.getElementById(targetNodeId);
@@ -287,7 +287,7 @@ export default function VerificationResult({
               <FajopaIDCard member={member} />
             </div>
             {/* Hidden node specifically optimized for exporting without 3D perspective issues */}
-            <div id="export-card-node" className="absolute opacity-0 pointer-events-none -z-50 left-0 top-0 print:static print:opacity-100 print:z-auto print:pointer-events-auto">
+            <div id="export-card-node" style={{ position: 'fixed', top: 0, left: '-9999px', pointerEvents: 'none' }} className="print:static print:left-auto print:pointer-events-auto">
               <FajopaIDCard member={member} exportMode={true} />
             </div>
 
