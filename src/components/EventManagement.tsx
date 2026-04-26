@@ -62,7 +62,7 @@ export default function EventManagement() {
     null,
   );
   const [showCertificateEditor, setShowCertificateEditor] =
-    useState<Event | null>(null);
+    useState<{ event: Event, type: "participant" | "organizer" } | null>(null);
 
   const [title, setTitle] = useState("");
   const [startDate, setStartDate] = useState("");
@@ -234,7 +234,8 @@ export default function EventManagement() {
       )}
       {showCertificateEditor && (
         <CertificateEditor
-          event={showCertificateEditor}
+          event={showCertificateEditor.event}
+          type={showCertificateEditor.type}
           onClose={() => setShowCertificateEditor(null)}
           onSaved={(updatedEvent) => {
             setEvents(prev => prev.map(e => e.id === updatedEvent.id ? updatedEvent : e));
@@ -603,7 +604,7 @@ export default function EventManagement() {
                         <span className="truncate">Inscritos</span>
                       </button>
                       <button
-                        onClick={() => setShowCertificateEditor(event)}
+                        onClick={() => setShowCertificateEditor({ event, type: "participant" })}
                         className={`flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 hover:bg-white dark:hover:bg-slate-700 text-xs font-bold rounded-md transition-colors ${
                           event.certificateTemplate?.isApproved 
                             ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10" 
@@ -613,6 +614,21 @@ export default function EventManagement() {
                         <Award className="w-3.5 h-3.5 shrink-0" />{" "}
                         <span className="truncate">Certificado</span>
                         {event.certificateTemplate?.isApproved && (
+                          <CheckCircle className="w-3 h-3 text-emerald-500 ml-1" />
+                        )}
+                      </button>
+                      <button
+                        onClick={() => setShowCertificateEditor({ event, type: "organizer" })}
+                        className={`flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 hover:bg-white dark:hover:bg-slate-700 text-xs font-bold rounded-md transition-colors ${
+                          event.organizationCertificateTemplate?.isApproved 
+                            ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10" 
+                            : "text-amber-600 dark:text-amber-400"
+                        }`}
+                        title="Certificado de Organização"
+                      >
+                        <Award className="w-3.5 h-3.5 shrink-0" />{" "}
+                        <span className="truncate">Cert. Org.</span>
+                        {event.organizationCertificateTemplate?.isApproved && (
                           <CheckCircle className="w-3 h-3 text-emerald-500 ml-1" />
                         )}
                       </button>

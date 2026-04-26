@@ -6,10 +6,11 @@ interface CertificateRendererProps {
   event: Event;
   template: CertificateTemplate;
   member: Partial<Member>;
+  isOrganizer?: boolean;
 }
 
 export const CertificateRenderer = forwardRef<HTMLDivElement, CertificateRendererProps>(
-  ({ event, template, member }, ref) => {
+  ({ event, template, member, isOrganizer }, ref) => {
     const { settings } = useSettings();
 
     // Use specific signature urls from template, or fallback to the carteirinha settings
@@ -21,7 +22,9 @@ export const CertificateRenderer = forwardRef<HTMLDivElement, CertificateRendere
     const fontClass = template.fontFamily === 'serif' ? 'font-serif' : 
                       template.fontFamily === 'mono' ? 'font-mono' : 'font-sans';
                       
-    const defaultBodyText = `Certificamos que [NOME DO ALUNO], participou com êxito do evento "${event.title}", em formato ${event.format}, realizado entre ${new Date(event.startDate).toLocaleDateString('pt-BR')} e ${new Date(event.endDate || event.startDate).toLocaleDateString('pt-BR')}, com carga horária total de ${event.hours} horas.`;
+    const defaultBodyText = isOrganizer
+      ? `Certificamos que [NOME DO ALUNO], atuou como membro da Equipe de Organização do evento "${event.title}", em formato ${event.format}, realizado entre ${new Date(event.startDate).toLocaleDateString('pt-BR')} e ${new Date(event.endDate || event.startDate).toLocaleDateString('pt-BR')}, com carga horária total de ${event.hours} horas.`
+      : `Certificamos que [NOME DO ALUNO], participou com êxito do evento "${event.title}", em formato ${event.format}, realizado entre ${new Date(event.startDate).toLocaleDateString('pt-BR')} e ${new Date(event.endDate || event.startDate).toLocaleDateString('pt-BR')}, com carga horária total de ${event.hours} horas.`;
     
     const bodyText = (template.bodyText || defaultBodyText)
       .replace(/\[NOME DO ALUNO\]/g, member.name || 'NOME DO ALUNO')
@@ -93,7 +96,7 @@ export const CertificateRenderer = forwardRef<HTMLDivElement, CertificateRendere
 
         <div className="relative z-10 flex flex-col items-center pt-8">
            <h1 className={`text-6xl font-black tracking-widest uppercase mb-4 ${currentTheme.titleColor}`}>CERTIFICADO</h1>
-           <h2 className={`text-2xl font-medium tracking-widest ${template.bgStyle === 'theme-solemn' ? 'text-slate-400' : 'text-slate-500'} uppercase`}>DE PARTICIPAÇÃO</h2>
+           <h2 className={`text-2xl font-medium tracking-widest ${template.bgStyle === 'theme-solemn' ? 'text-slate-400' : 'text-slate-500'} uppercase`}>{isOrganizer ? "DE ORGANIZAÇÃO" : "DE PARTICIPAÇÃO"}</h2>
         </div>
 
         <div className="relative z-10 flex flex-col items-center justify-center flex-1 my-12 px-24">

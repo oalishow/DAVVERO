@@ -144,6 +144,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
       // Legacy fallback
       localStorage.setItem(URL_STORAGE_KEY, url);
       localStorage.setItem(DIRECTOR_NAME_KEY, directorName);
+      localStorage.setItem('davveroId_rector_name', rectorName);
       localStorage.setItem(INSTITUTION_NAME_KEY, instName);
       localStorage.setItem(INSTITUTION_COLOR_KEY, instColor);
       localStorage.setItem(INSTITUTION_DESCRIPTION_KEY, instDescription);

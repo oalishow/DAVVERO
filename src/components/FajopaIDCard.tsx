@@ -75,6 +75,9 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
   const isSeminarista = member.roles?.some(r => r.trim().toUpperCase() === 'SEMINARISTA');
   const validDiocese = ['ASSIS', 'PRESIDENTE PRUDENTE', 'OURINHOS', 'ARAÇATUBA', 'ARACATUBA', 'LINS'].includes(normalizedDiocese);
   const showRector = isSeminarista && validDiocese;
+  
+  const directorNameText = directorName?.trim() || 'DIRETOR GERAL';
+  const rectorNameText = rectorName?.trim() || 'REITOR';
   const showSecondaryLogo = validDiocese;
   
   const displayInstNameForCard = (isSeminarista && !validDiocese && instName === 'FAJOPA e SPSCJ') ? 'FAJOPA' : instName;
@@ -354,7 +357,7 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
               
               {visibleFields.director && (
                 <div className="flex flex-col items-center mt-1 leading-tight text-center">
-                  <div className="text-slate-800 font-bold uppercase tracking-tight text-[9px] leading-tight mb-0.5 whitespace-normal">{directorName || 'DIRETOR GERAL'}</div>
+                  <div className="text-slate-800 font-bold uppercase tracking-tight text-[9px] leading-tight mb-0.5 whitespace-normal">{directorNameText}</div>
                   <div className="text-blue-900 font-bold text-[7px] leading-tight uppercase">Diretor Geral</div>
                 </div>
               )}
@@ -382,7 +385,7 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
               
               {visibleFields.rector && (
                 <div className="flex flex-col items-center mt-1 leading-tight text-center">
-                  <div className="text-slate-800 font-bold uppercase tracking-tight text-[9px] leading-tight mb-0.5 whitespace-normal">{rectorName || 'REITOR'}</div>
+                  <div className="text-slate-800 font-bold uppercase tracking-tight text-[9px] leading-tight mb-0.5 whitespace-normal">{rectorNameText}</div>
                   <div className="text-blue-900 font-bold text-[7px] leading-tight uppercase">Reitor do Seminário</div>
                 </div>
               )}

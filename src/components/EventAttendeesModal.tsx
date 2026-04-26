@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
-import { X, Search, CheckCircle, Clock, Trash2 } from "lucide-react";
+import { X, Search, CheckCircle, Clock, Trash2, Shield, ShieldAlert, Star } from "lucide-react";
 import type { Event, Attendance, Member } from "../types";
-import { db, appId, unsubscribeFromEvent } from "../lib/firebase";
+import { db, appId, unsubscribeFromEvent, updateAttendanceDetails } from "../lib/firebase";
 import { doc, getDoc, collection, getDocs, query } from "firebase/firestore";
 import Modal from "./Modal";
 
@@ -19,7 +19,8 @@ export default function EventAttendeesModal({
   >([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState<"alunos" | "visitantes">("alunos");
+  const [activeTab, setActiveTab] = useState<"alunos" | "visitantes" | "organizacao">("alunos");
+  const [allMembers, setAllMembers] = useState<Member[]>([]);
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
     message: string;
@@ -48,11 +49,16 @@ export default function EventAttendeesModal({
         query(collection(db, `artifacts/${appId}/public/data/students`)),
       );
       const membersDict: Record<string, Member> = {};
+      const allM: Member[] = [];
       membersSnap.docs.forEach((d) => {
         if (!d.id.startsWith("_")) {
-          membersDict[d.id] = { id: d.id, ...d.data() } as Member;
+          const mbr = { id: d.id, ...d.data() } as Member;
+          membersDict[d.id] = mbr;
+          allM.push(mbr);
         }
       });
+
+      setAllMembers(allM);
 
       const enriched = eventAttendances.map((a: Attendance) => ({
         ...a,
@@ -84,6 +90,15 @@ export default function EventAttendeesModal({
         }
       },
     });
+  };
+
+  const handleToggleOrganizer = async (eventId: string, studentId: string, currentStatus: boolean) => {
+    try {
+      await updateAttendanceDetails(eventId, studentId, { isOrganizer: !currentStatus });
+      loadData();
+    } catch (err) {
+      alert("Erro ao atualizar status de organização.");
+    }
   };
 
   const handlePrint = (filterType: "all" | "alunos" | "visitantes") => {
@@ -197,6 +212,7 @@ export default function EventAttendeesModal({
   };
 
   const filteredAttendees = attendees.filter((a) => {
+    if (activeTab === "organizacao") return false; // Handled separately below
     let matchTab = true;
     if (activeTab === "alunos") {
       matchTab = !a.member?.roles?.includes("VISITANTE");
@@ -210,6 +226,25 @@ export default function EventAttendeesModal({
       a.member?.name.toLowerCase().includes(term) ||
       a.member?.ra?.toLowerCase().includes(term) ||
       (a.member as any)?.cpf?.includes(term) // in case visitors use cpf
+    );
+  });
+
+  const filteredOrganization = allMembers.filter((mbr) => {
+    if (activeTab !== "organizacao") return false;
+    
+    // Default to showing only existing organizers if no search term, or show matched members
+    const attendance = attendees.find(a => a.studentId === mbr.id);
+    const isOrganizer = !!attendance?.isOrganizer;
+    
+    if (!searchTerm) {
+      return isOrganizer;
+    }
+    
+    const term = searchTerm.toLowerCase();
+    return (
+      mbr.name.toLowerCase().includes(term) ||
+      mbr.ra?.toLowerCase().includes(term) ||
+      (mbr as any).cpf?.includes(term)
     );
   });
 
@@ -233,10 +268,10 @@ export default function EventAttendeesModal({
           </button>
         </div>
 
-        <div className="flex bg-slate-100 dark:bg-slate-800/50 p-1 mx-4 mt-4 rounded-xl">
+        <div className="flex bg-slate-100 dark:bg-slate-800/50 p-1 mx-4 mt-4 rounded-xl flex-wrap">
           <button
             onClick={() => setActiveTab("alunos")}
-            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${
+            className={`flex-1 min-w-[100px] py-2 text-sm font-bold rounded-lg transition-colors ${
               activeTab === "alunos"
                 ? "bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-sm"
                 : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
@@ -246,13 +281,24 @@ export default function EventAttendeesModal({
           </button>
           <button
             onClick={() => setActiveTab("visitantes")}
-            className={`flex-1 py-2 text-sm font-bold rounded-lg transition-colors ${
+            className={`flex-1 min-w-[100px] py-2 text-sm font-bold rounded-lg transition-colors ${
               activeTab === "visitantes"
                 ? "bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-sm"
                 : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
             }`}
           >
             Visitantes
+          </button>
+          <button
+            onClick={() => setActiveTab("organizacao")}
+            className={`flex-1 min-w-[100px] py-2 text-sm font-bold rounded-lg transition-colors ${
+              activeTab === "organizacao"
+                ? "bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-sm"
+                : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+            }`}
+             title="Membros da equipe de organização deste evento"
+          >
+            Organização
           </button>
         </div>
 
@@ -298,6 +344,80 @@ export default function EventAttendeesModal({
             <div className="flex justify-center p-8">
               <div className="w-8 h-8 rounded-full border-4 border-sky-500 border-t-transparent animate-spin"></div>
             </div>
+          ) : activeTab === "organizacao" ? (
+            filteredOrganization.length === 0 ? (
+              <p className="text-center text-slate-500 dark:text-slate-400 py-8 font-medium">
+                Nenhum membro encontrado. Use a busca para encontrar membros e adicioná-los à organização.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {filteredOrganization.map((mbr) => {
+                  const attendance = attendees.find(a => a.studentId === mbr.id);
+                  const isOrganizer = !!attendance?.isOrganizer;
+                  return (
+                    <div
+                      key={mbr.id}
+                      className={`p-4 rounded-xl border flex flex-col sm:flex-row justify-between sm:items-center gap-3 transition-colors ${isOrganizer ? 'bg-amber-50/50 dark:bg-amber-500/5 border-amber-200 dark:border-amber-500/20' : 'bg-white dark:bg-slate-800/80 border-slate-200 dark:border-slate-700'}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        {mbr?.photoUrl ? (
+                          <img
+                            src={mbr.photoUrl}
+                            alt={mbr?.name}
+                            className="w-12 h-12 rounded-full object-cover border-2 border-slate-100 dark:border-slate-700"
+                          />
+                        ) : (
+                          <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-700 flex items-center justify-center text-slate-500 dark:text-slate-400 text-xl font-bold">
+                            {mbr?.name?.charAt(0).toUpperCase() || "?"}
+                          </div>
+                        )}
+                        <div>
+                          <h4 className="font-bold text-slate-800 dark:text-slate-200">
+                            {mbr?.name || "Aluno Excluído"}
+                          </h4>
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium mt-1 flex flex-wrap gap-x-2 gap-y-1">
+                            {mbr?.ra && <span>RA: {mbr.ra}</span>}
+                            {(mbr as any)?.cpf && <span>CPF: {(mbr as any).cpf}</span>}
+                            {mbr?.alphaCode && (
+                              <span>ID: {mbr.alphaCode}</span>
+                            )}
+                            {mbr?.course && (
+                              <span>
+                                <span className="text-slate-300 dark:text-slate-600 px-1">
+                                  •
+                                </span>
+                                {mbr.course}
+                              </span>
+                            )}
+                            {mbr?.roles && mbr.roles.length > 0 && (
+                              <span>
+                                <span className="text-slate-300 dark:text-slate-600 px-1">
+                                  •
+                                </span>
+                                {mbr.roles.join(", ")}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center justify-end gap-2 mt-2 sm:mt-0">
+                        <button
+                          onClick={() => handleToggleOrganizer(event.id, mbr.id, isOrganizer)}
+                          className={`p-1.5 rounded-lg border transition-colors flex items-center gap-1.5 px-3 py-2 text-xs font-bold ${
+                            isOrganizer
+                              ? "bg-amber-500 text-white border-amber-600 hover:bg-amber-600 shadow-sm"
+                              : "bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:text-amber-500 hover:border-amber-200 dark:hover:border-amber-500/30"
+                          }`}
+                          title={isOrganizer ? "Remover da equipe de organização" : "Adicionar à equipe de organização"}
+                        >
+                          <Star className={`w-4 h-4 ${isOrganizer ? "fill-white" : ""}`} /> {isOrganizer ? "Organizador" : "Adicionar como Organizador"}
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )
           ) : filteredAttendees.length === 0 ? (
             <p className="text-center text-slate-500 dark:text-slate-400 py-8 font-medium">
               Nenhum inscrito encontrado.
@@ -359,6 +479,17 @@ export default function EventAttendeesModal({
                     </div>
                   </div>
                   <div className="flex items-center justify-end gap-2 mt-2 sm:mt-0">
+                    <button
+                      onClick={() => handleToggleOrganizer(event.id, a.studentId, !!a.isOrganizer)}
+                      className={`p-1.5 rounded-lg border transition-colors flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold ${
+                        a.isOrganizer
+                          ? "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/20 hover:bg-amber-100"
+                          : "bg-slate-50 dark:bg-slate-800 text-slate-400 border-slate-200 dark:border-slate-700 hover:text-amber-500"
+                      }`}
+                      title={a.isOrganizer ? "Remover da equipe de organização" : "Adicionar à equipe de organização"}
+                    >
+                      <Star className={`w-3.5 h-3.5 ${a.isOrganizer ? "fill-amber-500" : ""}`} /> Org
+                    </button>
                     {a.status === "presente" ||
                     a.status === "apto_para_certificado" ? (
                       <>

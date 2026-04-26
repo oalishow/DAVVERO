@@ -422,6 +422,57 @@ export const updateAttendanceStatus = async (
   }
 };
 
+export const updateAttendanceDetails = async (eventId: string, studentId: string, updates: Partial<Attendance>) => {
+  try {
+    const attendancesRef = doc(
+      db,
+      `artifacts/${appId}/public/data/students`,
+      "_attendances_global",
+    );
+    const docSnap = await getDocFromServer(attendancesRef).catch(() => null);
+    if (docSnap && docSnap.exists()) {
+      const data = docSnap.data();
+      const list = (data.list || []) as Attendance[];
+      const idx = list.findIndex((a) => a.eventId === eventId && a.studentId === studentId);
+      if (idx !== -1) {
+        list[idx] = { ...list[idx], ...updates };
+        await updateDoc(attendancesRef, { list: removeUndefined(list) });
+        return true;
+      } else {
+        // Attendance doesn't exist. Create it!
+        const attendanceId = "att_" + Date.now().toString() + "_" + Math.floor(Math.random() * 1000);
+        const newAttendance: Attendance = {
+          id: attendanceId,
+          eventId,
+          studentId,
+          status: "inscrito",
+          timestamp: new Date().toISOString(),
+          ...updates
+        };
+        list.push(newAttendance);
+        await updateDoc(attendancesRef, { list: removeUndefined(list) });
+        return true;
+      }
+    } else {
+       // Doc completely doesn't exist, highly unlikely here since it's global, but just in case
+       const attendanceId = "att_" + Date.now().toString() + "_" + Math.floor(Math.random() * 1000);
+       const newAttendance: Attendance = {
+         id: attendanceId,
+         eventId,
+         studentId,
+         status: "inscrito",
+         timestamp: new Date().toISOString(),
+         ...updates
+       };
+       await setDoc(attendancesRef, { list: removeUndefined([newAttendance]) });
+       return true;
+    }
+  } catch (e) {
+    console.error("Error updating attendance details: ", e);
+    throw e;
+  }
+};
+
 export const unsubscribeFromEvent = async (eventId: string, studentId: string) => {
   try {
     const attendancesRef = doc(

@@ -13,6 +13,7 @@ interface CertificateEditorProps {
   event: Event;
   onClose: () => void;
   onSaved: (updatedEvent: Event) => void;
+  type?: "participant" | "organizer";
 }
 
 const TEMPLATE_STYLES = [
@@ -26,11 +27,12 @@ export default function CertificateEditor({
   event,
   onClose,
   onSaved,
+  type = "participant",
 }: CertificateEditorProps) {
   const { settings } = useSettings();
   
   const [template, setTemplate] = useState<CertificateTemplate>(
-    event.certificateTemplate || {
+    (type === "organizer" ? event.organizationCertificateTemplate : event.certificateTemplate) || {
       bodyText: "",
       fontFamily: "sans",
       bgStyle: "theme-classic",
@@ -56,7 +58,8 @@ export default function CertificateEditor({
     const fetchAssets = async () => {
       // First try to load from the new unified cert_assets doc
       try {
-        const assetsSnap = await getDoc(doc(db, ASSETS_DOC_PATH(appId, `cert_assets_${event.id}`)));
+        const assetDocId = type === "organizer" ? `cert_assets_org_${event.id}` : `cert_assets_${event.id}`;
+        const assetsSnap = await getDoc(doc(db, ASSETS_DOC_PATH(appId, assetDocId)));
         if (assetsSnap.exists() && assetsSnap.data().data) {
           const assetsData = assetsSnap.data().data;
           setTemplate(prev => ({
@@ -92,9 +95,10 @@ export default function CertificateEditor({
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const themeLabel = TEMPLATE_STYLES.find(t => t.bg === template.bgStyle)?.name || "Clássico";
+      const certRole = type === "organizer" ? "Membro da Equipe de Organização" : "Participação";
       
       const prompt = `Você é um curador acadêmico e teológico especialista em redação oficial.
-Escreva O CORPO do texto de um Certificado de Participação para o evento "${event.title}".
+Escreva O CORPO do texto de um Certificado de ${certRole} para o evento "${event.title}".
 Descrição do evento: "${event.description}".
 Carga horária: ${event.hours} horas.
 Data de Início: ${new Date(event.startDate).toLocaleDateString('pt-BR')}
@@ -110,7 +114,7 @@ Instruções RIGOROSAS:
 4. Mencione a carga horária e de forma elegante o nome do evento.`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-3.1-flash",
+        model: "gemini-3-flash-preview",
         contents: prompt,
       });
 
@@ -193,15 +197,21 @@ Instruções RIGOROSAS:
 
       // Always update assets doc if we have assets OR if we previously had them (to ensure sync)
       console.log("Saving assets document...");
-      await setDoc(doc(db, ASSETS_DOC_PATH(appId, `cert_assets_${event.id}`)), { 
+      const assetDocId = type === "organizer" ? `cert_assets_org_${event.id}` : `cert_assets_${event.id}`;
+      await setDoc(doc(db, ASSETS_DOC_PATH(appId, assetDocId)), { 
         data: hasAnyAssets ? assetsData : null,
         updatedAt: new Date().toISOString()
       });
 
       console.log("Updating main event document...");
-      await updateEvent(event.id, { certificateTemplate: finalTemplate });
+      if (type === "organizer") {
+        await updateEvent(event.id, { organizationCertificateTemplate: finalTemplate });
+        onSaved({ ...event, organizationCertificateTemplate: finalTemplate });
+      } else {
+        await updateEvent(event.id, { certificateTemplate: finalTemplate });
+        onSaved({ ...event, certificateTemplate: finalTemplate });
+      }
       
-      onSaved({ ...event, certificateTemplate: finalTemplate });
       alert(shouldApprove ? "Configurações do certificado liberadas com sucesso!" : "Alterações salvas com sucesso!");
     } catch (e: any) {
       console.error("Error saving certificate:", e);
@@ -218,9 +228,11 @@ Instruções RIGOROSAS:
         
         {/* CABEÇALHO DO EDITOR */}
         <div className="p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-between items-center shrink-0">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
              <Wand2 className="w-5 h-5 text-sky-500" />
-             <h2 className="text-xl font-bold text-slate-800 dark:text-white">Editor de Certificados</h2>
+             <h2 className="text-lg sm:text-xl font-bold text-slate-800 dark:text-white">
+               Editor de Certificado {type === "organizer" ? "da Organização" : "de Participação"}
+             </h2>
              <span className="hidden sm:inline text-xs font-medium text-slate-500 bg-slate-200 dark:bg-slate-700 px-2 py-1 rounded">
                {event.title}
              </span>
@@ -400,6 +412,7 @@ Instruções RIGOROSAS:
                      event={event} 
                      template={template} 
                      member={{ name: "JOÃO DA SILVA", ra: "123456" }} 
+                     isOrganizer={type === "organizer"}
                    />
                 </div>
              </div>

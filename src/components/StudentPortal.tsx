@@ -34,7 +34,7 @@ import Modal from "./Modal";
 import { ASSETS_DOC_PATH } from "../lib/constants";
 import { CertificateRenderer } from "./CertificateRenderer";
 
-const AsyncCertificateRenderer = ({ event, member }: { event: Event, member: Member }) => {
+const AsyncCertificateRenderer = ({ event, member, isOrganizer }: { event: Event, member: Member, isOrganizer?: boolean }) => {
   const [template, setTemplate] = useState(event.certificateTemplate);
 
   useEffect(() => {
@@ -46,7 +46,8 @@ const AsyncCertificateRenderer = ({ event, member }: { event: Event, member: Mem
 
     const fetchAssets = async () => {
       try {
-        const snap = await getDoc(doc(db, ASSETS_DOC_PATH(appId, `cert_assets_${event.id}`)));
+        const assetDocId = isOrganizer ? `cert_assets_org_${event.id}` : `cert_assets_${event.id}`;
+        const snap = await getDoc(doc(db, ASSETS_DOC_PATH(appId, assetDocId)));
         if (!isMounted) return;
         
         if (snap.exists() && snap.data().data) {
@@ -57,7 +58,7 @@ const AsyncCertificateRenderer = ({ event, member }: { event: Event, member: Mem
             ...(assets.fajopaDirectorSignatureUrl && { fajopaDirectorSignatureUrl: assets.fajopaDirectorSignatureUrl }),
             ...(assets.seminarRectorSignatureUrl && { seminarRectorSignatureUrl: assets.seminarRectorSignatureUrl }),
           } : prev);
-        } else if ((template as any).hasCustomBg) { // Fallback to old bg doc
+        } else if ((template as any).hasCustomBg && !isOrganizer) { // Fallback to old bg doc
           const oldBgSnap = await getDoc(doc(db, ASSETS_DOC_PATH(appId, `cert_bg_${event.id}`)));
           if (!isMounted) return;
           if (oldBgSnap.exists() && oldBgSnap.data().data) {
@@ -70,10 +71,10 @@ const AsyncCertificateRenderer = ({ event, member }: { event: Event, member: Mem
     };
     fetchAssets();
     return () => { isMounted = false; };
-  }, [event.id]);
+  }, [event.id, isOrganizer]);
 
   if (!template) return null;
-  return <CertificateRenderer event={event} template={template} member={member} />;
+  return <CertificateRenderer event={event} template={template} member={member} isOrganizer={isOrganizer} />;
 };
 
 const STUDENT_BOND_KEY = "davveroId_student_identity";
@@ -201,13 +202,13 @@ export default function StudentPortal({
     }
   };
 
-  const handleDownloadCertificate = async (event: Event) => {
+  const handleDownloadCertificate = async (event: Event, type: "participant" | "organizer") => {
     if (!member) return;
     setIsDownloading(true);
 
     try {
       // Find the node
-      const node = document.getElementById(`cert-node-${event.id}`);
+      const node = document.getElementById(`cert-node-${type === "participant" ? "part" : "org"}-${event.id}`);
       if (!node) {
         throw new Error("Certificado não encontrado no DOM.");
       }
@@ -705,13 +706,24 @@ export default function StudentPortal({
         {/* Hidden nodes for Certificate rendering - using visibility hidden instead of massive offset if possible, 
             but absolute off-screen is safer for capture tools */}
         <div className="absolute top-[-10000px] left-[-10000px] pointer-events-none" aria-hidden="true">
-          {allEvents
-            .filter(e => e.certificateTemplate)
-            .map((e) => (
-              <div key={e.id} id={`cert-node-${e.id}`} className="bg-white">
-                <AsyncCertificateRenderer event={e} member={member} />
+          {allEvents.map((e) => {
+            const hasPart = Boolean(e.certificateTemplate);
+            const hasOrg = Boolean(e.organizationCertificateTemplate);
+            return (
+              <div key={e.id} className="contents">
+                {hasPart && (
+                  <div id={`cert-node-part-${e.id}`} className="bg-white">
+                    <AsyncCertificateRenderer event={{ ...e, certificateTemplate: e.certificateTemplate }} member={member} />
+                  </div>
+                )}
+                {hasOrg && (
+                  <div id={`cert-node-org-${e.id}`} className="bg-white">
+                    <AsyncCertificateRenderer event={{ ...e, certificateTemplate: e.organizationCertificateTemplate }} member={member} isOrganizer={true} />
+                  </div>
+                )}
               </div>
-            ))}
+            );
+          })}
         </div>
 
         <div className="w-full flex flex-col items-center animate-fade-in mt-10 max-w-sm sm:max-w-[600px] mx-auto">
@@ -990,32 +1002,35 @@ export default function StudentPortal({
                 ).length > 0 ? (
                   <div className="space-y-3">
                     {allEvents
-                      .filter(
-                        (e) =>
-                          (e.status === "encerrado" || e.status === "aberto") &&
-                          e.certificateTemplate?.isApproved === true &&
-                          myAttendances.find(
-                            (a) =>
-                              a.eventId === e.id &&
-                              (a.status === "presente" ||
-                                a.status === "apto_para_certificado"),
-                          ),
-                      )
+                      .filter((e) => {
+                        if (e.status !== "encerrado" && e.status !== "aberto") return false;
+                        const attendance = myAttendances.find((a) => a.eventId === e.id);
+                        if (!attendance) return false;
+                        
+                        const hasPartCert = e.certificateTemplate?.isApproved === true && (attendance.status === "presente" || attendance.status === "apto_para_certificado");
+                        const hasOrgCert = e.organizationCertificateTemplate?.isApproved === true && attendance.isOrganizer === true;
+                        
+                        return hasPartCert || hasOrgCert;
+                      })
                       .map((event) => {
                         const startStr = new Date(event.startDate).toLocaleDateString("pt-BR");
                         const endStr = event.endDate ? new Date(event.endDate).toLocaleDateString("pt-BR") : startStr;
                         const periodText = startStr === endStr ? startStr : `${startStr} a ${endStr}`;
                         const formatText = event.format === "online" ? "Online" : "Presencial";
+                        
+                        const attendance = myAttendances.find((a) => a.eventId === event.id);
+                        const hasPartCert = event.certificateTemplate?.isApproved === true && (attendance?.status === "presente" || attendance?.status === "apto_para_certificado");
+                        const hasOrgCert = event.organizationCertificateTemplate?.isApproved === true && attendance?.isOrganizer === true;
 
                         return (
                           <div
                             key={event.id}
-                            className="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-200 dark:border-slate-700 text-left shadow-sm"
+                            className="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-200 dark:border-slate-700 text-left shadow-sm flex flex-col gap-2"
                           >
                             <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm leading-tight mb-2">
                               {event.title}
                             </h4>
-                            <div className="flex flex-wrap gap-2 mb-4">
+                            <div className="flex flex-wrap gap-2 mb-2">
                               <span className="text-[9px] font-bold uppercase bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md text-slate-500">
                                 {formatText}
                               </span>
@@ -1023,19 +1038,38 @@ export default function StudentPortal({
                                 {periodText}
                               </span>
                             </div>
-                            <button
-                              onClick={() => handleDownloadCertificate(event)}
-                              className="w-full py-3 bg-sky-600 hover:bg-sky-500 text-white rounded-2xl text-xs font-bold transition-all active:scale-95 shadow-md flex items-center justify-center gap-2"
-                            >
-                              {isDownloading ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <>
-                                  <ExternalLink className="w-4 h-4" />
-                                  Baixar Certificado
-                                </>
-                              )}
-                            </button>
+                            
+                            {hasPartCert && (
+                              <button
+                                onClick={() => handleDownloadCertificate(event, "participant")}
+                                className="w-full py-3 bg-sky-600 hover:bg-sky-500 text-white rounded-2xl text-xs font-bold transition-all active:scale-95 shadow-md flex items-center justify-center gap-2"
+                              >
+                                {isDownloading ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <>
+                                    <ExternalLink className="w-4 h-4" />
+                                    Participação
+                                  </>
+                                )}
+                              </button>
+                            )}
+                            
+                            {hasOrgCert && (
+                              <button
+                                onClick={() => handleDownloadCertificate(event, "organizer")}
+                                className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-white rounded-2xl text-xs font-bold transition-all active:scale-95 shadow-md flex items-center justify-center gap-2"
+                              >
+                                {isDownloading ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <>
+                                    <ExternalLink className="w-4 h-4" />
+                                    Organização
+                                  </>
+                                )}
+                              </button>
+                            )}
                           </div>
                         );
                       })}
