@@ -11,6 +11,7 @@ import {
   User,
   Download,
   ExternalLink,
+  Video,
 } from "lucide-react";
 import {
   collection,
@@ -201,26 +202,26 @@ export default function EventsPage({ onNavigateToStudent }: { onNavigateToStuden
         </div>
       </div>
 
-      <div className="flex gap-2 p-1 bg-slate-100 dark:bg-slate-800/30 rounded-2xl mb-6 no-print">
+      <div className="flex gap-2 p-1.5 bg-slate-100 dark:bg-slate-800/50 rounded-2xl mb-6 shadow-inner no-print border border-slate-200/50 dark:border-slate-700/50">
         <button
           onClick={() => setSubTab("upcoming")}
-          className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+          className={`flex-1 py-3 rounded-xl text-xs sm:text-sm font-black uppercase tracking-widest transition-all ${
             subTab === "upcoming"
-              ? "bg-white dark:bg-slate-700 text-sky-600 shadow-sm"
-              : "text-slate-400 hover:text-slate-600"
+              ? "bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-md transform scale-[1.02]"
+              : "text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 dark:hover:bg-slate-700/30"
           }`}
         >
-          Próximos
+          Eventos Próximos
         </button>
         <button
           onClick={() => setSubTab("past")}
-          className={`flex-1 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+          className={`flex-1 py-3 rounded-xl text-xs sm:text-sm font-black uppercase tracking-widest transition-all ${
             subTab === "past"
-              ? "bg-white dark:bg-slate-700 text-sky-600 shadow-sm"
-              : "text-slate-400 hover:text-slate-600"
+              ? "bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-md transform scale-[1.02]"
+              : "text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 dark:hover:bg-slate-700/30"
           }`}
         >
-          Encerrados
+          Eventos Encerrados
         </button>
       </div>
 
@@ -330,12 +331,14 @@ export default function EventsPage({ onNavigateToStudent }: { onNavigateToStuden
                         {event.status}
                       </span>
                       <span className="inline-flex items-center gap-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
-                        {isOnline ? (
+                        {event.format === "online" ? (
+                          <Video className="w-3 h-3" />
+                        ) : event.format === "hibrido" ? (
                           <Video className="w-3 h-3" />
                         ) : (
                           <MapPin className="w-3 h-3" />
                         )}
-                        {event.format}
+                        {event.format === "hibrido" ? "Híbrido" : event.format}
                       </span>
                     </div>
                     <h3 className="text-lg font-black text-slate-800 dark:text-slate-100 mb-2">
@@ -365,9 +368,7 @@ export default function EventsPage({ onNavigateToStudent }: { onNavigateToStuden
                         >
                           <MapPin className="w-3.5 h-3.5 text-sky-500" />{" "}
                           {(event.locationOrLink.startsWith("http") || event.locationOrLink.startsWith("www.")) ? (
-                            <a href={event.locationOrLink.startsWith("http") ? event.locationOrLink : `https://${event.locationOrLink}`} target="_blank" rel="noopener noreferrer" className="text-sky-600 hover:text-sky-700 hover:underline flex items-center gap-1">
-                              Link <ExternalLink className="w-3 h-3" />
-                            </a>
+                            "Link do Evento"
                           ) : (
                             event.locationOrLink
                           )}
@@ -382,18 +383,44 @@ export default function EventsPage({ onNavigateToStudent }: { onNavigateToStuden
                           {event.speaker}
                         </span>
                       )}
-                      {event.schedulePdfUrl && (
-                        <a
-                          href={event.schedulePdfUrl.startsWith("http") ? event.schedulePdfUrl : `https://${event.schedulePdfUrl}`}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-500 hover:underline"
-                        >
-                          <Download className="w-3.5 h-3.5" />{" "}
-                          Cronograma
-                        </a>
-                      )}
                     </div>
+                    
+                    {/* Event Links Section */}
+                    {(event.schedulePdfUrl || event.locationOrLink) && (
+                      <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 text-xs font-bold uppercase mt-5 pt-4 border-t border-slate-200 dark:border-slate-700/80">
+                        {event.schedulePdfUrl && (
+                          <>
+                            <a
+                              href={event.schedulePdfUrl.startsWith("http") ? event.schedulePdfUrl : `https://${event.schedulePdfUrl}`}
+                              download
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center justify-center sm:justify-start gap-2 bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-200 dark:border-sky-500/20 hover:bg-sky-100 dark:hover:bg-sky-500/20 px-4 py-2.5 rounded-xl transition-all shadow-sm"
+                            >
+                              <Download className="w-4 h-4" /> Baixar Material
+                            </a>
+                            <a
+                              href={event.schedulePdfUrl.startsWith("http") ? event.schedulePdfUrl : `https://${event.schedulePdfUrl}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center justify-center sm:justify-start gap-2 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 px-4 py-2.5 rounded-xl transition-all shadow-sm"
+                            >
+                              <ExternalLink className="w-4 h-4" /> Abrir Link Material
+                            </a>
+                          </>
+                        )}
+                        {event.locationOrLink && (event.locationOrLink.startsWith("http") || event.locationOrLink.startsWith("www.")) && (
+                          <a
+                            href={event.locationOrLink.startsWith("http") ? event.locationOrLink : `https://${event.locationOrLink}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center sm:justify-start gap-2 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 px-4 py-2.5 rounded-xl transition-all shadow-sm"
+                          >
+                            <Video className="w-4 h-4" /> {event.format === "presencial" ? "Acessar Conteúdo (Formulário)" : "Acessar Link do Evento"}
+                          </a>
+                        )}
+                      </div>
+                    )}
                   </div>
 
                   {/* Right Column - Action */}

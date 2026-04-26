@@ -12,6 +12,8 @@ import {
   KeyRound,
   Clock,
   ExternalLink,
+  Download,
+  Video,
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { jsPDF } from "jspdf";
@@ -1104,11 +1106,15 @@ export default function StudentPortal({
                                   className={`text-[9px] font-black uppercase px-2 py-1 rounded-full ${
                                     event.format === "presencial"
                                       ? "bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400"
+                                      : event.format === "hibrido"
+                                      ? "bg-fuchsia-100 dark:bg-fuchsia-500/20 text-fuchsia-700 dark:text-fuchsia-400"
                                       : "bg-sky-100 dark:bg-sky-500/20 text-sky-700 dark:text-sky-400"
                                   }`}
                                 >
                                   {event.format === "presencial"
                                     ? "Presencial"
+                                    : event.format === "hibrido"
+                                    ? "Híbrido"
                                     : "Online"}
                                 </span>
                                 {isEnrolled && (
@@ -1138,7 +1144,6 @@ export default function StudentPortal({
                                   </div>
                                 )}
                               </div>
-
                               {!isEnrolled ? (
                                 <button
                                   onClick={() => handleEnroll(event.id)}
@@ -1154,6 +1159,43 @@ export default function StudentPortal({
                               ) : (
                                 <div className="w-full py-3 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-500 rounded-2xl font-bold border border-emerald-100 dark:border-emerald-900/30 text-center text-xs">
                                   Inscrição confirmada
+                                </div>
+                              )}
+
+                              {/* Event Links Section */}
+                              {(event.schedulePdfUrl || event.locationOrLink) && (
+                                <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 text-xs font-bold uppercase mt-5 pt-4 border-t border-slate-200 dark:border-slate-700/80">
+                                  {event.schedulePdfUrl && (
+                                    <>
+                                      <a
+                                        href={event.schedulePdfUrl.startsWith("http") ? event.schedulePdfUrl : `https://${event.schedulePdfUrl}`}
+                                        download
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center justify-center sm:justify-start gap-2 bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-200 dark:border-sky-500/20 hover:bg-sky-100 dark:hover:bg-sky-500/20 px-4 py-2.5 rounded-xl transition-all shadow-sm"
+                                      >
+                                        <Download className="w-4 h-4" /> Baixar conteúdo
+                                      </a>
+                                      <a
+                                        href={event.schedulePdfUrl.startsWith("http") ? event.schedulePdfUrl : `https://${event.schedulePdfUrl}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center justify-center sm:justify-start gap-2 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 px-4 py-2.5 rounded-xl transition-all shadow-sm"
+                                      >
+                                        <ExternalLink className="w-4 h-4" /> Abrir Link Conteúdo
+                                      </a>
+                                    </>
+                                  )}
+                                  {event.locationOrLink && (event.locationOrLink.startsWith("http") || event.locationOrLink.startsWith("www.")) && (
+                                    <a
+                                      href={event.locationOrLink.startsWith("http") ? event.locationOrLink : `https://${event.locationOrLink}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center justify-center sm:justify-start gap-2 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 px-4 py-2.5 rounded-xl transition-all shadow-sm"
+                                    >
+                                      <Video className="w-4 h-4" /> {event.format === "presencial" ? "Acessar Conteúdo (Formulário)" : "Acessar Link do Evento"}
+                                    </a>
+                                  )}
                                 </div>
                               )}
                             </div>
@@ -1204,6 +1246,8 @@ export default function StudentPortal({
                                 •{" "}
                                 {event.format === "presencial"
                                   ? "Presencial"
+                                  : event.format === "hibrido"
+                                  ? "Híbrido"
                                   : "Online"}
                               </p>
                               <div className="flex items-center gap-2">
@@ -1224,6 +1268,42 @@ export default function StudentPortal({
                                   </span>
                                 )}
                               </div>
+                              {/* Event Links Section */}
+                              {(event.schedulePdfUrl || event.locationOrLink) && (
+                                <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 text-xs font-bold uppercase mt-5 pt-4 border-t border-slate-200 dark:border-slate-700/80">
+                                  {event.schedulePdfUrl && (
+                                    <>
+                                      <a
+                                        href={event.schedulePdfUrl.startsWith("http") ? event.schedulePdfUrl : `https://${event.schedulePdfUrl}`}
+                                        download
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center justify-center sm:justify-start gap-2 bg-sky-50 dark:bg-sky-500/10 text-sky-700 dark:text-sky-400 border border-sky-200 dark:border-sky-500/20 hover:bg-sky-100 dark:hover:bg-sky-500/20 px-4 py-2.5 rounded-xl transition-all shadow-sm"
+                                      >
+                                        <Download className="w-4 h-4" /> Baixar conteúdo
+                                      </a>
+                                      <a
+                                        href={event.schedulePdfUrl.startsWith("http") ? event.schedulePdfUrl : `https://${event.schedulePdfUrl}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center justify-center sm:justify-start gap-2 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 px-4 py-2.5 rounded-xl transition-all shadow-sm"
+                                      >
+                                        <ExternalLink className="w-4 h-4" /> Abrir Link Conteúdo
+                                      </a>
+                                    </>
+                                  )}
+                                  {event.locationOrLink && (event.locationOrLink.startsWith("http") || event.locationOrLink.startsWith("www.")) && (
+                                    <a
+                                      href={event.locationOrLink.startsWith("http") ? event.locationOrLink : `https://${event.locationOrLink}`}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center justify-center sm:justify-start gap-2 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 px-4 py-2.5 rounded-xl transition-all shadow-sm"
+                                    >
+                                      <Video className="w-4 h-4" /> {event.format === "presencial" ? "Acessar Conteúdo (Formulário)" : "Acessar Link do Evento"}
+                                    </a>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           ))}
                       </div>
@@ -1299,7 +1379,7 @@ export default function StudentPortal({
                             ? startStr
                             : `${startStr} a ${endStr}`;
                         const formatText =
-                          event.format === "online" ? "Online" : "Presencial";
+                          event.format === "online" ? "Online" : event.format === "hibrido" ? "Híbrido" : "Presencial";
 
                         const attendance = myAttendances.find(
                           (a) => a.eventId === event.id,

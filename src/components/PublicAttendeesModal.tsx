@@ -13,9 +13,10 @@ export default function PublicAttendeesModal({
   onClose,
 }: PublicAttendeesModalProps) {
   const [subscribers, setSubscribers] = useState<
-    { name: string; photoUrl: string | null }[]
+    { name: string; photoUrl: string | null; roles?: string[] }[]
   >([]);
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"all" | "alunos" | "visitantes">("all");
 
   useEffect(() => {
     const loadSubscribers = async () => {
@@ -52,6 +53,39 @@ export default function PublicAttendeesModal({
           </button>
         </div>
 
+        <div className="flex bg-slate-100 dark:bg-slate-800/50 p-1 mx-4 mt-4 rounded-xl flex-wrap">
+          <button
+            onClick={() => setActiveTab("all")}
+            className={`flex-1 min-w-[100px] py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-colors ${
+              activeTab === "all"
+                ? "bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-sm"
+                : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+            }`}
+          >
+            Todos
+          </button>
+          <button
+            onClick={() => setActiveTab("alunos")}
+            className={`flex-1 min-w-[100px] py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-colors ${
+              activeTab === "alunos"
+                ? "bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-sm"
+                : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+            }`}
+          >
+            Alunos
+          </button>
+          <button
+            onClick={() => setActiveTab("visitantes")}
+            className={`flex-1 min-w-[100px] py-1.5 text-[10px] font-black uppercase tracking-widest rounded-lg transition-colors ${
+              activeTab === "visitantes"
+                ? "bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-sm"
+                : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+            }`}
+          >
+            Visitantes
+          </button>
+        </div>
+
         <div className="flex-1 overflow-y-auto p-4 sm:p-6 bg-slate-50/30 dark:bg-slate-900/30">
           {loading ? (
             <div className="flex justify-center p-8">
@@ -64,10 +98,20 @@ export default function PublicAttendeesModal({
           ) : (
             <div className="space-y-3">
               <div className="text-sm font-bold text-slate-400 mb-4 uppercase tracking-widest text-center">
-                {subscribers.length} inscritos
+                {subscribers.filter(s => {
+                  if (activeTab === "all") return true;
+                  const isVis = s.roles?.includes("VISITANTE");
+                  if (activeTab === "visitantes") return isVis;
+                  return !isVis;
+                }).length} inscritos
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                {subscribers.map((s, idx) => (
+                {subscribers.filter(s => {
+                  if (activeTab === "all") return true;
+                  const isVis = s.roles?.includes("VISITANTE");
+                  if (activeTab === "visitantes") return isVis;
+                  return !isVis;
+                }).map((s, idx) => (
                   <div
                     key={idx}
                     className="bg-white dark:bg-slate-800/80 p-3 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center gap-3"

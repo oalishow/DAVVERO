@@ -49,7 +49,7 @@ export interface Event {
   title: string;
   startDate: string;
   endDate: string;
-  format: "online" | "presencial";
+  format: "online" | "presencial" | "hibrido";
   locationOrLink: string;
   description: string;
   hours?: string | number;

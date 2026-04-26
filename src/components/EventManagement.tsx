@@ -69,7 +69,7 @@ export default function EventManagement() {
   const [title, setTitle] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [format, setFormat] = useState<"online" | "presencial">("presencial");
+  const [format, setFormat] = useState<"online" | "presencial" | "hibrido">("presencial");
   const [locationOrLink, setLocationOrLink] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
@@ -329,17 +329,18 @@ export default function EventManagement() {
             <select
               value={format}
               onChange={(e) =>
-                setFormat(e.target.value as "online" | "presencial")
+                setFormat(e.target.value as "online" | "presencial" | "hibrido")
               }
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm outline-none focus:border-sky-500 dark:focus:border-sky-500"
             >
               <option value="presencial">Presencial</option>
               <option value="online">Online</option>
+              <option value="hibrido">Híbrido</option>
             </select>
           </div>
           <div className="space-y-1">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
-              Local ou Link
+              {format === 'presencial' ? 'Local ou Link do Conteúdo (Ex: Formulário)' : format === 'hibrido' ? 'Local e Link do Evento/Conteúdo' : 'Link do Evento (Ex: Zoom, Meet)'}
             </label>
             <input
               type="text"
@@ -408,7 +409,7 @@ export default function EventManagement() {
           </div>
           <div className="space-y-1">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
-              Link do Cronograma (Ex: Google Drive) (Opcional)
+              Link do conteúdo (Ex: Google Drive) (Opcional)
             </label>
             <input
               type="text"
@@ -492,7 +493,7 @@ export default function EventManagement() {
                 onClick={() => setFilterStatus("aberto")}
                 className={`flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-md transition-all ${filterStatus === "aberto" ? "bg-white dark:bg-slate-700 text-slate-800 dark:text-slate-100 shadow-sm" : "text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-800"}`}
               >
-                Abertos
+                Abertos / Próximos
               </button>
               <button
                 onClick={() => setFilterStatus("encerrado")}
@@ -579,9 +580,14 @@ export default function EventManagement() {
                         </span>
                       )}
                       {event.schedulePdfUrl && (
-                        <a href={event.schedulePdfUrl.startsWith("http") ? event.schedulePdfUrl : `https://${event.schedulePdfUrl}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-100 dark:border-emerald-500/20 hover:bg-emerald-100 transition-colors">
-                          <Download className="w-3 h-3" /> PDF
-                        </a>
+                        <>
+                          <a href={event.schedulePdfUrl.startsWith("http") ? event.schedulePdfUrl : `https://${event.schedulePdfUrl}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 dark:bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-100 dark:border-emerald-500/20 hover:bg-emerald-100 transition-colors">
+                            <ExternalLink className="w-3 h-3" /> Abrir Link
+                          </a>
+                          <a href={event.schedulePdfUrl.startsWith("http") ? event.schedulePdfUrl : `https://${event.schedulePdfUrl}`} download target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-[10px] font-bold text-sky-600 bg-sky-50 dark:bg-sky-500/10 px-2 py-0.5 rounded-full border border-sky-100 dark:border-sky-500/20 hover:bg-sky-100 transition-colors">
+                            <Download className="w-3 h-3" /> Baixar
+                          </a>
+                        </>
                       )}
                     </div>
                   </div>

@@ -549,7 +549,7 @@ export const unsubscribeFromEvent = async (
 
 export const getEventSubscribers = async (
   eventId: string,
-): Promise<{ name: string; photoUrl: string | null }[]> => {
+): Promise<{ name: string; photoUrl: string | null; roles?: string[] }[]> => {
   try {
     const attendancesRef = doc(
       db,
@@ -576,13 +576,14 @@ export const getEventSubscribers = async (
       query(collection(db, `artifacts/${appId}/public/data/students`)),
     );
 
-    const subscribers: { name: string; photoUrl: string | null }[] = [];
+    const subscribers: { name: string; photoUrl: string | null; roles?: string[] }[] = [];
     membersSnap.docs.forEach((d) => {
       if (studentIds.includes(d.id)) {
         const data = d.data();
         subscribers.push({
           name: data.name,
           photoUrl: data.photoUrl || null,
+          roles: data.roles || [],
         });
       }
     });

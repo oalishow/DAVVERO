@@ -21,7 +21,7 @@ export default function EventAttendeesModal({
   >([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
-  const [activeTab, setActiveTab] = useState<"alunos" | "visitantes" | "organizacao">("alunos");
+  const [activeTab, setActiveTab] = useState<"all" | "alunos" | "visitantes" | "organizacao">("all");
   const [allMembers, setAllMembers] = useState<Member[]>([]);
   const [confirmModal, setConfirmModal] = useState<{
     isOpen: boolean;
@@ -271,6 +271,16 @@ export default function EventAttendeesModal({
         </div>
 
         <div className="flex bg-slate-100 dark:bg-slate-800/50 p-1 mx-4 mt-4 rounded-xl flex-wrap">
+          <button
+            onClick={() => setActiveTab("all")}
+            className={`flex-1 min-w-[100px] py-2 text-sm font-bold rounded-lg transition-colors ${
+              activeTab === "all"
+                ? "bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-sm"
+                : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"
+            }`}
+          >
+            Todos
+          </button>
           <button
             onClick={() => setActiveTab("alunos")}
             className={`flex-1 min-w-[100px] py-2 text-sm font-bold rounded-lg transition-colors ${
