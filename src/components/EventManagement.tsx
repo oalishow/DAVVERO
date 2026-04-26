@@ -13,6 +13,7 @@ import {
   User,
   Download,
   ExternalLink,
+  MapPin,
 } from "lucide-react";
 import ImageCropperModal from "./ImageCropperModal";
 import {
@@ -70,7 +71,8 @@ export default function EventManagement() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [format, setFormat] = useState<"online" | "presencial" | "hibrido">("presencial");
-  const [locationOrLink, setLocationOrLink] = useState("");
+  const [location, setLocation] = useState("");
+  const [link, setLink] = useState("");
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [hours, setHours] = useState("");
@@ -134,7 +136,8 @@ export default function EventManagement() {
     setStartDate(event.startDate);
     setEndDate(event.endDate || "");
     setFormat(event.format || "presencial");
-    setLocationOrLink(event.locationOrLink || "");
+    setLocation(event.location || (event.format === "presencial" ? event.locationOrLink || "" : ""));
+    setLink(event.link || (event.format !== "presencial" ? event.locationOrLink || "" : ""));
     setDescription(event.description);
     setImageUrl(event.imageUrl || "");
     setHours(event.hours ? event.hours.toString() : "");
@@ -150,7 +153,8 @@ export default function EventManagement() {
     setStartDate("");
     setEndDate("");
     setFormat("presencial");
-    setLocationOrLink("");
+    setLocation("");
+    setLink("");
     setDescription("");
     setImageUrl("");
     setHours("");
@@ -166,7 +170,7 @@ export default function EventManagement() {
       !endDate ||
       !description ||
       !maxParticipants ||
-      !locationOrLink
+      (!location && !link)
     ) {
       setStatusMsg({ msg: "Preencha todos os campos.", type: "error" });
       setTimeout(() => setStatusMsg(null), 4000);
@@ -184,7 +188,8 @@ export default function EventManagement() {
         startDate,
         endDate,
         format,
-        locationOrLink,
+        location,
+        link,
         description,
         imageUrl,
         maxParticipants: Number(maxParticipants),
@@ -340,14 +345,26 @@ export default function EventManagement() {
           </div>
           <div className="space-y-1">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
-              {format === 'presencial' ? 'Local ou Link do Conteúdo (Ex: Formulário)' : format === 'hibrido' ? 'Local e Link do Evento/Conteúdo' : 'Link do Evento (Ex: Zoom, Meet)'}
+              Local (Endereço físico)
             </label>
             <input
               type="text"
-              value={locationOrLink}
-              onChange={(e) => setLocationOrLink(e.target.value)}
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm outline-none focus:border-sky-500 dark:focus:border-sky-500"
-              placeholder="Auditório / Zoom link..."
+              placeholder="Ex: Auditório Principal..."
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
+              Link do Evento / Conteúdo
+            </label>
+            <input
+              type="text"
+              value={link}
+              onChange={(e) => setLink(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm outline-none focus:border-sky-500 dark:focus:border-sky-500"
+              placeholder="Ex: https://zoom.us/... ou URL Formulário"
             />
           </div>
           <div className="space-y-1 md:col-span-2">
@@ -563,15 +580,17 @@ export default function EventManagement() {
                           <FileText className="w-3 h-3" /> {event.hours}h
                         </span>
                       ) : null}
-                      {event.locationOrLink && (
+                      {(event.location || event.locationOrLink) && (
                         <span className="inline-flex items-center gap-1 text-[10px] font-bold text-pink-600 bg-pink-50 dark:bg-pink-500/10 px-2 py-0.5 rounded-full border border-pink-100 dark:border-pink-500/20">
-                          {(event.locationOrLink.startsWith("http") || event.locationOrLink.startsWith("www.")) ? (
-                            <a href={event.locationOrLink.startsWith("http") ? event.locationOrLink : `https://${event.locationOrLink}`} target="_blank" rel="noopener noreferrer" className="hover:underline flex items-center gap-1">
-                              Link <ExternalLink className="w-2.5 h-2.5" />
-                            </a>
-                          ) : (
-                            <span className="truncate max-w-[100px]">{event.locationOrLink}</span>
-                          )}
+                          <MapPin className="w-3 h-3" />
+                          <span className="truncate max-w-[150px]">{event.location || event.locationOrLink}</span>
+                        </span>
+                      )}
+                      {(event.link || (event.locationOrLink && (event.locationOrLink.startsWith("http") || event.locationOrLink.startsWith("www.")))) && (
+                        <span className="inline-flex items-center gap-1 text-[10px] font-bold text-sky-600 bg-sky-50 dark:bg-sky-500/10 px-2 py-0.5 rounded-full border border-sky-100 dark:border-sky-500/20">
+                          <a href={event.link || event.locationOrLink?.startsWith("http") ? event.link || event.locationOrLink : `https://${event.link || event.locationOrLink}`} target="_blank" rel="noopener noreferrer" className="hover:underline flex items-center gap-1">
+                            Link <ExternalLink className="w-2.5 h-2.5" />
+                          </a>
                         </span>
                       )}
                       {event.speaker && (

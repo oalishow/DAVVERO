@@ -1163,7 +1163,7 @@ export default function StudentPortal({
                               )}
 
                               {/* Event Links Section */}
-                              {(event.schedulePdfUrl || event.locationOrLink) && (
+                              {(event.schedulePdfUrl || event.link || event.locationOrLink) && (
                                 <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 text-xs font-bold uppercase mt-5 pt-4 border-t border-slate-200 dark:border-slate-700/80">
                                   {event.schedulePdfUrl && (
                                     <>
@@ -1186,9 +1186,9 @@ export default function StudentPortal({
                                       </a>
                                     </>
                                   )}
-                                  {event.locationOrLink && (event.locationOrLink.startsWith("http") || event.locationOrLink.startsWith("www.")) && (
+                                  {(event.link || (event.locationOrLink && (event.locationOrLink.startsWith("http") || event.locationOrLink.startsWith("www.")))) && (
                                     <a
-                                      href={event.locationOrLink.startsWith("http") ? event.locationOrLink : `https://${event.locationOrLink}`}
+                                      href={event.link ? (event.link.startsWith("http") ? event.link : `https://${event.link}`) : (event.locationOrLink?.startsWith("http") ? event.locationOrLink : `https://${event.locationOrLink}`)}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       className="flex items-center justify-center sm:justify-start gap-2 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 px-4 py-2.5 rounded-xl transition-all shadow-sm"
@@ -1269,7 +1269,7 @@ export default function StudentPortal({
                                 )}
                               </div>
                               {/* Event Links Section */}
-                              {(event.schedulePdfUrl || event.locationOrLink) && (
+                              {(event.schedulePdfUrl || event.link || event.locationOrLink) && (
                                 <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 text-xs font-bold uppercase mt-5 pt-4 border-t border-slate-200 dark:border-slate-700/80">
                                   {event.schedulePdfUrl && (
                                     <>
@@ -1292,9 +1292,9 @@ export default function StudentPortal({
                                       </a>
                                     </>
                                   )}
-                                  {event.locationOrLink && (event.locationOrLink.startsWith("http") || event.locationOrLink.startsWith("www.")) && (
+                                  {(event.link || (event.locationOrLink && (event.locationOrLink.startsWith("http") || event.locationOrLink.startsWith("www.")))) && (
                                     <a
-                                      href={event.locationOrLink.startsWith("http") ? event.locationOrLink : `https://${event.locationOrLink}`}
+                                      href={event.link ? (event.link.startsWith("http") ? event.link : `https://${event.link}`) : (event.locationOrLink?.startsWith("http") ? event.locationOrLink : `https://${event.locationOrLink}`)}
                                       target="_blank"
                                       rel="noopener noreferrer"
                                       className="flex items-center justify-center sm:justify-start gap-2 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 px-4 py-2.5 rounded-xl transition-all shadow-sm"

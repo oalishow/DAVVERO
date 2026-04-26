@@ -50,7 +50,9 @@ export interface Event {
   startDate: string;
   endDate: string;
   format: "online" | "presencial" | "hibrido";
-  locationOrLink: string;
+  location?: string;
+  link?: string;
+  locationOrLink?: string; // KEEP THIS FOR OLD DATA
   description: string;
   hours?: string | number;
   maxParticipants: number;

@@ -11,7 +11,6 @@ import {
   User,
   Download,
   ExternalLink,
-  Video,
 } from "lucide-react";
 import {
   collection,
@@ -361,16 +360,16 @@ export default function EventsPage({ onNavigateToStudent }: { onNavigateToStuden
                           {event.hours}h
                         </span>
                       ) : null}
-                      {event.locationOrLink && (
+                      {(event.location || event.locationOrLink) && (
                         <span
                           className="flex items-center gap-1.5 truncate max-w-[150px] sm:max-w-[200px]"
-                          title={event.locationOrLink}
+                          title={event.location || event.locationOrLink}
                         >
                           <MapPin className="w-3.5 h-3.5 text-sky-500" />{" "}
-                          {(event.locationOrLink.startsWith("http") || event.locationOrLink.startsWith("www.")) ? (
-                            "Link do Evento"
+                          {(event.location || event.locationOrLink)?.startsWith("http") || (event.location || event.locationOrLink)?.startsWith("www.") ? (
+                            <span className="truncate">Link do Evento</span>
                           ) : (
-                            event.locationOrLink
+                            <span className="truncate">{event.location || event.locationOrLink}</span>
                           )}
                         </span>
                       )}
@@ -386,7 +385,7 @@ export default function EventsPage({ onNavigateToStudent }: { onNavigateToStuden
                     </div>
                     
                     {/* Event Links Section */}
-                    {(event.schedulePdfUrl || event.locationOrLink) && (
+                    {(event.schedulePdfUrl || event.link || event.locationOrLink) && (
                       <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 text-xs font-bold uppercase mt-5 pt-4 border-t border-slate-200 dark:border-slate-700/80">
                         {event.schedulePdfUrl && (
                           <>
@@ -409,9 +408,9 @@ export default function EventsPage({ onNavigateToStudent }: { onNavigateToStuden
                             </a>
                           </>
                         )}
-                        {event.locationOrLink && (event.locationOrLink.startsWith("http") || event.locationOrLink.startsWith("www.")) && (
+                        {(event.link || (event.locationOrLink && (event.locationOrLink.startsWith("http") || event.locationOrLink.startsWith("www.")))) && (
                           <a
-                            href={event.locationOrLink.startsWith("http") ? event.locationOrLink : `https://${event.locationOrLink}`}
+                            href={event.link ? (event.link.startsWith("http") ? event.link : `https://${event.link}`) : (event.locationOrLink?.startsWith("http") ? event.locationOrLink : `https://${event.locationOrLink}`)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="flex items-center justify-center sm:justify-start gap-2 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 px-4 py-2.5 rounded-xl transition-all shadow-sm"
