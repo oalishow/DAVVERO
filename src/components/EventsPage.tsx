@@ -261,7 +261,7 @@ END:VCALENDAR`;
                 : "text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 dark:hover:bg-slate-700/30"
             }`}
           >
-            Seminários
+            SEMINÁRIO
           </button>
         </div>
       )}

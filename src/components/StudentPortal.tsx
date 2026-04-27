@@ -247,6 +247,23 @@ export default function StudentPortal({
     }
   }, [member]);
 
+  const formatDateTime = (dateStr: string | undefined) => {
+    if (!dateStr) return "---";
+    try {
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return "---";
+      return d.toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch {
+      return "---";
+    }
+  };
+
   const handleEnroll = async (eventId: string) => {
     if (!member) {
       showAlert(
@@ -1035,22 +1052,8 @@ export default function StudentPortal({
               )}
             </div>
           </div>
-          <VerificationResult
-            member={member}
-            status={member.isActive ? "VALID" : "INACTIVE"}
-            onReset={() => {
-              localStorage.removeItem(STUDENT_BOND_KEY);
-              localStorage.removeItem(STUDENT_FALLBACK_PIN);
-              setMember(null);
-              setBondedId(null);
-              setIsUnlocked(false);
-              setPinMode("none");
-            }}
-            isMyID={true}
-          />
-
           {/* TAB NAVIGATION */}
-          <div className="w-full mt-8 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-2xl flex flex-wrap gap-1 no-print print:hidden">
+          <div className="w-full mt-2 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-2xl flex flex-wrap gap-1 no-print print:hidden mb-2">
             <button
               onClick={() => setActiveTab("id")}
               className={`flex-1 min-w-[100px] flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
@@ -1125,13 +1128,27 @@ export default function StudentPortal({
             )}
           </div>
 
-          <div className="w-full mt-6">
+          <div className="w-full mt-2">
             {activeTab === "id" && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 className="space-y-6"
               >
+                <VerificationResult
+                  member={member}
+                  status={member.isActive ? "VALID" : "INACTIVE"}
+                  onReset={() => {
+                    localStorage.removeItem(STUDENT_BOND_KEY);
+                    localStorage.removeItem(STUDENT_FALLBACK_PIN);
+                    setMember(null);
+                    setBondedId(null);
+                    setIsUnlocked(false);
+                    setPinMode("none");
+                  }}
+                  isMyID={true}
+                />
+
                 <div className="px-4 py-6 bg-blue-50/50 dark:bg-blue-900/10 rounded-3xl border border-blue-100 dark:border-blue-900/30">
                   <p className="text-xs text-blue-700 dark:text-blue-400 font-medium leading-relaxed">
                     Esta é a sua Identidade Estudantil oficial. Use o QR Code
@@ -1444,17 +1461,20 @@ export default function StudentPortal({
                   </h3>
                 </div>
 
-                {allEvents.filter(
-                  (e) =>
+                {allEvents.filter((e) => {
+                  const attendance = myAttendances.find((a) => a.eventId === e.id);
+                  if (!attendance) return false;
+                  const hasPartCert =
                     (e.status === "encerrado" || e.status === "aberto") &&
                     e.certificateTemplate?.isApproved === true &&
-                    myAttendances.find(
-                      (a) =>
-                        a.eventId === e.id &&
-                        (a.status === "presente" ||
-                          a.status === "apto_para_certificado"),
-                    ),
-                ).length > 0 ? (
+                    (attendance.status === "presente" ||
+                      attendance.status === "apto_para_certificado");
+                  const hasOrgCert =
+                    (e.status === "encerrado" || e.status === "aberto") &&
+                    e.organizationCertificateTemplate?.isApproved === true &&
+                    attendance.isOrganizer === true;
+                  return hasPartCert || hasOrgCert;
+                }).length > 0 ? (
                   <div className="space-y-3">
                     {allEvents
                       .filter((e) => {
