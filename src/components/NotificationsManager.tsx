@@ -121,7 +121,7 @@ Retorne o resultado estritamente em um JSON com os campos 'title' (o título) e 
         }
       });
 
-      const responseText = response.text();
+      const responseText = response.text;
       if (responseText) {
         const jsonContent = JSON.parse(responseText);
         setTitle(jsonContent.title || "");

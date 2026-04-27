@@ -201,7 +201,7 @@ export default function Header() {
                       )}
                     </div>
                   </div>
-                  <div className="max-h-64 overflow-y-auto w-full flex flex-col p-2 space-y-1">
+                  <div className="max-h-96 overflow-y-auto w-full flex flex-col p-2 space-y-1">
                     {notifications.length === 0 ? (
                       <div className="py-8 text-center text-slate-400 dark:text-slate-500 text-xs">
                         Nenhuma notificação nova.
@@ -232,7 +232,7 @@ export default function Header() {
                             <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${n.read ? 'bg-transparent' : 'bg-pink-500'}`} />
                             <div className="flex-1 min-w-0 pr-6">
                               <p className={`text-xs ${n.read ? 'font-medium text-slate-700 dark:text-slate-300' : 'font-bold text-slate-900 dark:text-white'}`}>{n.title}</p>
-                              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2 leading-tight">{n.message}</p>
+                              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-tight whitespace-pre-wrap">{n.message}</p>
                               <p className="text-[9px] text-slate-400 dark:text-slate-500 mt-1 uppercase">{(new Date(n.createdAt)).toLocaleString('pt-BR')}</p>
                             </div>
                           </button>
