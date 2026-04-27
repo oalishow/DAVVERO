@@ -160,10 +160,10 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
         }}
       >
         <div style={{ height: '3px', backgroundColor: '#fbbf24', width: '100%' }}></div>
-        {isSeminarista && validDiocese && (
+        {(isSeminarista || member.seminary) && (member.seminary || validDiocese) && (
           <div className="w-full flex-1 flex items-center justify-center">
             <span className="text-white font-semibold uppercase tracking-wide opacity-95 mx-4 whitespace-nowrap" style={{ fontSize: '6px' }}>
-              SPSCJ - Seminário Provincial Sagrado Coração de Jesus - Rua: Olavo Bilac, 554, São Miguel, Marília-SP
+              {member.seminary ? member.seminary : "SPSCJ - Seminário Provincial Sagrado Coração de Jesus - Rua: Olavo Bilac, 554, São Miguel, Marília-SP"}
             </span>
           </div>
         )}

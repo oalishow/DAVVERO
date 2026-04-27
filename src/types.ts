@@ -1,3 +1,9 @@
+export const AVAILABLE_SEMINARIES = [
+  "SPSCJ - Sagrado Coração de Jesus",
+  "Seminário Rainha dos Apóstolos",
+  "Seminário Diocesano São José"
+];
+
 export interface Member {
   id: string;
   name: string;
@@ -11,6 +17,7 @@ export interface Member {
   photoUrl?: string | null;
   roles?: string[];
   course?: string;
+  seminary?: string;
   diocese?: string;
   isActive?: boolean;
   isApproved?: boolean;
@@ -60,11 +67,14 @@ export interface Event {
   imageUrl?: string;
   certificateTemplate?: CertificateTemplate;
   organizationCertificateTemplate?: CertificateTemplate;
+  organizationHours?: string | number;
   registrationDeadline?: string;
   isRegistrationPaused?: boolean;
   deletedAt?: string;
   speaker?: string;
   schedulePdfUrl?: string;
+  isSeminary?: boolean; // NEW: Indicates if it's a seminary event
+  seminaryId?: string; // SPSCJ, Marília, Bauru, or ALL
 }
 
 export interface Attendance {

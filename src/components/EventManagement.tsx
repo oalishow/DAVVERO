@@ -35,7 +35,7 @@ import {
   deleteEvent,
   createNotification,
 } from "../lib/firebase";
-import type { Event, Attendance } from "../types";
+import { type Event, type Attendance, AVAILABLE_SEMINARIES } from "../types";
 import EventAttendeesModal from "./EventAttendeesModal";
 import CertificateEditor from "./CertificateEditor";
 import Modal from "./Modal";
@@ -76,9 +76,12 @@ export default function EventManagement() {
   const [description, setDescription] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [hours, setHours] = useState("");
+  const [organizationHours, setOrganizationHours] = useState("");
   const [maxParticipants, setMaxParticipants] = useState("");
   const [speaker, setSpeaker] = useState("");
   const [schedulePdfUrl, setSchedulePdfUrl] = useState("");
+  const [isSeminary, setIsSeminary] = useState(false);
+  const [seminaryId, setSeminaryId] = useState("");
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
   const [eventSearchQuery, setEventSearchQuery] = useState("");
   const [statusMsg, setStatusMsg] = useState<{
@@ -130,9 +133,12 @@ export default function EventManagement() {
     setDescription(event.description);
     setImageUrl(event.imageUrl || "");
     setHours(event.hours ? event.hours.toString() : "");
+    setOrganizationHours(event.organizationHours ? event.organizationHours.toString() : "");
     setMaxParticipants(event.maxParticipants.toString());
     setSpeaker(event.speaker || "");
     setSchedulePdfUrl(event.schedulePdfUrl || "");
+    setIsSeminary(event.isSeminary || false);
+    setSeminaryId(event.seminaryId || "");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -147,9 +153,12 @@ export default function EventManagement() {
     setDescription("");
     setImageUrl("");
     setHours("");
+    setOrganizationHours("");
     setMaxParticipants("");
     setSpeaker("");
     setSchedulePdfUrl("");
+    setIsSeminary(false);
+    setSeminaryId("");
   };
 
   const handleSaveEvent = async () => {
@@ -184,11 +193,18 @@ export default function EventManagement() {
         maxParticipants: Number(maxParticipants),
         speaker,
         schedulePdfUrl,
+        isSeminary,
+        seminaryId: isSeminary ? seminaryId : null,
       };
       if (hours) {
         payload.hours = Number(hours);
       } else {
         payload.hours = null;
+      }
+      if (organizationHours) {
+        payload.organizationHours = Number(organizationHours);
+      } else {
+        payload.organizationHours = null;
       }
 
       if (editingEventId) {
@@ -446,6 +462,18 @@ export default function EventManagement() {
           </div>
           <div className="space-y-1">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
+              Horas (Org.)
+            </label>
+            <input
+              type="number"
+              value={organizationHours}
+              onChange={(e) => setOrganizationHours(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm outline-none focus:border-amber-500 dark:focus:border-amber-500"
+              placeholder="Ex: 40"
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
               Vagas
             </label>
             <input
@@ -456,6 +484,41 @@ export default function EventManagement() {
               placeholder="Ex: 50"
             />
           </div>
+        </div>
+        <div className="mt-4">
+          <label className="flex items-center gap-3 cursor-pointer p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/50 rounded-xl">
+            <input
+              type="checkbox"
+              checked={isSeminary}
+              onChange={(e) => setIsSeminary(e.target.checked)}
+              className="w-5 h-5 text-amber-600 focus:ring-amber-500 rounded border-amber-300 dark:border-amber-700 bg-white dark:bg-slate-900 focus:ring-2"
+            />
+            <div>
+              <p className="text-sm font-bold text-amber-900 dark:text-amber-500">Restrito ao Seminário</p>
+              <p className="text-[10px] text-amber-700/80 dark:text-amber-400/80 uppercase">Este evento será visível apenas para funções do seminário.</p>
+            </div>
+          </label>
+          
+          {isSeminary && (
+            <div className="mt-3 p-4 bg-amber-50/50 dark:bg-amber-900/5 border border-amber-200/50 dark:border-amber-800/30 rounded-xl">
+               <label className="block text-[10px] sm:text-xs font-semibold text-amber-800 dark:text-amber-500 uppercase tracking-wider mb-2">
+                 Selecione o Seminário (Opcional)
+               </label>
+               <select
+                 value={seminaryId}
+                 onChange={(e) => setSeminaryId(e.target.value)}
+                 className="w-full bg-white dark:bg-slate-800 border fill-amber-200 border-amber-200 dark:border-amber-700 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm outline-none focus:border-amber-500 dark:focus:border-amber-500"
+               >
+                 <option value="">Todos os Seminários (Geral)</option>
+                 {AVAILABLE_SEMINARIES.map(s => (
+                   <option key={s} value={s}>{s}</option>
+                 ))}
+               </select>
+               <p className="text-[10px] text-amber-700/80 dark:text-amber-400/80 uppercase mt-2">
+                 Se deixar vazio, será visível para todos que tenham o papel de SEMINARISTA, REITOR, etc.
+               </p>
+            </div>
+          )}
         </div>
         <div className="mt-4 flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <button
@@ -553,6 +616,11 @@ export default function EventManagement() {
                       ) : (
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-200 text-slate-600 dark:bg-slate-700 dark:text-slate-400">
                           Encerrado
+                        </span>
+                      )}
+                      {event.isSeminary && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400">
+                          Seminário
                         </span>
                       )}
                     </div>

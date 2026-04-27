@@ -5,7 +5,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db, appId, createNotification } from '../lib/firebase';
 import FajopaIDCard from './FajopaIDCard';
 import { useSettings } from '../context/SettingsContext';
-import type { Member } from '../types';
+import { type Member, AVAILABLE_SEMINARIES } from '../types';
 import { QRCodeCanvas } from 'qrcode.react';
 import { URL_STORAGE_KEY, DEFAULT_PUBLIC_URL, CUSTOM_ROLES_KEY, CUSTOM_COURSES_KEY } from '../lib/constants';
 import ImageCropperModal from './ImageCropperModal';
@@ -39,6 +39,7 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
   const [isActive, setIsActive] = useState(member.isActive !== false);
   const [course, setCourse] = useState(member.course || '');
   const [diocese, setDiocese] = useState(member.diocese || '');
+  const [seminary, setSeminary] = useState(member.seminary || '');
   const [roles, setRoles] = useState<string[]>(member.roles || []);
   const [newRole, setNewRole] = useState('');
   
@@ -115,7 +116,7 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
     try {
       const docRef = doc(db, `artifacts/${appId}/public/data/students`, member.id);
       await updateDoc(docRef, {
-        name, ra, cpf, rg, birthdate, email, validityDate: validity, isActive, course, diocese, roles,
+        name, ra, cpf, rg, birthdate, email, validityDate: validity, isActive, course, diocese, seminary, roles,
         legacyQrCode,
         photoUrl: photoUrl || null
       });

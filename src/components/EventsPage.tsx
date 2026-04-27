@@ -31,7 +31,7 @@ import PublicAttendeesModal from "./PublicAttendeesModal";
 import Modal from "./Modal";
 import { useDialog } from "../context/DialogContext";
 
-export default function EventsPage({ onNavigateToStudent }: { onNavigateToStudent?: () => void }) {
+export default function EventsPage({ onNavigateToStudent, renderSeminary = false }: { onNavigateToStudent?: () => void, renderSeminary?: boolean }) {
   const { showAlert } = useDialog();
   const [events, setEvents] = useState<Event[]>([]);
   const [subTab, setSubTab] = useState<"upcoming" | "past">("upcoming");
@@ -94,6 +94,16 @@ export default function EventsPage({ onNavigateToStudent }: { onNavigateToStuden
 
     return () => unsubEvents();
   }, []);
+
+  const filteredEvents = events.filter((e) => {
+    if (renderSeminary) {
+      if (!e.isSeminary) return false;
+      if (e.seminaryId && e.seminaryId !== member?.seminary) return false;
+      return true;
+    } else {
+      return !e.isSeminary;
+    }
+  });
 
   useEffect(() => {
     if (!member) return;
@@ -173,7 +183,7 @@ export default function EventsPage({ onNavigateToStudent }: { onNavigateToStuden
 
   return (
     <div className="space-y-6">
-      <div className="bg-sky-600 dark:bg-sky-700 rounded-3xl p-6 sm:p-8 text-white relative overflow-hidden shadow-lg border border-sky-500 dark:border-sky-600">
+      <div className={`${renderSeminary ? 'bg-amber-600 dark:bg-amber-700 border-amber-500 dark:border-amber-600' : 'bg-sky-600 dark:bg-sky-700 border-sky-500 dark:border-sky-600'} rounded-3xl p-6 sm:p-8 text-white relative overflow-hidden shadow-lg border`}>
         {viewPublicAttendeesEvent && (
           <PublicAttendeesModal
             event={viewPublicAttendeesEvent}
@@ -185,10 +195,10 @@ export default function EventsPage({ onNavigateToStudent }: { onNavigateToStuden
             <Calendar className="w-8 h-8 text-white" />
           </div>
           <h2 className="text-2xl sm:text-3xl font-black mb-2">
-            Painel de Eventos
+            {renderSeminary ? "Eventos do Seminário" : "Painel de Eventos"}
           </h2>
-          <p className="text-sky-100 font-medium text-sm sm:text-base max-w-md mx-auto">
-            Explore e inscreva-se nos próximos eventos formativos acadêmicos.
+          <p className={`${renderSeminary ? 'text-amber-100' : 'text-sky-100'} font-medium text-sm sm:text-base max-w-md mx-auto`}>
+            {renderSeminary ? "Explore e inscreva-se nos retiros, formações exclusivas e demais eventos." : "Explore e inscreva-se nos próximos eventos formativos acadêmicos."}
           </p>
         </div>
       </div>
@@ -217,7 +227,7 @@ export default function EventsPage({ onNavigateToStudent }: { onNavigateToStuden
       </div>
 
       <div className="space-y-4">
-        {events.filter(e => subTab === "upcoming" ? e.status !== "encerrado" : e.status === "encerrado").length === 0 ? (
+        {filteredEvents.filter(e => subTab === "upcoming" ? e.status !== "encerrado" : e.status === "encerrado").length === 0 ? (
           <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl text-center border border-slate-200 dark:border-slate-700">
             <Calendar className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
             <p className="text-slate-500 dark:text-slate-400 font-medium">
@@ -225,7 +235,7 @@ export default function EventsPage({ onNavigateToStudent }: { onNavigateToStuden
             </p>
           </div>
         ) : (
-          events
+          filteredEvents
             .filter(e => subTab === "upcoming" ? e.status !== "encerrado" : e.status === "encerrado")
             .map((event) => {
             const isOnline = event.format === "online";

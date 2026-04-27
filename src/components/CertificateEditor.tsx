@@ -98,11 +98,12 @@ export default function CertificateEditor({
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const themeLabel = TEMPLATE_STYLES.find(t => t.bg === template.bgStyle)?.name || "Clássico";
       const certRole = type === "organizer" ? "Membro da Equipe de Organização" : "Participação";
+      const certHours = type === "organizer" && event.organizationHours ? event.organizationHours : event.hours;
       
       const prompt = `Você é um curador acadêmico e teológico especialista em redação oficial.
 Escreva O CORPO do texto de um Certificado de ${certRole} para o evento "${event.title}".
 Descrição do evento: "${event.description}".
-Carga horária: ${event.hours} horas.
+Carga horária: ${certHours} horas.
 Data de Início: ${new Date(event.startDate).toLocaleDateString('pt-BR')}
 
 Tone of Voice / Tema selecionado: ${themeLabel}.

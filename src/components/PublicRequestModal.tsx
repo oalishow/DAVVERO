@@ -6,6 +6,7 @@ import { db, appId } from '../lib/firebase';
 import { useSettings } from '../context/SettingsContext';
 import type { Member } from '../types';
 import ImageCropperModal from './ImageCropperModal';
+import { AVAILABLE_SEMINARIES } from '../types';
 
 interface PublicRequestModalProps {
   onClose: () => void;
@@ -28,6 +29,7 @@ export default function PublicRequestModal({ onClose, onSubmitSuccess }: PublicR
   
   const [diocese, setDiocese] = useState('');
   const [newDiocese, setNewDiocese] = useState('');
+  const [seminary, setSeminary] = useState('');
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -121,6 +123,7 @@ export default function PublicRequestModal({ onClose, onSubmitSuccess }: PublicR
         roles,
         course,
         diocese,
+        seminary,
         photoUrl: photoBase64,
         isApproved: false, // Pedido pendente  
         hasPendingAction: true,
@@ -290,6 +293,17 @@ export default function PublicRequestModal({ onClose, onSubmitSuccess }: PublicR
                     +
                   </button>
                 </div>
+              </div>
+          </div>
+          <div>
+              <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1 mt-2">Seminário (Opcional)</label>
+              <div className="flex gap-2">
+                <select value={seminary} onChange={e => setSeminary(e.target.value)} className="input-modern flex-1 rounded-xl py-3 px-4 text-sm">
+                    <option value="">Selecione um Seminário (se aplicável)</option>
+                    {AVAILABLE_SEMINARIES.map(s => (
+                      <option key={s} value={s}>{s}</option>
+                    ))}
+                </select>
               </div>
           </div>
           <div>

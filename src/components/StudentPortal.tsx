@@ -14,6 +14,10 @@ import {
   ExternalLink,
   Download,
   Video,
+  GraduationCap,
+  CalendarHeart,
+  BookHeart,
+  HeartHandshake
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { jsPDF } from "jspdf";
@@ -33,6 +37,8 @@ import { db, appId, enrollStudent } from "../lib/firebase";
 import type { Member, Event, Attendance } from "../types";
 import VerificationResult from "./VerificationResult";
 import Modal from "./Modal";
+import AppointmentsPanel from "./AppointmentsPanel";
+import EventsPage from "./EventsPage";
 import { ASSETS_DOC_PATH } from "../lib/constants";
 import { CertificateRenderer } from "./CertificateRenderer";
 import { useDialog } from "../context/DialogContext";
@@ -152,7 +158,7 @@ export default function StudentPortal({
   const [alphaCode, setAlphaCode] = useState("");
   const [isPrePinAnimation, setIsPrePinAnimation] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [activeTab, setActiveTab] = useState<"id" | "events" | "certificates">(
+  const [activeTab, setActiveTab] = useState<"id" | "events" | "certificates" | "academic" | "appointments" | "seminary_events" | "liturgy">(
     "id",
   );
   const [eventsSubTab, setEventsSubTab] = useState<"upcoming" | "past">(
@@ -182,6 +188,8 @@ export default function StudentPortal({
   const [allEvents, setAllEvents] = useState<Event[]>([]);
   const [availableEvents, setAvailableEvents] = useState<Event[]>([]);
   const [pastEvents, setPastEvents] = useState<Event[]>([]);
+  const [seminaryAvailableEvents, setSeminaryAvailableEvents] = useState<Event[]>([]);
+  const [seminaryPastEvents, setSeminaryPastEvents] = useState<Event[]>([]);
   const [myAttendances, setMyAttendances] = useState<Attendance[]>([]);
   const [isEnrollingInProgress, setIsEnrollingInProgress] = useState<
     string | null
@@ -207,8 +215,10 @@ export default function StudentPortal({
           return aIsFuture ? -1 : 1;
         });
         setAllEvents(evts);
-        setAvailableEvents(evts.filter((e) => e.status === "aberto"));
-        setPastEvents(evts.filter((e) => e.status === "encerrado"));
+        setAvailableEvents(evts.filter((e) => e.status === "aberto" && !e.isSeminary));
+        setPastEvents(evts.filter((e) => e.status === "encerrado" && !e.isSeminary));
+        setSeminaryAvailableEvents(evts.filter((e) => e.status === "aberto" && e.isSeminary && (!e.seminaryId || e.seminaryId === member.seminary)));
+        setSeminaryPastEvents(evts.filter((e) => e.status === "encerrado" && e.isSeminary && (!e.seminaryId || e.seminaryId === member.seminary)));
       });
 
       const qAttendances = query(collection(db, `artifacts/${appId}/public/data/attendances`));
@@ -331,10 +341,10 @@ export default function StudentPortal({
     }
   }, [overrideCode]);
 
-  // Lock automatically when user leaves the page or hides the app
+  // Automatically lock when user leaves page, ONLY if they have a PIN
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.hidden) {
+      if (document.hidden && localStorage.getItem(STUDENT_FALLBACK_PIN)) {
         setIsUnlocked(false);
       }
     };
@@ -361,7 +371,12 @@ export default function StudentPortal({
           setIsUnlocked(true);
           onOverrideConsumed?.();
         } else {
-          setIsUnlocked(false); // Make them click the Unlock or enter PIN
+          // If the user has a PIN, require them to unlock, else automatically stay unlocked
+          if (localStorage.getItem(STUDENT_FALLBACK_PIN)) {
+            setIsUnlocked(false);
+          } else {
+            setIsUnlocked(true);
+          }
         }
       } else {
         setError("Identidade vinculada não encontrada.");
@@ -971,10 +986,10 @@ export default function StudentPortal({
           />
 
           {/* TAB NAVIGATION */}
-          <div className="w-full mt-8 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-2xl flex no-print print:hidden">
+          <div className="w-full mt-8 bg-slate-100 dark:bg-slate-800/50 p-1 rounded-2xl flex flex-wrap gap-1 no-print print:hidden">
             <button
               onClick={() => setActiveTab("id")}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+              className={`flex-1 min-w-[100px] flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
                 activeTab === "id"
                   ? "bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-sm"
                   : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
@@ -985,7 +1000,7 @@ export default function StudentPortal({
             </button>
             <button
               onClick={() => setActiveTab("events")}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+              className={`flex-1 min-w-[100px] flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
                 activeTab === "events"
                   ? "bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-sm"
                   : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
@@ -996,7 +1011,7 @@ export default function StudentPortal({
             </button>
             <button
               onClick={() => setActiveTab("certificates")}
-              className={`flex-1 flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+              className={`flex-1 min-w-[100px] flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
                 activeTab === "certificates"
                   ? "bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-sm"
                   : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
@@ -1005,6 +1020,45 @@ export default function StudentPortal({
               <ShieldCheck className="w-4 h-4" />
               Certificados
             </button>
+            <button
+              onClick={() => setActiveTab("academic")}
+              className={`flex-1 min-w-[100px] flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                activeTab === "academic"
+                  ? "bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+              }`}
+            >
+              <GraduationCap className="w-4 h-4" />
+              <span className="hidden sm:inline">Acadêmico</span>
+              <span className="sm:hidden">Acad.</span>
+            </button>
+
+            {(member?.roles?.some(r => ["SEMINARISTA", "PADRE", "REITOR", "VICE-REITOR", "PSICÓLOGA", "DIRETOR ESPIRITUAL", "DIRETORA ESPIRITUAL"].includes(r.toUpperCase()))) && (
+              <>
+                <button
+                  onClick={() => setActiveTab("appointments")}
+                  className={`flex-1 min-w-[100px] flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                    activeTab === "appointments"
+                      ? "bg-white dark:bg-slate-700 text-purple-600 dark:text-purple-400 shadow-sm"
+                      : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                  }`}
+                >
+                  <HeartHandshake className="w-4 h-4" />
+                  Atendimento
+                </button>
+                <button
+                  onClick={() => setActiveTab("seminary_events")}
+                  className={`flex-1 min-w-[100px] flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                    activeTab === "seminary_events"
+                      ? "bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-sm"
+                      : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                  }`}
+                >
+                  <CalendarHeart className="w-4 h-4" />
+                  Seminário
+                </button>
+              </>
+            )}
           </div>
 
           <div className="w-full mt-6">
@@ -1452,6 +1506,63 @@ export default function StudentPortal({
                     </p>
                   </div>
                 )}
+              </motion.div>
+            )}
+
+            {activeTab === "academic" && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-4"
+              >
+                <div className="bg-slate-50 dark:bg-slate-800/30 p-10 rounded-3xl border border-dashed border-slate-200 dark:border-slate-700 text-center space-y-4">
+                  <div className="mx-auto w-16 h-16 bg-sky-100 dark:bg-sky-500/20 rounded-full flex items-center justify-center">
+                    <GraduationCap className="w-8 h-8 text-sky-600 dark:text-sky-400" />
+                  </div>
+                  <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-2">
+                    Portal Acadêmico
+                  </p>
+                  <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">
+                    Sistema Sophia
+                  </h3>
+                  <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+                    Estamos criando uma integração direta com o Sistema Acadêmico Sophia para futuras versões. Enquanto a integração não está pronta, você pode acessar o portal externo clicando no botão abaixo.
+                  </p>
+                  <div className="pt-4 flex flex-col items-center gap-3">
+                    <a
+                      href="https://portal.sophia.com.br/SophiA_107/Acesso.aspx?escola=9087"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-2 px-6 py-3 bg-sky-600 hover:bg-sky-500 text-white rounded-xl font-bold shadow-md transition-all active:scale-95"
+                    >
+                      Acessar Portal Sophia
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wider">
+                      Integração Nativa em Breve
+                    </span>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
+            {activeTab === "appointments" && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-4"
+              >
+                <AppointmentsPanel member={member} />
+              </motion.div>
+            )}
+
+            {activeTab === "seminary_events" && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-4"
+              >
+                <EventsPage renderSeminary={true} />
               </motion.div>
             )}
           </div>

@@ -31,6 +31,7 @@ import {
 import { db, appId, auth, registerVisitor, createNotification } from "../lib/firebase";
 import { signOut } from "firebase/auth";
 import type { Member } from "../types";
+import { AVAILABLE_SEMINARIES } from "../types";
 import { useSettings } from "../context/SettingsContext";
 import { APP_VERSION } from "../lib/constants";
 import MemberList from "./MemberList";
@@ -62,6 +63,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const [roles, setRoles] = useState<string[]>([]);
   const [course, setCourse] = useState("");
   const [diocese, setDiocese] = useState("");
+  const [seminary, setSeminary] = useState("");
   
   const [visitorName, setVisitorName] = useState("");
   const [visitorCpf, setVisitorCpf] = useState("");
@@ -323,6 +325,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
         roles,
         course,
         diocese,
+        seminary,
         isActive: true,
         isApproved: true,
         createdAt: new Date().toISOString(),
@@ -347,6 +350,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
       setValidity("");
       setCourse("");
       setDiocese("");
+      setSeminary("");
       setRoles([]);
       setPhotoBase64(null);
       setTimeout(() => setStatus(null), 4000);
@@ -746,6 +750,26 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
                       Add Diocese
                     </button>
                   </div>
+                </div>
+              </div>
+
+              <div className="md:col-span-2 border-t border-slate-200 dark:border-slate-700/50 pt-3 mt-1">
+                <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
+                  Seminário (Opcional)
+                </label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <select
+                    value={seminary}
+                    onChange={(e) => setSeminary(e.target.value)}
+                    className="input-modern flex-1 rounded-xl py-2.5 px-3 text-sm"
+                  >
+                    <option value="">Selecione um Seminário (se aplicável)</option>
+                    {AVAILABLE_SEMINARIES.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 

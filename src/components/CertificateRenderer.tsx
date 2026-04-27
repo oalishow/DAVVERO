@@ -22,9 +22,11 @@ export const CertificateRenderer = forwardRef<HTMLDivElement, CertificateRendere
     const fontClass = template.fontFamily === 'serif' ? 'font-serif' : 
                       template.fontFamily === 'mono' ? 'font-mono' : 'font-sans';
                       
+    const certHours = isOrganizer && event.organizationHours ? event.organizationHours : event.hours;
+                      
     const defaultBodyText = isOrganizer
-      ? `Certificamos que [NOME DO ALUNO], atuou como membro da Equipe de Organização do evento "${event.title}", em formato ${event.format}, realizado entre ${new Date(event.startDate).toLocaleDateString('pt-BR')} e ${new Date(event.endDate || event.startDate).toLocaleDateString('pt-BR')}, com carga horária total de ${event.hours} horas.`
-      : `Certificamos que [NOME DO ALUNO], participou com êxito do evento "${event.title}", em formato ${event.format}, realizado entre ${new Date(event.startDate).toLocaleDateString('pt-BR')} e ${new Date(event.endDate || event.startDate).toLocaleDateString('pt-BR')}, com carga horária total de ${event.hours} horas.`;
+      ? `Certificamos que [NOME DO ALUNO], atuou como membro da Equipe de Organização do evento "${event.title}", em formato ${event.format}, realizado entre ${new Date(event.startDate).toLocaleDateString('pt-BR')} e ${new Date(event.endDate || event.startDate).toLocaleDateString('pt-BR')}, com carga horária total de ${certHours} horas.`
+      : `Certificamos que [NOME DO ALUNO], participou com êxito do evento "${event.title}", em formato ${event.format}, realizado entre ${new Date(event.startDate).toLocaleDateString('pt-BR')} e ${new Date(event.endDate || event.startDate).toLocaleDateString('pt-BR')}, com carga horária total de ${certHours} horas.`;
     
     const bodyText = (template.bodyText || defaultBodyText)
       .replace(/\[NOME DO ALUNO\]/g, member.name || 'NOME DO ALUNO')
