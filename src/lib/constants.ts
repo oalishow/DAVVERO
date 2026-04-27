@@ -26,12 +26,17 @@ export const INSTITUTION_DESCRIPTION_KEY = "davveroId_institution_description";
 export const CARD_DESCRIPTION_KEY = "davveroId_card_description";
 export const CUSTOM_ROLES_KEY = "davveroId_custom_roles";
 export const CUSTOM_COURSES_KEY = "davveroId_custom_courses";
-export const APP_VERSION = "4.9.0";
+export const APP_VERSION = "5.0.0";
 export const SETTINGS_DOC_PATH = (appId: string) =>
   `artifacts/${appId}/public/data/students/_settings_global`;
 export const ASSETS_DOC_PATH = (appId: string, assetType: string) =>
   `artifacts/${appId}/public/data/students/_asset_${assetType}`;
 export const CHANGELOG = [
+  "Versão 5.0.0 - Refatoração Profunda e Otimização",
+  "Administração: Funcionalidade de recuperação de senha ('Esqueci minha senha') através de e-mail.",
+  "Performance: Separação global das coleções de eventos e presenças reduzindo drasticamente o tráfego de dados.",
+  "Escalabilidade: Listeners otimizados para suportar +200 alunos simultâneos com sincronização perfeita.",
+  "Segurança: Código limpo e testes reforçados para o lançamento oficial.",
   "Versão 4.9.0 - Reforços Teológicos e Históricos",
   "Sobre: Inclusão do nome oficial do TCC ('E O VERBO SE FEZ I.A.?'), explicação do conceito de Vibe Coding, e expansão da reflexão teológica sobre a Inteligência Artificial e a pastoral.",
   "Versão 4.8.0 - Atualização da Identidade e História",

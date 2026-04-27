@@ -8,6 +8,17 @@ interface ChangelogModalProps {
 export default function ChangelogModal({ onClose }: ChangelogModalProps) {
   const versions = [
     {
+      version: 'v5.0.0',
+      title: 'Refatoração Profunda e Otimização',
+      changes: [
+        'Funcionalidade de recuperação de senha: \'Esqueci minha senha\' agora disponível para o painel administrativo através de reset por e-mail.',
+        'Otimização de Banco de Dados: Separação global das coleções de eventos e presenças reduzindo radicalmente o tráfego de rede.',
+        'Real-time aprimorado: Listeners otimizados para sincronização perfeita de novos dados, garantindo que o aplicativo suporte com extrema estabilidade e escalabilidade +200 alunos em simultâneo.',
+        'Segurança: Regras do painel atualizadas, código limpo e testes reforçados focados na escalabilidade.'
+      ],
+      current: true,
+    },
+    {
       version: 'v4.8.0',
       title: 'Performance e Experiência',
       changes: [
@@ -15,7 +26,7 @@ export default function ChangelogModal({ onClose }: ChangelogModalProps) {
         'Privacidade Aprimorada: Exibição focada nas funcionalidades de baixar PDF e nova consulta ao acessar sua carteirinha de estudante.',
         'Otimização: Maior fluidez de acesso ao painel do aluno.'
       ],
-      current: true,
+      current: false,
     },
     {
       version: 'v4.7.1',

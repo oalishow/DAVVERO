@@ -74,7 +74,7 @@ export default function Footer() {
               <div className="w-1 h-1 rounded-full bg-emerald-500 animate-pulse" />
               DB Conectado
             </div>
-            <span className="text-[7px] font-bold text-slate-400 uppercase tracking-tighter opacity-70">Build: 26.04.26</span>
+            <span className="text-[7px] font-bold text-slate-400 uppercase tracking-tighter opacity-70">Build: 27.04.26</span>
           </div>
         </div>
         <a href="mailto:oalison.rodrigues@gmail.com" className="flex items-center gap-1.5 hover:text-sky-600 dark:hover:text-sky-400 transition-colors border-b border-transparent hover:border-sky-600 dark:hover:border-sky-400 pb-0.5 text-[10px] sm:text-xs text-slate-600 dark:text-slate-400">
