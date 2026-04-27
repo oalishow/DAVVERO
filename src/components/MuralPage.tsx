@@ -24,9 +24,11 @@ export default function MuralPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Check if user is admin
+    // Check if user is admin via Firebase Auth
     const unsubAuth = auth.onAuthStateChanged((user) => {
-      setIsAdmin(!!(user && !user.isAnonymous));
+      if (user && !user.isAnonymous) {
+        setIsAdmin(true);
+      }
     });
     return () => unsubAuth();
   }, []);
@@ -39,6 +41,11 @@ export default function MuralPage() {
         if (snap.exists()) {
           const m = snap.data() as Member;
           setCurrentUserData({ id: m.id, name: m.name });
+          
+          // Check if this student is actually an admin by role
+          if (m.roles && m.roles.some(r => r.toLowerCase() === 'admin' || r.toLowerCase() === 'diretoria' || r.toLowerCase() === 'gestão')) {
+            setIsAdmin(true);
+          }
         }
       }).catch(err => {
         handleFirestoreError(err, OperationType.GET, `artifacts/${appId}/public/data/students`);
@@ -356,17 +363,19 @@ export default function MuralPage() {
                      {post.status === "pending" && (
                        <span className="px-2 py-1 bg-amber-100 text-amber-700 text-[10px] rounded-lg font-bold uppercase">Pendente</span>
                      )}
-                     {isAdmin && (
+                     {(isAdmin || post.authorId === myUserId) && (
                        <div className="flex items-center gap-1">
-                          {post.status === "pending" && (
+                          {isAdmin && post.status === "pending" && (
                             <button onClick={() => approvePost(post.id)} className="p-1.5 text-green-600 hover:bg-green-50 rounded-md" title="Aprovar">
                               <Check className="w-4 h-4"/>
                             </button>
                           )}
-                          <button onClick={() => togglePin(post)} className={`p-1.5 rounded-md ${post.isPinned ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400 hover:bg-slate-100'}`}>
-                             <Pin className="w-4 h-4"/>
-                          </button>
-                          <button onClick={() => deletePost(post.id)} className="p-1.5 text-red-400 hover:bg-red-50 hover:text-red-500 rounded-md">
+                          {isAdmin && (
+                            <button onClick={() => togglePin(post)} className={`p-1.5 rounded-md ${post.isPinned ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400 hover:bg-slate-100'}`} title={post.isPinned ? "Desafixar" : "Fixar no topo"}>
+                               <Pin className="w-4 h-4"/>
+                            </button>
+                          )}
+                          <button onClick={() => deletePost(post.id)} className="p-1.5 text-red-400 hover:bg-red-50 hover:text-red-500 rounded-md" title="Apagar Publicação">
                              <Trash2 className="w-4 h-4"/>
                           </button>
                        </div>
@@ -380,11 +389,11 @@ export default function MuralPage() {
 
                 {post.mediaUrl && (
                   <div className="mt-4">
-                     {post.mediaType === 'image' ? (
+                     {(post.mediaType === 'image' || post.mediaUrl.match(/\\.(jpeg|jpg|gif|png|webp|svg)$/i) || post.mediaUrl.includes('drive.google.com/uc?export=view')) ? (
                         <div className="rounded-xl overflow-hidden cursor-pointer bg-slate-100 dark:bg-slate-900 flex justify-center" onClick={() => window.open(post.mediaUrl, '_blank')}>
                           <img src={post.mediaUrl} alt="Visualização" className="max-w-full max-h-96 object-contain hover:opacity-95 transition-opacity" />
                         </div>
-                     ) : post.mediaType === 'video' ? (
+                     ) : (post.mediaType === 'video' || post.mediaUrl.includes('youtube.com/embed') || post.mediaUrl.includes('youtu.be/')) ? (
                         <div className="rounded-xl overflow-hidden cursor-pointer" >
                           <iframe 
                              src={post.mediaUrl} 
