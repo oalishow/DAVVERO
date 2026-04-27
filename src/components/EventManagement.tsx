@@ -395,11 +395,18 @@ export default function EventManagement() {
                 />
               </label>
             </div>
-            {imageUrl && imageUrl.startsWith("data:image") && (
-              <div className="mt-2 text-[10px] text-emerald-600 font-bold uppercase pl-1">
-                ✓ Imagem carregada com sucesso
+            {imageUrl ? (
+              <div className="mt-3 relative w-full max-w-sm rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm aspect-video">
+                <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
+                <button
+                  type="button"
+                  onClick={() => setImageUrl("")}
+                  className="absolute top-2 right-2 p-1.5 bg-black/50 hover:bg-red-500 text-white rounded-lg backdrop-blur-md transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
-            )}
+            ) : null}
           </div>
           <div className="space-y-1">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
