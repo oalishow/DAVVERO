@@ -143,18 +143,20 @@ export default function Verifier({
     // Populate cache for "offline fallback" strategy
     const loadCache = async (retries = 3) => {
       try {
-        const q = query(
+        const qStudents = query(
           collection(db, `artifacts/${appId}/public/data/students`),
         );
-        const snapshot = await getDocs(q);
-        const allDocs = snapshot.docs.map(
+        const qEvents = query(collection(db, `artifacts/${appId}/public/data/events`));
+        const qAttendances = query(collection(db, `artifacts/${appId}/public/data/attendances`));
+        
+        const [studentSnap, eventSnap, attSnap] = await Promise.all([
+          getDocs(qStudents), getDocs(qEvents), getDocs(qAttendances)
+        ]);
+
+        const allDocs = studentSnap.docs.map(
           (doc) => ({ id: doc.id, ...doc.data() }) as any,
         );
 
-        const eventsDoc = allDocs.find((d: any) => d.id === "_events_global");
-        const attendancesDoc = allDocs.find(
-          (d: any) => d.id === "_attendances_global",
-        );
         const mList = allDocs
           .filter((d: any) => !d.id.startsWith("_"))
           .map((m: any) => {
@@ -163,8 +165,8 @@ export default function Verifier({
             return safeMember as Member;
           });
 
-        const eList = eventsDoc?.list || [];
-        const aList = attendancesDoc?.list || [];
+        const eList = eventSnap.docs.map(d => d.data() as Event);
+        const aList = attSnap.docs.map(d => d.data() as Attendance);
 
         setMembersCache(mList);
         setEventsCache(eList);

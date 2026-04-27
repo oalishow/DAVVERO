@@ -189,47 +189,39 @@ export default function StudentPortal({
   const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
+    let unsubEvents: any;
+    let unsubAttendances: any;
     if (member) {
-      const unsubEvents = onSnapshot(
-        doc(db, `artifacts/${appId}/public/data/students`, "_events_global"),
-        (docSnap) => {
-          if (docSnap.exists()) {
-            let evts = (docSnap.data().list || []) as Event[];
-            evts = evts.filter((e) => e.status !== "deleted");
-            const now = new Date().getTime();
-            evts.sort((a, b) => {
-              const timeA = new Date(a.startDate).getTime();
-              const timeB = new Date(b.startDate).getTime();
-              const aIsFuture = timeA >= now;
-              const bIsFuture = timeB >= now;
-              if (aIsFuture && bIsFuture) return timeA - timeB;
-              if (!aIsFuture && !bIsFuture) return timeB - timeA;
-              return aIsFuture ? -1 : 1;
-            });
-            setAllEvents(evts);
-            setAvailableEvents(evts.filter((e) => e.status === "aberto"));
-            setPastEvents(evts.filter((e) => e.status === "encerrado"));
-          }
-        },
-      );
+      import("firebase/firestore").then(({ collection, query, onSnapshot }) => {
+        const qEvents = query(collection(db, `artifacts/${appId}/public/data/events`));
+        unsubEvents = onSnapshot(qEvents, (snap) => {
+          let evts = snap.docs.map(d => d.data() as Event);
+          evts = evts.filter((e) => e.status !== "deleted");
+          const now = new Date().getTime();
+          evts.sort((a, b) => {
+            const timeA = new Date(a.startDate).getTime();
+            const timeB = new Date(b.startDate).getTime();
+            const aIsFuture = timeA >= now;
+            const bIsFuture = timeB >= now;
+            if (aIsFuture && bIsFuture) return timeA - timeB;
+            if (!aIsFuture && !bIsFuture) return timeB - timeA;
+            return aIsFuture ? -1 : 1;
+          });
+          setAllEvents(evts);
+          setAvailableEvents(evts.filter((e) => e.status === "aberto"));
+          setPastEvents(evts.filter((e) => e.status === "encerrado"));
+        });
 
-      const unsubAttendances = onSnapshot(
-        doc(
-          db,
-          `artifacts/${appId}/public/data/students`,
-          "_attendances_global",
-        ),
-        (docSnap) => {
-          if (docSnap.exists()) {
-            const list = (docSnap.data().list || []) as Attendance[];
-            setMyAttendances(list.filter((a) => a.studentId === member.id));
-          }
-        },
-      );
+        const qAttendances = query(collection(db, `artifacts/${appId}/public/data/attendances`));
+        unsubAttendances = onSnapshot(qAttendances, (snap) => {
+          const list = snap.docs.map(d => d.data() as Attendance);
+          setMyAttendances(list.filter((a) => a.studentId === member.id));
+        });
+      });
 
       return () => {
-        unsubEvents();
-        unsubAttendances();
+        if (unsubEvents) unsubEvents();
+        if (unsubAttendances) unsubAttendances();
       };
     }
   }, [member]);

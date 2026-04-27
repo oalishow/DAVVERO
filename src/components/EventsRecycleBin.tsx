@@ -10,40 +10,37 @@ export default function EventsRecycleBin() {
   const { showConfirm } = useDialog();
 
   useEffect(() => {
-    const unsub = onSnapshot(
-      doc(db, `artifacts/${appId}/public/data/students`, "_events_global"),
-      (docSnap) => {
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          const evts = (data.list || []) as Event[];
-          
-          const now = new Date().getTime();
-          const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
-          
-          const filtered = evts.filter((e) => e.status === "deleted" && e.deletedAt);
-          const activeDeleted: Event[] = [];
+    let unsub: any;
+    import("firebase/firestore").then(({ collection, query, onSnapshot }) => {
+      const qEvents = query(collection(db, `artifacts/${appId}/public/data/events`));
+      unsub = onSnapshot(qEvents, (snap) => {
+        const evts = snap.docs.map(d => d.data() as Event);
+        const now = new Date().getTime();
+        const thirtyDaysMs = 30 * 24 * 60 * 60 * 1000;
+        
+        const filtered = evts.filter((e) => e.status === "deleted" && e.deletedAt);
+        const activeDeleted: Event[] = [];
 
-          for (const evt of filtered) {
-             const deleteTime = new Date(evt.deletedAt!).getTime();
-             if (now - deleteTime > thirtyDaysMs) {
-                permanentDeleteEvent(evt.id).catch(console.error);
-                continue;
-             }
-             activeDeleted.push(evt);
-          }
-
-          activeDeleted.sort(
-            (a, b) =>
-              new Date(b.deletedAt!).getTime() - new Date(a.deletedAt!).getTime(),
-          );
-          setDeletedEvents(activeDeleted);
-        } else {
-          setDeletedEvents([]);
+        for (const evt of filtered) {
+            const deleteTime = new Date(evt.deletedAt!).getTime();
+            if (now - deleteTime > thirtyDaysMs) {
+              permanentDeleteEvent(evt.id).catch(console.error);
+              continue;
+            }
+            activeDeleted.push(evt);
         }
-      },
-    );
 
-    return () => unsub();
+        activeDeleted.sort(
+          (a, b) =>
+            new Date(b.deletedAt!).getTime() - new Date(a.deletedAt!).getTime(),
+        );
+        setDeletedEvents(activeDeleted);
+      });
+    });
+
+    return () => {
+      if (unsub) unsub();
+    };
   }, []);
 
   const handleRestore = async (id: string) => {

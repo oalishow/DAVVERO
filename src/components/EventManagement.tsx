@@ -87,46 +87,40 @@ export default function EventManagement() {
   } | null>(null);
 
   useEffect(() => {
-    const unsub = onSnapshot(
-      doc(db, `artifacts/${appId}/public/data/students`, "_events_global"),
-      (docSnap) => {
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          const evts = (data.list || []) as Event[];
-          const now = new Date().getTime();
-          evts.sort((a, b) => {
-            const timeA = new Date(a.startDate).getTime();
-            const timeB = new Date(b.startDate).getTime();
-            const aIsFuture = timeA >= now;
-            const bIsFuture = timeB >= now;
-            if (aIsFuture && bIsFuture) return timeA - timeB;
-            if (!aIsFuture && !bIsFuture) return timeB - timeA;
-            return aIsFuture ? -1 : 1;
-          });
-          setEvents(evts);
-        } else {
-          setEvents([]);
-        }
-      },
-    );
+    let unsub: any;
+    let unsubAttendances: any;
 
-    const unsubAttendances = onSnapshot(
-      doc(db, `artifacts/${appId}/public/data/students`, "_attendances_global"),
-      (docSnap) => {
+    import("firebase/firestore").then(({ collection, query, onSnapshot }) => {
+      const qEvents = query(collection(db, `artifacts/${appId}/public/data/events`));
+      unsub = onSnapshot(qEvents, (snap) => {
+        const evts = snap.docs.map(d => d.data() as Event);
+        const now = new Date().getTime();
+        evts.sort((a, b) => {
+          const timeA = new Date(a.startDate).getTime();
+          const timeB = new Date(b.startDate).getTime();
+          const aIsFuture = timeA >= now;
+          const bIsFuture = timeB >= now;
+          if (aIsFuture && bIsFuture) return timeA - timeB;
+          if (!aIsFuture && !bIsFuture) return timeB - timeA;
+          return aIsFuture ? -1 : 1;
+        });
+        setEvents(evts);
+      });
+
+      const qAttendances = query(collection(db, `artifacts/${appId}/public/data/attendances`));
+      unsubAttendances = onSnapshot(qAttendances, (snap) => {
         const counts: Record<string, number> = {};
-        if (docSnap.exists()) {
-          const list = (docSnap.data().list || []) as Attendance[];
-          list.forEach((a) => {
-            counts[a.eventId] = (counts[a.eventId] || 0) + 1;
-          });
-        }
+        const list = snap.docs.map(d => d.data() as Attendance);
+        list.forEach((a) => {
+          counts[a.eventId] = (counts[a.eventId] || 0) + 1;
+        });
         setAttendancesCount(counts);
-      },
-    );
+      });
+    });
 
     return () => {
-      unsub();
-      unsubAttendances();
+      if (unsub) unsub();
+      if (unsubAttendances) unsubAttendances();
     };
   }, []);
 
