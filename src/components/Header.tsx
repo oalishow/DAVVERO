@@ -2,6 +2,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { ShieldCheck, Download, Sun, Moon, Bell, Trash2 } from 'lucide-react';
 import { APP_VERSION } from '../lib/constants';
 import { useSettings } from '../context/SettingsContext';
+import { useDialog } from '../context/DialogContext';
 import { useState, useEffect, useRef } from 'react';
 import { useNotifications } from '../hooks/useNotifications';
 import { markAllNotificationsAsRead, markNotificationAsRead, clearAllNotifications, clearNotification } from '../lib/firebase';
@@ -11,6 +12,7 @@ const STUDENT_TRACK_KEY = 'davveroId_student_track_ra';
 
 export default function Header() {
   const { settings } = useSettings();
+  const { showConfirm } = useDialog();
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isDark, setIsDark] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -20,6 +22,34 @@ export default function Header() {
   const bondedId = localStorage.getItem(STUDENT_BOND_KEY) || localStorage.getItem(STUDENT_TRACK_KEY);
   const recipientId = isMasterLogged ? "admin" : bondedId ? bondedId : null;
   const { notifications, unreadCount } = useNotifications(recipientId);
+  const [notiPermission, setNotiPermission] = useState<NotificationPermission>('default');
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setNotiPermission(Notification.permission);
+      
+      const hasAsked = localStorage.getItem('davveroId_noti_ask');
+      if (!hasAsked && Notification.permission === 'default') {
+        const ask = async () => {
+          const res = await showConfirm("Deseja receber notificações do instituto no seu celular e computador?", { 
+            title: "Ativar Notificações", type: "info", confirmText: "Ativar", cancelText: "Não Obrigado"
+          });
+          if (res) {
+            requestNotificationPermission();
+          }
+          localStorage.setItem('davveroId_noti_ask', 'true');
+        };
+        setTimeout(ask, 3000);
+      }
+    }
+  }, []);
+
+  const requestNotificationPermission = async () => {
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      const perm = await Notification.requestPermission();
+      setNotiPermission(perm);
+    }
+  };
 
   useEffect(() => {
     const handlePrompt = (e: Event) => {
@@ -202,6 +232,15 @@ export default function Header() {
                     </div>
                   </div>
                   <div className="max-h-96 overflow-y-auto w-full flex flex-col p-2 space-y-1">
+                    {notiPermission === 'default' && (
+                      <button 
+                        onClick={requestNotificationPermission}
+                        className="w-full mb-2 bg-sky-100 hover:bg-sky-200 dark:bg-sky-900/30 dark:hover:bg-sky-900/50 text-sky-700 dark:text-sky-300 rounded-xl p-3 text-xs font-bold transition-colors flex items-center justify-center gap-2"
+                      >
+                        <Bell className="w-3 h-3" />
+                        Ativar Alertas no Sistema
+                      </button>
+                    )}
                     {notifications.length === 0 ? (
                       <div className="py-8 text-center text-slate-400 dark:text-slate-500 text-xs">
                         Nenhuma notificação nova.

@@ -110,10 +110,43 @@ export function useNotifications(recipientId: string | null) {
     );
 
     let lastSnapshotDocs: Notification[] = [];
+    let initialLoad = true;
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       lastSnapshotDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
+      
+      if (!initialLoad && typeof window !== "undefined" && "Notification" in window && Notification.permission === "granted") {
+        snapshot.docChanges().forEach(change => {
+          if (change.type === "added") {
+            const data = change.doc.data() as Notification;
+            
+            // Check if it's already read locally (e.g. for broadcast)
+            let isLocalRead = false;
+            let isLocalCleared = false;
+            try {
+              const localReads = JSON.parse(localStorage.getItem('davveroId_broadcast_reads') || '[]');
+              const localCleared = JSON.parse(localStorage.getItem('davveroId_cleared_notifs') || '[]');
+              if (data.recipientId === "todos" && localReads.includes(change.doc.id)) {
+                isLocalRead = true;
+              }
+              if (localCleared.includes(change.doc.id)) {
+                isLocalCleared = true;
+              }
+            } catch (e) {}
+
+            if (!data.read && !isLocalRead && !isLocalCleared) {
+               new Notification(data.title || "Nova Notificação", {
+                 body: data.message,
+                 icon: "/icon.svg",
+                 tag: change.doc.id // Prevents duplicate notifications
+               });
+            }
+          }
+        });
+      }
+      
       processNotifications(lastSnapshotDocs);
+      initialLoad = false;
     }, (error) => {
       if (error?.code !== 'permission-denied' && !error?.message?.includes('Missing or insufficient permissions')) {
         console.error("Erro no snapshot de notificações:", error);
