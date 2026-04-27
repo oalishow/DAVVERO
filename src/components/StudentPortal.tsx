@@ -414,10 +414,7 @@ export default function StudentPortal({
     }
   }, [overrideCode]);
 
-  // Removes the lock on visibilitychange so the user only enters the PIN once per session
-  useEffect(() => {
-    // Intentionally empty: The user requested to only enter the PIN once until the app is closed.
-  }, []);
+
 
   const loadBondedMember = async (id: string, isOverride = false) => {
     setIsLoading(true);
@@ -437,8 +434,9 @@ export default function StudentPortal({
           setIsUnlocked(true);
           onOverrideConsumed?.();
         } else {
-          // If the user has a PIN, require them to unlock, else automatically stay unlocked
-          if (localStorage.getItem(STUDENT_FALLBACK_PIN)) {
+          // If the user has a PIN, require them to unlock, ONLY if they are not already unlocked in this session
+          const isAlreadyUnlockedInSession = sessionStorage.getItem("davveroId_unlocked") === "true";
+          if (localStorage.getItem(STUDENT_FALLBACK_PIN) && !isAlreadyUnlockedInSession) {
             setIsUnlocked(false);
           } else {
             setIsUnlocked(true);
