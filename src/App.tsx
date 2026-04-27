@@ -27,11 +27,12 @@ const Verifier = lazy(() => import("./components/Verifier"));
 const Admin = lazy(() => import("./components/Admin"));
 const StudentPortal = lazy(() => import("./components/StudentPortal"));
 const EventsPage = lazy(() => import("./components/EventsPage"));
+const MuralPage = lazy(() => import("./components/MuralPage"));
 
 export default function App() {
   const { settings } = useSettings();
   const [activeTab, setActiveTab] = useState<
-    "verifier" | "admin" | "student" | "events" | "liturgy"
+    "verifier" | "admin" | "student" | "events" | "liturgy" | "mural"
   >("verifier");
   const [targetVerifyCode, setTargetVerifyCode] = useState<string | null>(null);
   const [adminForceViewCode, setAdminForceViewCode] = useState<string | null>(
@@ -244,7 +245,7 @@ export default function App() {
         </AnimatePresence>
 
         <div className="relative z-10 space-y-6 sm:space-y-8 print:space-y-4">
-          <Header />
+          <Header onOpenAdmin={() => setActiveTab("admin")} />
 
           <div className="grid grid-cols-5 bg-slate-200/50 dark:bg-slate-900/60 rounded-xl p-1 shadow-inner border border-slate-200/50 dark:border-slate-700/50 no-print print:hidden gap-1">
             <button
@@ -276,11 +277,11 @@ export default function App() {
               Liturgia
             </button>
             <button
-              onClick={() => setActiveTab("admin")}
-              className={`flex flex-col items-center justify-center py-2 text-[10px] font-black uppercase tracking-tighter rounded-lg transition-all duration-300 ${activeTab === "admin" ? "bg-white dark:bg-sky-600 text-sky-600 dark:text-white shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"}`}
+              onClick={() => setActiveTab("mural")}
+              className={`flex flex-col items-center justify-center py-2 text-[10px] font-black uppercase tracking-tighter rounded-lg transition-all duration-300 ${activeTab === "mural" ? "bg-white dark:bg-amber-600 text-amber-600 dark:text-white shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"}`}
             >
-              <Lock className="w-4 h-4 mb-0.5" />
-              Gestão
+              <Sparkles className="w-4 h-4 mb-0.5" />
+              Mural
             </button>
           </div>
 
@@ -325,6 +326,7 @@ export default function App() {
                   {activeTab === "admin" && <Admin />}
                   {activeTab === "events" && <EventsPage onNavigateToStudent={() => setActiveTab("student")} />}
                   {activeTab === "liturgy" && <LiturgyPanel />}
+                  {activeTab === "mural" && <MuralPage />}
                   {activeTab === "student" && (
                     <StudentPortal
                       overrideCode={adminForceViewCode}

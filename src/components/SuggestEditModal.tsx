@@ -153,11 +153,7 @@ export default function SuggestEditModal({ member, onClose, onSubmitSuccess }: S
               <input type="text" value={name} onChange={e => setName(e.target.value)} className="input-modern w-full rounded-xl py-3 px-4 text-sm" />
           </div>
           
-          <div className="grid grid-cols-2 gap-4">
-              <div>
-                  <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Novo RG</label>
-                  <input type="text" value={rg} onChange={e => setRg(e.target.value)} className="input-modern w-full rounded-xl py-3 px-4 text-sm" />
-              </div>
+          <div className="grid grid-cols-1 gap-4">
               <div>
                   <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">Novo CPF</label>
                   <input type="text" value={cpf} onChange={e => setCpf(e.target.value)} className="input-modern w-full rounded-xl py-3 px-4 text-sm" />

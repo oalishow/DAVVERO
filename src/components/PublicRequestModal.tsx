@@ -195,14 +195,10 @@ export default function PublicRequestModal({ onClose, onSubmitSuccess }: PublicR
               <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">E-mail para Contacto *</label>
               <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="Para ser notificado(a) da aprovação" className="input-modern w-full rounded-xl py-3 px-4 text-sm" />
           </div>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 gap-4">
               <div>
                   <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">CPF</label>
                   <input type="text" value={cpf} onChange={e => setCpf(e.target.value)} placeholder="000.000.000-00" className="input-modern w-full rounded-xl py-3 px-4 text-sm" />
-              </div>
-              <div>
-                  <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1">RG</label>
-                  <input type="text" value={rg} onChange={e => setRg(e.target.value)} placeholder="00.000.000-0" className="input-modern w-full rounded-xl py-3 px-4 text-sm" />
               </div>
           </div>
           <div>

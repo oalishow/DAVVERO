@@ -207,7 +207,6 @@ export default function AdminRequestsModal({ onClose }: { onClose: () => void })
                             <p className="text-xs text-slate-500 dark:text-slate-400">{req.roles?.join(', ')} • {req.course || 'S/ Curso'} • {req.diocese || 'S/ Diocese'}{req.seminary ? ` • ${req.seminary}` : ''}</p>
                             <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1">
                               {req.cpf && <p className="text-[10px] text-slate-500 font-medium">CPF: {req.cpf}</p>}
-                              {req.rg && <p className="text-[10px] text-slate-500 font-medium">RG: {req.rg}</p>}
                               {req.birthdate && <p className="text-[10px] text-slate-500 font-medium">Nasc: {req.birthdate}</p>}
                               {req.diocese && <p className="text-[10px] text-amber-600 font-bold">Diocese: {req.diocese}</p>}
                               {req.seminary && <p className="text-[10px] text-amber-600 font-bold">Seminário: {req.seminary}</p>}
@@ -233,7 +232,6 @@ export default function AdminRequestsModal({ onClose }: { onClose: () => void })
                           {pc.name && <p><span className="text-slate-500">Novo Nome:</span> <span className="text-amber-600 dark:text-amber-300 font-medium">{pc.name}</span></p>}
                           {pc.ra && <p><span className="text-slate-500">Novo RA:</span> <span className="text-amber-600 dark:text-amber-300 font-medium">{pc.ra}</span></p>}
                           {pc.cpf && <p><span className="text-slate-500">Novo CPF:</span> <span className="text-amber-600 dark:text-amber-300 font-medium">{pc.cpf}</span></p>}
-                          {pc.rg && <p><span className="text-slate-500">Novo RG:</span> <span className="text-amber-600 dark:text-amber-300 font-medium">{pc.rg}</span></p>}
                           {pc.birthdate && <p><span className="text-slate-500">Nova Data Nasc.:</span> <span className="text-amber-600 dark:text-amber-300 font-medium">{pc.birthdate}</span></p>}
                           {pc.email && <p><span className="text-slate-500">Novo E-mail:</span> <span className="text-amber-600 dark:text-amber-300 font-medium">{pc.email}</span></p>}
                           {pc.roles && <p><span className="text-slate-500">Novo Vínculo:</span> <span className="text-amber-600 dark:text-amber-300 font-medium">{pc.roles.join(', ')}</span></p>}

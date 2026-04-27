@@ -131,3 +131,20 @@ export interface Appointment {
   createdAt: string;
   updatedAt?: string;
 }
+
+export interface MuralPost {
+  id: string;
+  tabFn: "academico" | "seminario"; // Which tab it belongs to
+  authorId?: string; // If known (memberId)
+  authorName: string; // The selected or provided name
+  text: string;
+  type: "message" | "poll";
+  mediaUrl?: string; // For images/PDFs
+  mediaType?: "image" | "pdf" | "link" | "video";
+  pollOptions?: { id: string; text: string; votes: number }[];
+  votedUserIds?: string[]; // IDs of users who voted
+  createdAt: any;
+  isPinned: boolean;
+  status: "pending" | "approved"; // Non-admin posts are pending by default
+  isAdminPost?: boolean;
+}

@@ -607,18 +607,6 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
               </div>
               <div>
                 <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
-                  RG
-                </label>
-                <input
-                  type="text"
-                  value={rg}
-                  onChange={(e) => setRg(e.target.value)}
-                  placeholder="00.000.000-0"
-                  className="input-modern w-full rounded-xl py-2.5 px-3"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
                   Data de Nascimento *
                 </label>
                 <input

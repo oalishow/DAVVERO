@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { ShieldCheck, Download, Sun, Moon, Bell, Trash2 } from 'lucide-react';
+import { ShieldCheck, Download, Sun, Moon, Bell, Trash2, Lock } from 'lucide-react';
 import { APP_VERSION } from '../lib/constants';
 import { useSettings } from '../context/SettingsContext';
 import { useDialog } from '../context/DialogContext';
@@ -10,7 +10,7 @@ import { markAllNotificationsAsRead, markNotificationAsRead, clearAllNotificatio
 const STUDENT_BOND_KEY = 'davveroId_student_identity';
 const STUDENT_TRACK_KEY = 'davveroId_student_track_ra';
 
-export default function Header() {
+export default function Header({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
   const { settings } = useSettings();
   const { showConfirm } = useDialog();
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
@@ -177,6 +177,17 @@ export default function Header() {
 
   return (
     <div className="text-center relative print:hidden no-print">
+      {onOpenAdmin && (
+        <div className="absolute top-0 left-0 flex items-center gap-2 z-50 no-print print:hidden">
+          <button
+            onClick={onOpenAdmin}
+            className="relative p-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 transition-colors hover:scale-110 active:scale-95"
+            title="Gestão"
+          >
+            <Lock className="w-4 h-4" />
+          </button>
+        </div>
+      )}
       <div className="absolute top-0 right-0 flex items-center gap-2 z-50 no-print print:hidden">
         {recipientId && (
           <div className="relative" ref={dropdownRef}>

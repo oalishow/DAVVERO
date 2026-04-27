@@ -361,7 +361,7 @@ export default function StudentPortal({
 
   const [isUploadingCert, setIsUploadingCert] = useState(false);
 
-  const handleUploadExternalCertificate = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUploadExternalCertificate = async (e: any) => {
     const file = e.target.files?.[0];
     if (!file || !member) return;
 
@@ -1122,7 +1122,7 @@ export default function StudentPortal({
                   }`}
                 >
                   <CalendarHeart className="w-4 h-4" />
-                  Seminário
+                  SEMINÁRIO
                 </button>
               </>
             )}
@@ -1652,7 +1652,7 @@ export default function StudentPortal({
                     Portal Acadêmico
                   </p>
                   <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">
-                    Sistema Sophia
+                    SISTEMA FAJOPA (SOPHIA)
                   </h3>
                   <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
                     Estamos criando uma integração direta com o Sistema Acadêmico Sophia para futuras versões. Enquanto a integração não está pronta, você pode acessar o portal externo clicando no botão abaixo.
@@ -1664,7 +1664,7 @@ export default function StudentPortal({
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-2 px-6 py-3 bg-sky-600 hover:bg-sky-500 text-white rounded-xl font-bold shadow-md transition-all active:scale-95"
                     >
-                      Acessar Portal Sophia
+                      Acessar o portal do aluno
                       <ExternalLink className="w-4 h-4" />
                     </a>
                     <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wider">

@@ -226,14 +226,10 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
                   </select>
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3">
                 <div>
                   <label className="text-xs font-medium text-slate-500 mb-1 block">CPF</label>
                   <input type="text" value={cpf} onChange={e => setCpf(e.target.value)} className="input-modern w-full rounded-lg py-2 px-3 text-sm" />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-slate-500 mb-1 block">RG</label>
-                  <input type="text" value={rg} onChange={e => setRg(e.target.value)} className="input-modern w-full rounded-lg py-2 px-3 text-sm" />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
@@ -436,10 +432,6 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
                   <div>
                      <p className="font-bold text-xs text-gray-500 uppercase">CPF</p>
                      <p className="text-base font-bold border-b border-gray-300 pb-1">{cpf || '---'}</p>
-                  </div>
-                  <div>
-                     <p className="font-bold text-xs text-gray-500 uppercase">RG</p>
-                     <p className="text-base font-bold border-b border-gray-300 pb-1">{rg || '---'}</p>
                   </div>
                   <div>
                      <p className="font-bold text-xs text-gray-500 uppercase">Data de Nascimento</p>
