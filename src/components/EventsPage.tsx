@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import {
   Calendar,
+  CalendarPlus,
   Clock,
   MapPin,
   Video,
@@ -180,6 +181,42 @@ export default function EventsPage({ onNavigateToStudent, renderSeminary = false
       default:
         return "bg-sky-100 text-sky-700 dark:bg-sky-500/20 dark:text-sky-400";
     }
+  };
+
+  const exportToCalendar = (event: Event) => {
+    const formatDate = (dateUnparsed: string) => {
+      const d = new Date(dateUnparsed);
+      // Create ICS format: YYYYMMDDTHHmmssZ
+      return d.toISOString().replace(/[-:]/g, "").split(".")[0] + "Z";
+    };
+
+    let locationStr = event.locationOrLink || event.location || "";
+    if (locationStr && !locationStr.startsWith("http")) {
+      locationStr = `LOCATION:${locationStr}\n`;
+    } else {
+      locationStr = "";
+    }
+
+    const icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Fajopa//Eventos//PT
+BEGIN:VEVENT
+UID:${event.id}@fajopa.com
+DTSTAMP:${formatDate(new Date().toISOString())}
+DTSTART:${formatDate(event.startDate)}
+DTEND:${formatDate(event.endDate)}
+SUMMARY:${event.title}
+DESCRIPTION:${event.description.replace(/\n/g, "\\n")}
+${locationStr}END:VEVENT
+END:VCALENDAR`;
+
+    const blob = new Blob([icsContent], { type: "text/calendar;charset=utf-8" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `${event.title.replace(/[^a-z0-9]/gi, "_").toLowerCase()}.ics`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   return (
@@ -469,6 +506,14 @@ export default function EventsPage({ onNavigateToStudent, renderSeminary = false
                         )}
                       </div>
                     )}
+                    
+                    {/* Botão de Adicionar ao Calendário */}
+                    <button
+                      onClick={() => exportToCalendar(event)}
+                      className="mt-3 flex items-center justify-center sm:justify-start gap-2 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all shadow-sm w-max"
+                    >
+                      <CalendarPlus className="w-3.5 h-3.5" /> Adicionar ao Calendário
+                    </button>
                   </div>
 
                   {/* Right Column - Action */}

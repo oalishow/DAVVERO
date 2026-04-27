@@ -151,7 +151,18 @@ export default function StudentPortal({
     localStorage.getItem(STUDENT_BOND_KEY),
   );
   const [member, setMember] = useState<Member | null>(null);
-  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [isUnlocked, setIsUnlocked] = useState(() => {
+    return sessionStorage.getItem("davveroId_unlocked") === "true";
+  });
+
+  // Update sessionStorage whenever isUnlocked changes
+  useEffect(() => {
+    if (isUnlocked) {
+      sessionStorage.setItem("davveroId_unlocked", "true");
+    } else {
+      sessionStorage.removeItem("davveroId_unlocked");
+    }
+  }, [isUnlocked]);
   const [isOverrideMode, setIsOverrideMode] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -403,16 +414,9 @@ export default function StudentPortal({
     }
   }, [overrideCode]);
 
-  // Automatically lock when user leaves page, ONLY if they have a PIN
+  // Removes the lock on visibilitychange so the user only enters the PIN once per session
   useEffect(() => {
-    const handleVisibilityChange = () => {
-      if (document.hidden && localStorage.getItem(STUDENT_FALLBACK_PIN)) {
-        setIsUnlocked(false);
-      }
-    };
-    document.addEventListener("visibilitychange", handleVisibilityChange);
-    return () =>
-      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    // Intentionally empty: The user requested to only enter the PIN once until the app is closed.
   }, []);
 
   const loadBondedMember = async (id: string, isOverride = false) => {
