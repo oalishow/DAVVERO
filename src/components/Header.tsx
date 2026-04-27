@@ -1,10 +1,10 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { ShieldCheck, Download, Sun, Moon, Bell } from 'lucide-react';
+import { ShieldCheck, Download, Sun, Moon, Bell, Trash2 } from 'lucide-react';
 import { APP_VERSION } from '../lib/constants';
 import { useSettings } from '../context/SettingsContext';
 import { useState, useEffect, useRef } from 'react';
 import { useNotifications } from '../hooks/useNotifications';
-import { markAllNotificationsAsRead, markNotificationAsRead } from '../lib/firebase';
+import { markAllNotificationsAsRead, markNotificationAsRead, clearAllNotifications, clearNotification } from '../lib/firebase';
 
 const STUDENT_BOND_KEY = 'davveroId_student_identity';
 const STUDENT_TRACK_KEY = 'davveroId_student_track_ra';
@@ -170,14 +170,36 @@ export default function Header() {
                 >
                   <div className="p-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-800/50">
                     <h3 className="font-bold text-slate-800 dark:text-white text-xs uppercase tracking-widest">Notificações</h3>
-                    {unreadCount > 0 && (
-                      <button 
-                        onClick={() => recipientId && markAllNotificationsAsRead(recipientId)}
-                        className="text-[10px] text-sky-600 dark:text-sky-400 font-bold hover:underline uppercase"
-                      >
-                        Marcar Lidas
-                      </button>
-                    )}
+                    <div className="flex items-center gap-3">
+                      {unreadCount > 0 && (
+                        <button 
+                          onClick={() => {
+                             if (recipientId) {
+                               // Mark specific broadcasts locally
+                               notifications.filter(n => n.recipientId === "todos" && !n.read).forEach(n => {
+                                 markNotificationAsRead(n.id, true);
+                               });
+                               markAllNotificationsAsRead(recipientId);
+                             }
+                          }}
+                          className="text-[10px] text-sky-600 dark:text-sky-400 font-bold hover:underline uppercase"
+                        >
+                          Marcar Lidas
+                        </button>
+                      )}
+                      {notifications.length > 0 && (
+                        <button
+                          onClick={() => {
+                             if (recipientId) {
+                               clearAllNotifications(recipientId);
+                             }
+                          }}
+                          className="text-[10px] text-red-500 dark:text-red-400 font-bold hover:underline uppercase"
+                        >
+                          Limpar Todas
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="max-h-64 overflow-y-auto w-full flex flex-col p-2 space-y-1">
                     {notifications.length === 0 ? (
@@ -186,34 +208,45 @@ export default function Header() {
                       </div>
                     ) : (
                       notifications.slice(0, 20).map(n => (
-                        <button
-                          key={n.id}
-                          onClick={() => {
-                            if (!n.read) markNotificationAsRead(n.id);
-                            
-                            // Navegação via triggerTab global
-                            const trigger = (window as any).triggerTab;
-                            if (trigger) {
-                              if (n.type === 'evento') trigger('events');
-                              else if (n.type === 'carteirinha') trigger('student');
-                              else if (n.type === 'edicao') {
-                                if (isMasterLogged) trigger('admin');
-                                else trigger('student');
+                        <div key={n.id} className="relative group">
+                          <button
+                            onClick={() => {
+                              if (!n.read) markNotificationAsRead(n.id, n.recipientId === "todos");
+                              
+                              // Navegação via triggerTab global
+                              const trigger = (window as any).triggerTab;
+                              if (trigger) {
+                                if (n.type === 'evento') trigger('events');
+                                else if (n.type === 'carteirinha') trigger('student');
+                                else if (n.type === 'edicao') {
+                                  if (isMasterLogged) trigger('admin');
+                                  else trigger('student');
+                                }
+                                else if (n.type === 'certificado') trigger('student');
+                                else if (n.type === 'inscricao') trigger('admin');
                               }
-                              else if (n.type === 'certificado') trigger('student');
-                              else if (n.type === 'inscricao') trigger('admin');
-                            }
-                            setShowDropdown(false);
-                          }}
-                          className={`w-full text-left p-2.5 rounded-xl transition-colors flex items-start gap-2.5 ${n.read ? 'opacity-60 hover:bg-slate-50 dark:hover:bg-slate-800' : 'bg-sky-50 dark:bg-sky-900/10 hover:bg-sky-100 dark:hover:bg-sky-900/20'}`}
-                        >
-                          <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${n.read ? 'bg-transparent' : 'bg-pink-500'}`} />
-                          <div className="flex-1 min-w-0">
-                            <p className={`text-xs ${n.read ? 'font-medium text-slate-700 dark:text-slate-300' : 'font-bold text-slate-900 dark:text-white'}`}>{n.title}</p>
-                            <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2 leading-tight">{n.message}</p>
-                            <p className="text-[9px] text-slate-400 dark:text-slate-500 mt-1 uppercase">{(new Date(n.createdAt)).toLocaleString('pt-BR')}</p>
-                          </div>
-                        </button>
+                              setShowDropdown(false);
+                            }}
+                            className={`w-full text-left p-2.5 rounded-xl transition-colors flex items-start gap-2.5 ${n.read ? 'opacity-60 hover:bg-slate-50 dark:hover:bg-slate-800' : 'bg-sky-50 dark:bg-sky-900/10 hover:bg-sky-100 dark:hover:bg-sky-900/20'}`}
+                          >
+                            <div className={`mt-1 w-2 h-2 rounded-full shrink-0 ${n.read ? 'bg-transparent' : 'bg-pink-500'}`} />
+                            <div className="flex-1 min-w-0 pr-6">
+                              <p className={`text-xs ${n.read ? 'font-medium text-slate-700 dark:text-slate-300' : 'font-bold text-slate-900 dark:text-white'}`}>{n.title}</p>
+                              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2 leading-tight">{n.message}</p>
+                              <p className="text-[9px] text-slate-400 dark:text-slate-500 mt-1 uppercase">{(new Date(n.createdAt)).toLocaleString('pt-BR')}</p>
+                            </div>
+                          </button>
+                          <button 
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              clearNotification(n.id, n.recipientId === "todos");
+                            }}
+                            className="absolute top-2.5 right-2.5 p-1.5 opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-500 bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 transition duration-200"
+                            title="Remover Notificação"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
                       ))
                     )}
                   </div>

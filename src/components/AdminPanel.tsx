@@ -42,11 +42,12 @@ import ImageCropperModal from "./ImageCropperModal";
 import PrintReportModal from "./PrintReportModal";
 import EventManagement from "./EventManagement";
 import EventsRecycleBin from "./EventsRecycleBin";
+import NotificationsManager from "./NotificationsManager";
 import { Calendar } from "lucide-react";
 
 export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const { settings, updateSettings } = useSettings();
-  const [activeTab, setActiveTab] = useState<"members" | "events" | "events_trash">("members");
+  const [activeTab, setActiveTab] = useState<"members" | "events" | "notifications">("members");
   const [name, setName] = useState("");
   const [ra, setRa] = useState("");
   const [cpf, setCpf] = useState("");
@@ -461,23 +462,29 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
           <Calendar className="w-4 h-4" />
           Eventos e Presenças (BETA)
         </button>
+
         <button
-          onClick={() => setActiveTab("events_trash")}
+          onClick={() => setActiveTab("notifications")}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl font-bold text-sm transition-colors ${
-            activeTab === "events_trash"
+            activeTab === "notifications"
               ? "bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border-b-2 border-sky-600 dark:border-sky-400"
               : "text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50"
           }`}
         >
-          <Trash2 className="w-4 h-4" />
-          Lixeira de Eventos
+          <Bell className="w-4 h-4" />
+          Enviar Notificações
         </button>
       </div>
 
       {activeTab === "events" ? (
-        <EventManagement />
-      ) : activeTab === "events_trash" ? (
-        <EventsRecycleBin />
+        <div className="space-y-12">
+          <EventManagement />
+          <div className="pt-8 border-t border-slate-200 dark:border-slate-800/60 mt-8">
+            <EventsRecycleBin />
+          </div>
+        </div>
+      ) : activeTab === "notifications" ? (
+        <NotificationsManager />
       ) : (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-8 no-print">

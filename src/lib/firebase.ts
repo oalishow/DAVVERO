@@ -515,8 +515,20 @@ export const createNotification = async (
   }
 };
 
-export const markNotificationAsRead = async (notificationId: string) => {
+export const markNotificationAsRead = async (notificationId: string, isBroadcast: boolean = false) => {
   try {
+    if (isBroadcast) {
+      const localReads = JSON.parse(localStorage.getItem('davveroId_broadcast_reads') || '[]');
+      if (!localReads.includes(notificationId)) {
+        localReads.push(notificationId);
+        localStorage.setItem('davveroId_broadcast_reads', JSON.stringify(localReads));
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new globalThis.Event('davveroId_notifs_local_update'));
+        }
+      }
+      return;
+    }
+
     const { doc, updateDoc } = await import("firebase/firestore");
     const notificationRef = doc(
       db,
@@ -530,6 +542,90 @@ export const markNotificationAsRead = async (notificationId: string) => {
       !error?.message?.includes("Missing or insufficient permissions")
     ) {
       console.error("Erro ao marcar notificação como lida:", error);
+    }
+  }
+};
+
+export const clearNotification = async (notificationId: string, isBroadcast: boolean = false) => {
+  try {
+    if (isBroadcast) {
+      const localCleared = JSON.parse(localStorage.getItem('davveroId_cleared_notifs') || '[]');
+      if (!localCleared.includes(notificationId)) {
+        localCleared.push(notificationId);
+        localStorage.setItem('davveroId_cleared_notifs', JSON.stringify(localCleared));
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new globalThis.Event('davveroId_notifs_local_update'));
+        }
+      }
+      return;
+    }
+    const { doc, deleteDoc } = await import("firebase/firestore");
+    const notificationRef = doc(
+      db,
+      `artifacts/${appId}/public/data/notifications`,
+      notificationId,
+    );
+    await deleteDoc(notificationRef);
+  } catch (error: any) {
+    if (
+      error?.code !== "permission-denied" &&
+      !error?.message?.includes("Missing or insufficient permissions")
+    ) {
+      console.error("Erro ao limpar notificação:", error);
+    }
+  }
+};
+
+export const clearAllNotifications = async (recipientId: string) => {
+  try {
+    const { collection, query, where, getDocs, writeBatch } =
+      await import("firebase/firestore");
+    const notificationsRef = collection(
+      db,
+      `artifacts/${appId}/public/data/notifications`,
+    );
+    // Handle specific user notifications
+    const qUser = query(
+      notificationsRef,
+      where("recipientId", "==", recipientId)
+    );
+    const snapUser = await getDocs(qUser);
+    if (!snapUser.empty) {
+      const batch = writeBatch(db);
+      snapUser.docs.forEach((d) => {
+        batch.delete(d.ref);
+      });
+      await batch.commit();
+    }
+    
+    // Also mark ALL broadcasts as cleared locally for this browser
+    const qTodos = query(
+      notificationsRef,
+      where("recipientId", "==", "todos")
+    );
+    const snapTodos = await getDocs(qTodos);
+    if (!snapTodos.empty) {
+      const localCleared = JSON.parse(localStorage.getItem('davveroId_cleared_notifs') || '[]');
+      let changed = false;
+      snapTodos.docs.forEach(d => {
+        if (!localCleared.includes(d.id)) {
+          localCleared.push(d.id);
+          changed = true;
+        }
+      });
+      if (changed) {
+        localStorage.setItem('davveroId_cleared_notifs', JSON.stringify(localCleared));
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new globalThis.Event('davveroId_notifs_local_update'));
+        }
+      }
+    }
+  } catch (error: any) {
+    if (
+      error?.code !== "permission-denied" &&
+      !error?.message?.includes("Missing or insufficient permissions")
+    ) {
+      console.error("Erro ao limpar todas notificações:", error);
     }
   }
 };

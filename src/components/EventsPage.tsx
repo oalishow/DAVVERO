@@ -367,7 +367,7 @@ export default function EventsPage({ onNavigateToStudent }: { onNavigateToStuden
                       )}
                       {event.speaker && (
                         <span
-                          className="flex items-center gap-1.5 truncate max-w-[150px] sm:max-w-[200px]"
+                          className="flex items-center gap-1.5"
                           title={event.speaker}
                         >
                           <User className="w-3.5 h-3.5 text-indigo-500" />{" "}

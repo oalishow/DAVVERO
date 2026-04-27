@@ -4,10 +4,30 @@ import { db, appId, auth } from '../lib/firebase';
 import { onAuthStateChanged } from 'firebase/auth';
 import type { Notification } from '../types';
 
+const NOTIF_CACHE_PREFIX = "notif_cache_";
+
 export function useNotifications(recipientId: string | null) {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isOnline, setIsOnline] = useState(typeof window !== 'undefined' ? navigator.onLine : true);
+
+  // Monitorar conexão para sincronização
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
+    const handleStatusChange = () => {
+      setIsOnline(navigator.onLine);
+    };
+
+    window.addEventListener('online', handleStatusChange);
+    window.addEventListener('offline', handleStatusChange);
+
+    return () => {
+      window.removeEventListener('online', handleStatusChange);
+      window.removeEventListener('offline', handleStatusChange);
+    };
+  }, []);
 
   useEffect(() => {
     const unsubAuth = onAuthStateChanged(auth, (user) => {
@@ -20,10 +40,68 @@ export function useNotifications(recipientId: string | null) {
     if (!recipientId || !isAuthenticated) {
       setNotifications([]);
       setUnreadCount(0);
-      if ('clearAppBadge' in navigator) {
+      if (typeof window !== 'undefined' && 'clearAppBadge' in navigator) {
         navigator.clearAppBadge().catch(console.error);
       }
       return;
+    }
+
+    const cacheKey = `${NOTIF_CACHE_PREFIX}${recipientId}`;
+    
+    // Extracted logic to process and set notifications so we can reuse it
+    const processNotifications = (rawNotifs: Notification[]) => {
+      let localReads: string[] = [];
+      let localCleared: string[] = [];
+      try {
+        localReads = JSON.parse(localStorage.getItem('davveroId_broadcast_reads') || '[]');
+        localCleared = JSON.parse(localStorage.getItem('davveroId_cleared_notifs') || '[]');
+      } catch (e) {}
+
+      // Combinar estado de leitura local e filtragem de removidas
+      let processed = rawNotifs
+        .filter(n => !localCleared.includes(n.id))
+        .map(n => {
+          if (n.recipientId === "todos" && localReads.includes(n.id)) {
+            return { ...n, read: true };
+          }
+          return n;
+        });
+
+      // Ordenar por data de criação descrescente
+      processed.sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA;
+      });
+      
+      setNotifications(processed);
+      localStorage.setItem(cacheKey, JSON.stringify(processed));
+      
+      const unread = processed.filter(n => !n.read).length;
+      setUnreadCount(unread);
+
+      // Atualizar badge do PWA
+      if (typeof window !== 'undefined' && 'setAppBadge' in navigator) {
+        if (unread > 0) {
+          navigator.setAppBadge(unread).catch(console.error);
+        } else {
+          navigator.clearAppBadge().catch(console.error);
+        }
+      }
+    };
+
+    const cached = localStorage.getItem(cacheKey);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) {
+           // processed already 
+           setNotifications(parsed);
+           setUnreadCount(parsed.filter((n: Notification) => !n.read).length);
+        }
+      } catch (err) {
+        console.error("Erro ao carregar cache de notificações:", err);
+      }
     }
 
     const q = query(
@@ -31,31 +109,33 @@ export function useNotifications(recipientId: string | null) {
       where("recipientId", "in", [recipientId, "todos"])
     );
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const notifs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
-      // Sort client-side mostly since composite index might be needed otherwise
-      notifs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      
-      setNotifications(notifs);
-      
-      const unread = notifs.filter(n => !n.read).length;
-      setUnreadCount(unread);
+    let lastSnapshotDocs: Notification[] = [];
 
-      // Update PWA badge
-      if ('setAppBadge' in navigator && unread > 0) {
-        navigator.setAppBadge(unread).catch(console.error);
-      } else if ('clearAppBadge' in navigator && unread === 0) {
-        navigator.clearAppBadge().catch(console.error);
-      }
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      lastSnapshotDocs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Notification));
+      processNotifications(lastSnapshotDocs);
     }, (error) => {
-      // Missing or insufficient permissions means the user hasn't updated their external Firebase rules yet
       if (error?.code !== 'permission-denied' && !error?.message?.includes('Missing or insufficient permissions')) {
-        console.error("Notifications snapshot error:", error);
+        console.error("Erro no snapshot de notificações:", error);
       }
     });
 
-    return () => unsubscribe();
+    const handleLocalUpdate = () => {
+      // Re-process last known Firebase state with new local storage overrides
+      processNotifications(lastSnapshotDocs);
+    };
+
+    if (typeof window !== 'undefined') {
+      window.addEventListener('davveroId_notifs_local_update', handleLocalUpdate);
+    }
+    
+    return () => {
+      unsubscribe();
+      if (typeof window !== 'undefined') {
+        window.removeEventListener('davveroId_notifs_local_update', handleLocalUpdate);
+      }
+    };
   }, [recipientId, isAuthenticated]);
 
-  return { notifications, unreadCount };
+  return { notifications, unreadCount, isOnline };
 }
