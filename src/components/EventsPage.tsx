@@ -34,6 +34,7 @@ import { useDialog } from "../context/DialogContext";
 export default function EventsPage({ onNavigateToStudent, renderSeminary = false }: { onNavigateToStudent?: () => void, renderSeminary?: boolean }) {
   const { showAlert } = useDialog();
   const [events, setEvents] = useState<Event[]>([]);
+  const [eventTypeTab, setEventTypeTab] = useState<"general" | "seminary">(renderSeminary ? "seminary" : "general");
   const [subTab, setSubTab] = useState<"upcoming" | "past">("upcoming");
   const [myAttendances, setMyAttendances] = useState<Attendance[]>([]);
   const [member, setMember] = useState<Member | null>(null);
@@ -96,7 +97,7 @@ export default function EventsPage({ onNavigateToStudent, renderSeminary = false
   }, []);
 
   const filteredEvents = events.filter((e) => {
-    if (renderSeminary) {
+    if (eventTypeTab === "seminary") {
       if (!e.isSeminary) return false;
       if (e.seminaryId && e.seminaryId !== member?.seminary) return false;
       return true;
@@ -198,12 +199,58 @@ export default function EventsPage({ onNavigateToStudent, renderSeminary = false
             {renderSeminary ? "Eventos do Seminário" : "Painel de Eventos"}
           </h2>
           <p className={`${renderSeminary ? 'text-amber-100' : 'text-sky-100'} font-medium text-sm sm:text-base max-w-md mx-auto`}>
-            {renderSeminary ? "Explore e inscreva-se nos retiros, formações exclusivas e demais eventos." : "Explore e inscreva-se nos próximos eventos formativos acadêmicos."}
+            {renderSeminary ? "Explore e inscreva-se nos retiros, formações exclusivas e demais eventos." : "Explore e inscreva-se nos próximos eventos acadêmicos e do seminário."}
           </p>
         </div>
       </div>
 
-      <div className="flex gap-2 p-1.5 bg-slate-100 dark:bg-slate-800/50 rounded-2xl mb-6 shadow-inner no-print border border-slate-200/50 dark:border-slate-700/50">
+      {!renderSeminary && (
+        <div className="flex gap-2 p-1.5 bg-slate-100 dark:bg-slate-800/50 rounded-2xl mb-2 shadow-inner no-print border border-slate-200/50 dark:border-slate-700/50">
+          <button
+            onClick={() => setEventTypeTab("general")}
+            className={`flex-1 py-3 rounded-xl text-xs sm:text-sm font-black uppercase tracking-widest transition-all ${
+              eventTypeTab === "general"
+                ? "bg-white dark:bg-slate-700 text-sky-600 dark:text-sky-400 shadow-md transform scale-[1.02]"
+                : "text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 dark:hover:bg-slate-700/30"
+            }`}
+          >
+            Acadêmico
+          </button>
+          <button
+            onClick={() => setEventTypeTab("seminary")}
+            className={`flex-1 py-3 rounded-xl text-xs sm:text-sm font-black uppercase tracking-widest transition-all ${
+              eventTypeTab === "seminary"
+                ? "bg-white dark:bg-slate-700 text-amber-600 dark:text-amber-400 shadow-md transform scale-[1.02]"
+                : "text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 dark:hover:bg-slate-700/30"
+            }`}
+          >
+            Seminários
+          </button>
+        </div>
+      )}
+
+      {eventTypeTab === "seminary" && !renderSeminary && !member && (
+        <div className="bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-500/20 p-6 rounded-2xl text-center mb-4">
+          <p className="text-sm font-bold text-amber-800 dark:text-amber-400 mb-3">
+            Eventos do Seminário são exclusivos para seminaristas
+          </p>
+          <p className="text-xs font-medium text-amber-700 dark:text-amber-500 mb-4">
+            Você precisa vincular sua identidade na aba MINHA ID para visualizar e se inscrever.
+          </p>
+          <button 
+            onClick={() => {
+              if (onNavigateToStudent) onNavigateToStudent();
+            }}
+            className="px-4 py-2 bg-amber-100 dark:bg-amber-800/30 text-amber-700 dark:text-amber-300 rounded-lg text-xs font-bold uppercase hover:bg-amber-200 dark:hover:bg-amber-800/50 transition-colors"
+          >
+            Ir para Minha ID
+          </button>
+        </div>
+      )}
+
+      {!(eventTypeTab === "seminary" && !renderSeminary && !member) && (
+        <>
+          <div className="flex gap-2 p-1.5 bg-slate-100 dark:bg-slate-800/50 rounded-2xl mb-6 shadow-inner no-print border border-slate-200/50 dark:border-slate-700/50">
         <button
           onClick={() => setSubTab("upcoming")}
           className={`flex-1 py-3 rounded-xl text-xs sm:text-sm font-black uppercase tracking-widest transition-all ${
@@ -477,6 +524,8 @@ export default function EventsPage({ onNavigateToStudent, renderSeminary = false
           })
         )}
       </div>
+      </>
+      )}
       <Modal
         isOpen={!!confirmModal?.isOpen}
         onClose={() => setConfirmModal(null)}
