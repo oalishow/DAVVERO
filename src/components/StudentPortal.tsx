@@ -17,7 +17,8 @@ import {
   GraduationCap,
   CalendarHeart,
   BookHeart,
-  HeartHandshake
+  HeartHandshake,
+  Trash2
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { jsPDF } from "jspdf";
@@ -1590,7 +1591,7 @@ export default function StudentPortal({
                                 <ExternalLink className="w-4 h-4" />
                               </a>
                               <button onClick={() => handleDeleteExternalCertificate(cert.id)} className="p-2 text-rose-600 bg-rose-50 rounded-xl hover:bg-rose-100 transition-colors">
-                                <LogOut className="w-4 h-4" /> {/* Or Trash2 if imported, but LogOut is available */}
+                                <Trash2 className="w-4 h-4" />
                               </button>
                             </div>
                           </div>

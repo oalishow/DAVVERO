@@ -1,11 +1,13 @@
 import React, { useState } from "react";
-import { BookHeart, Sunrise, Sun, Sunset, Moon, ExternalLink, BookOpen, CalendarHeart, X } from "lucide-react";
+import { BookHeart, Sunrise, Sun, Sunset, Moon, ExternalLink, BookOpen, CalendarHeart, X, Youtube, Maximize2, Minimize2 } from "lucide-react";
 
 export default function LiturgyPanel() {
   const [selectedHour, setSelectedHour] = useState<{ id: string, name: string, url: string } | null>(null);
+  const [showYoutube, setShowYoutube] = useState(false);
+  const [ytIsExpanded, setYtIsExpanded] = useState(false);
 
   const hours = [
-    { id: "liturgia-diaria", name: "Liturgia Diária", icon: BookOpen, time: "Missa do Dia", url: "https://liturgia.cancaonova.com/" },
+    { id: "liturgia-diaria", name: "Liturgia Diária (CNBB)", icon: BookOpen, time: "Missa do Dia", url: "https://www.cnbb.org.br/liturgia-diaria/" },
     { id: "santo-do-dia", name: "Santo do Dia", icon: CalendarHeart, time: "Hagiografia", url: "https://santo.cancaonova.com/" },
     { id: "oficio", name: "Ofício das Leituras", icon: BookHeart, time: "Madrugada/Manhã", url: "https://liturgiadashoras.online/oficio-das-leituras/" },
     { id: "laudes", name: "Laudes", icon: Sunrise, time: "Manhã", url: "https://liturgiadashoras.online/laudes/" },
@@ -29,6 +31,17 @@ export default function LiturgyPanel() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+               <button
+                 onClick={() => setShowYoutube(!showYoutube)}
+                 className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                   showYoutube 
+                    ? "bg-rose-600 text-white shadow-md active:scale-95" 
+                    : "text-slate-600 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700"
+                 }`}
+               >
+                 <Youtube className="w-4 h-4" /> 
+                 <span className="hidden xs:inline">{showYoutube ? "Fechar Vídeo" : "Assistir no YouTube"}</span>
+               </button>
                <a 
                  href={selectedHour.url} 
                  target="_blank" 
@@ -38,20 +51,50 @@ export default function LiturgyPanel() {
                  Abrir no Navegador <ExternalLink className="w-3 h-3" />
                </a>
               <button
-                onClick={() => setSelectedHour(null)}
+                onClick={() => {
+                  setSelectedHour(null);
+                  setShowYoutube(false);
+                }}
                 className="p-2 bg-slate-200 hover:bg-rose-100 hover:text-rose-600 dark:bg-slate-800 dark:hover:bg-rose-900/30 dark:hover:text-rose-400 rounded-full transition-colors text-slate-600 dark:text-slate-400"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
           </div>
-          <div className="flex-1 bg-slate-100 dark:bg-slate-950 relative">
+          <div className="flex-1 bg-slate-100 dark:bg-slate-950 relative overflow-hidden">
             <iframe 
               src={selectedHour.url} 
               className="w-full h-full border-none"
-              sandbox="allow-same-origin allow-forms"
+              sandbox="allow-same-origin allow-forms allow-scripts allow-popups"
               title={selectedHour.name}
             />
+
+            {/* Miniature YouTube Player */}
+            {showYoutube && (
+              <div 
+                className={`absolute bottom-4 right-4 z-20 bg-black rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 border-2 border-slate-800 dark:border-slate-700 ${
+                  ytIsExpanded ? "w-[90%] h-[300px] sm:w-[480px] sm:h-[270px]" : "w-[160px] h-[90px] sm:w-[240px] sm:h-[135px]"
+                }`}
+              >
+                <div className="absolute top-0 left-0 w-full h-8 flex items-center justify-between px-2 bg-black/60 backdrop-blur-sm opacity-0 hover:opacity-100 transition-opacity z-10">
+                   <span className="text-[10px] text-white font-bold truncate pr-2">Canal Liturgia das Horas</span>
+                   <div className="flex gap-1">
+                     <button onClick={() => setYtIsExpanded(!ytIsExpanded)} className="text-white hover:text-sky-400 transition-colors">
+                       {ytIsExpanded ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
+                     </button>
+                     <button onClick={() => setShowYoutube(false)} className="text-white hover:text-rose-400 transition-colors">
+                       <X className="w-3 h-3" />
+                     </button>
+                   </div>
+                </div>
+                <iframe
+                  src="https://www.youtube.com/embed?listType=search&list=liturgia+das+horas+ao+vivo"
+                  className="w-full h-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -80,7 +123,12 @@ export default function LiturgyPanel() {
         {hours.map((hour) => (
           <button
             key={hour.id}
-            onClick={() => setSelectedHour(hour)}
+            onClick={() => {
+              setSelectedHour(hour);
+              if (hour.id !== "liturgia-diaria" && hour.id !== "santo-do-dia") {
+                setShowYoutube(true);
+              }
+            }}
             className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 hover:border-rose-400 dark:hover:border-rose-500 hover:shadow-md transition-all group flex flex-col items-center text-center gap-3"
           >
             <div className="w-12 h-12 bg-rose-50 dark:bg-rose-900/20 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
