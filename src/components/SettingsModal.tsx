@@ -24,6 +24,7 @@ import {
 import { GoogleGenAI, Type } from "@google/genai";
 import FajopaIDCard from "./FajopaIDCard";
 import { useSettings } from "../context/SettingsContext";
+import { AVAILABLE_SEMINARIES } from "../types";
 import {
   PASSWORD_STORAGE_KEY,
   URL_STORAGE_KEY,
@@ -146,6 +147,9 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
     cloudSettings.databaseName || "",
   );
   const [cardZoom, setCardZoom] = useState(cloudSettings.cardZoom || 1);
+  const [seminariesConfig, setSeminariesConfig] = useState<Record<string, { logo: string | null; signature: string | null; rectorName: string }>>(
+    cloudSettings.seminariesConfig || {}
+  );
   const [activeTab, setActiveTab] = useState<"visual" | "content" | "database">(
     "visual",
   );
@@ -221,6 +225,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
         customRoles,
         databaseName,
         cardZoom,
+        seminariesConfig,
       });
 
       // Legacy fallback
@@ -369,6 +374,32 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
       setter(ev.target?.result as string);
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleSeminaryFileWrapper = (
+    e: React.ChangeEvent<HTMLInputElement>,
+    seminary: string,
+    field: "logo" | "signature"
+  ) => {
+    handleFileUpload(e, (val) => {
+      setSeminariesConfig(prev => ({
+        ...prev,
+        [seminary]: {
+          ...prev[seminary],
+          [field]: val
+        }
+      }));
+    }, 500);
+  };
+
+  const updateSeminaryConfig = (seminary: string, field: "rectorName", val: string) => {
+    setSeminariesConfig(prev => ({
+      ...prev,
+      [seminary]: {
+        ...prev[seminary],
+        [field]: val
+      }
+    }));
   };
 
   const handleSavePassword = () => {
@@ -1131,6 +1162,65 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                           </div>
                         </div>
                       </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-amber-50/50 dark:bg-amber-900/10 p-5 rounded-2xl border border-amber-100 dark:border-amber-500/20">
+                    <h3 className="text-sm font-bold flex items-center gap-2 mb-4 text-amber-800 dark:text-amber-300 uppercase tracking-widest text-[10px]">
+                      <Type className="w-4 h-4" /> Configurações por Seminário
+                    </h3>
+                    <div className="space-y-6">
+                      {AVAILABLE_SEMINARIES.map(sem => {
+                        const config = seminariesConfig[sem] || { logo: null, signature: null, rectorName: '' };
+                        return (
+                          <div key={sem} className="bg-white dark:bg-slate-800 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-4">
+                            <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300 border-b border-slate-100 dark:border-slate-700 pb-2 mb-3">{sem}</h4>
+                            
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                              <div className="flex flex-col items-center">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase mb-2">Logo (Frente da Carteirinha)</label>
+                                {config.logo ? (
+                                  <div className="relative group mb-2">
+                                    <img src={config.logo} alt={`Logo ${sem}`} className="h-10 w-auto object-contain bg-white rounded p-0.5 border" />
+                                    <button onClick={() => updateSeminaryConfig(sem, "logo" as any, null as any)} className="absolute -top-1 -right-1 p-1 bg-rose-500 text-white rounded-full"><Trash2 className="w-3 h-3" /></button>
+                                  </div>
+                                ) : (
+                                  <label className="p-2 px-4 rounded-lg bg-slate-100 border border-slate-200 dark:bg-slate-700 cursor-pointer text-slate-500 hover:text-sky-500 mb-2 flex items-center gap-2 text-xs">
+                                    <Upload className="w-4 h-4" /> Carregar Logo
+                                    <input type="file" className="hidden" accept="image/*" onChange={(e) => handleSeminaryFileWrapper(e, sem, 'logo')} />
+                                  </label>
+                                )}
+                              </div>
+                              
+                              <div className="flex flex-col items-center">
+                                <label className="text-[10px] font-bold text-slate-500 uppercase mb-2">Assinatura Reitor (Verso)</label>
+                                {config.signature ? (
+                                  <div className="relative group mb-2">
+                                    <img src={config.signature} alt={`Assinatura ${sem}`} className="h-10 w-auto object-contain bg-white rounded p-0.5 border" />
+                                    <button onClick={() => updateSeminaryConfig(sem, "signature" as any, null as any)} className="absolute -top-1 -right-1 p-1 bg-rose-500 text-white rounded-full"><Trash2 className="w-3 h-3" /></button>
+                                  </div>
+                                ) : (
+                                  <label className="p-2 px-4 rounded-lg bg-slate-100 border border-slate-200 dark:bg-slate-700 cursor-pointer text-slate-500 hover:text-sky-500 mb-2 flex items-center gap-2 text-xs">
+                                    <Upload className="w-4 h-4" /> Carregar Assinatura
+                                    <input type="file" className="hidden" accept="image/png" onChange={(e) => handleSeminaryFileWrapper(e, sem, 'signature')} />
+                                  </label>
+                                )}
+                              </div>
+                            </div>
+                            
+                            <div>
+                               <label className="text-[10px] font-bold text-slate-500 uppercase mb-1 block">Nome do Reitor deste Seminário</label>
+                               <input 
+                                 type="text" 
+                                 placeholder="NOME COMPLETO DO REITOR" 
+                                 value={config.rectorName || ''}
+                                 onChange={(e) => updateSeminaryConfig(sem, 'rectorName', e.target.value.toUpperCase())}
+                                 className="input-modern w-full rounded-lg py-2 px-3 text-xs" 
+                               />
+                            </div>
+                          </div>
+                        );
+                      })}
                     </div>
                   </div>
                 </div>

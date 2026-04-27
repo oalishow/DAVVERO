@@ -28,6 +28,12 @@ export interface Member {
   legacyQrCode?: string;
   pendingChanges?: any;
   hasPendingAction?: boolean;
+  externalCertificates?: {
+    id: string;
+    title: string;
+    fileUrl: string;
+    uploadedAt: string;
+  }[];
 }
 
 export interface CertificateTemplate {

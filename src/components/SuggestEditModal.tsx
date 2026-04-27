@@ -5,7 +5,7 @@ import { doc, updateDoc } from 'firebase/firestore';
 import { db, appId, createNotification } from '../lib/firebase';
 import { resizeAndConvertToBase64 } from '../lib/imageUtils';
 import { useSettings } from '../context/SettingsContext';
-import type { Member } from '../types';
+import { AVAILABLE_SEMINARIES, type Member } from '../types';
 import ImageCropperModal from './ImageCropperModal';
 
 interface SuggestEditModalProps {
@@ -21,6 +21,7 @@ export default function SuggestEditModal({ member, onClose, onSubmitSuccess }: S
   const [roles, setRoles] = useState<string[]>(member.roles || []);
   const [course, setCourse] = useState(member.course || '');
   const [diocese, setDiocese] = useState(member.diocese || '');
+  const [seminary, setSeminary] = useState(member.seminary || '');
   const [cpf, setCpf] = useState(member.cpf || '');
   const [rg, setRg] = useState(member.rg || '');
   const [birthdate, setBirthdate] = useState(() => {
@@ -69,12 +70,13 @@ export default function SuggestEditModal({ member, onClose, onSubmitSuccess }: S
     const raMatch = (ra || '').trim() === (member.ra || '').trim();
     const courseMatch = (course || '') === (member.course || '');
     const dioceseMatch = (diocese || '') === (member.diocese || '');
+    const seminaryMatch = (seminary || '') === (member.seminary || '');
     const cpfMatch = (cpf || '').trim() === (member.cpf || '').trim();
     const rgMatch = (rg || '').trim() === (member.rg || '').trim();
     const birthdateMatch = (birthdate || '').trim() === (member.birthdate || '').trim();
     const emailMatch = (email || '').trim() === (member.email || '').trim();
 
-    if (nameMatch && raMatch && courseMatch && dioceseMatch && cpfMatch && rgMatch && birthdateMatch && emailMatch && !rolesChanged && !photoBase64) {
+    if (nameMatch && raMatch && courseMatch && dioceseMatch && seminaryMatch && cpfMatch && rgMatch && birthdateMatch && emailMatch && !rolesChanged && !photoBase64) {
       setError('Altere pelo menos um dado antes de enviar.');
       return;
     }
@@ -88,6 +90,7 @@ export default function SuggestEditModal({ member, onClose, onSubmitSuccess }: S
       if (!raMatch) pendingChanges.ra = ra.trim();
       if (!courseMatch) pendingChanges.course = course;
       if (!dioceseMatch) pendingChanges.diocese = diocese;
+      if (!seminaryMatch) pendingChanges.seminary = seminary;
       if (!cpfMatch) pendingChanges.cpf = cpf.trim();
       if (!rgMatch) pendingChanges.rg = rg.trim();
       if (!birthdateMatch) pendingChanges.birthdate = birthdate.trim();
@@ -207,6 +210,15 @@ export default function SuggestEditModal({ member, onClose, onSubmitSuccess }: S
                   <option value="">Nenhum / Não aplicável</option>
                   {availableDioceses.map(d => (
                     <option key={d} value={d}>{d}</option>
+                  ))}
+              </select>
+          </div>
+          <div>
+              <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1 mt-2">Novo Seminário (Opcional)</label>
+              <select value={seminary} onChange={e => setSeminary(e.target.value)} className="input-modern w-full rounded-xl py-3 px-4 text-sm">
+                  <option value="">Nenhum / Não aplicável</option>
+                  {AVAILABLE_SEMINARIES.map(s => (
+                    <option key={s} value={s}>{s}</option>
                   ))}
               </select>
           </div>

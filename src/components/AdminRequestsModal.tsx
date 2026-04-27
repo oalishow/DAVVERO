@@ -91,6 +91,7 @@ export default function AdminRequestsModal({ onClose }: { onClose: () => void })
       if (pc.roles) updatePayload.roles = pc.roles;
       if (pc.course) updatePayload.course = pc.course;
       if (pc.diocese) updatePayload.diocese = pc.diocese;
+      if (pc.seminary !== undefined) updatePayload.seminary = pc.seminary;
       if (pc.cpf !== undefined) updatePayload.cpf = pc.cpf;
       if (pc.rg !== undefined) updatePayload.rg = pc.rg;
       if (pc.birthdate !== undefined) updatePayload.birthdate = pc.birthdate;
@@ -203,12 +204,13 @@ export default function AdminRequestsModal({ onClose }: { onClose: () => void })
                         <img src={avatarSrc} className="w-12 h-12 rounded-full border border-slate-300 dark:border-slate-600 object-cover bg-white dark:bg-slate-800" />
                         <div>
                             <p className="font-bold text-sm text-slate-800 dark:text-slate-200">{req.name} {req.ra && <span className="text-xs font-normal text-slate-500 border border-slate-300 px-1 rounded ml-1">RA: {req.ra}</span>}</p>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">{req.roles?.join(', ')} • {req.course || 'S/ Curso'} • {req.diocese || 'S/ Diocese'}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">{req.roles?.join(', ')} • {req.course || 'S/ Curso'} • {req.diocese || 'S/ Diocese'}{req.seminary ? ` • ${req.seminary}` : ''}</p>
                             <div className="flex flex-wrap gap-x-3 gap-y-1 mt-1">
                               {req.cpf && <p className="text-[10px] text-slate-500 font-medium">CPF: {req.cpf}</p>}
                               {req.rg && <p className="text-[10px] text-slate-500 font-medium">RG: {req.rg}</p>}
                               {req.birthdate && <p className="text-[10px] text-slate-500 font-medium">Nasc: {req.birthdate}</p>}
                               {req.diocese && <p className="text-[10px] text-amber-600 font-bold">Diocese: {req.diocese}</p>}
+                              {req.seminary && <p className="text-[10px] text-amber-600 font-bold">Seminário: {req.seminary}</p>}
                             </div>
                             {req.email && <p className="text-[10px] text-sky-600 dark:text-sky-400 mt-1">{req.email}</p>}
                         </div>
@@ -237,6 +239,7 @@ export default function AdminRequestsModal({ onClose }: { onClose: () => void })
                           {pc.roles && <p><span className="text-slate-500">Novo Vínculo:</span> <span className="text-amber-600 dark:text-amber-300 font-medium">{pc.roles.join(', ')}</span></p>}
                           {pc.course && <p><span className="text-slate-500">Novo Curso:</span> <span className="text-amber-600 dark:text-amber-300 font-medium">{pc.course}</span></p>}
                           {pc.diocese && <p><span className="text-slate-500">Nova Diocese:</span> <span className="text-amber-600 dark:text-amber-300 font-medium">{pc.diocese}</span></p>}
+                          {pc.seminary !== undefined && <p><span className="text-slate-500">Novo Seminário:</span> <span className="text-amber-600 dark:text-amber-300 font-medium">{pc.seminary || 'Nenhum'}</span></p>}
                           {pc.photoUrl && <div className="flex items-center gap-2 mt-1"><span className="text-slate-500">Nova Foto:</span> <img src={pc.photoUrl} className="w-8 h-8 rounded border border-amber-300 object-cover" /></div>}
                       </div>
                       <div className="flex gap-2 mt-3">

@@ -63,24 +63,32 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
     rectorSignature,
     instName,
     instColor,
-    visibleFields
+    visibleFields,
+    seminariesConfig
   } = settings;
 
   const cleanBaseUrl = baseUrl.endsWith('/') ? baseUrl.slice(0, -1) : baseUrl;
-  const displayLogoFront = cardLogo || instLogo;
-  const displayLogoBack = cardBackLogo || cardLogo || instLogo;
   const displayDescription = cardDescription || 'Documento de identificação estudantil é padronizado e apresenta os dados requeridos pela Lei 12.933/2013 para comprovação de matrícula, sendo sua aceitação sujeita aos critérios dos organizadores de eventos.';
   
   const normalizedDiocese = member.diocese?.toUpperCase().trim() || '';
   const isSeminarista = member.roles?.some(r => r.trim().toUpperCase() === 'SEMINARISTA');
   const validDiocese = ['ASSIS', 'PRESIDENTE PRUDENTE', 'OURINHOS', 'ARAÇATUBA', 'ARACATUBA', 'LINS'].includes(normalizedDiocese);
-  const showRector = isSeminarista && validDiocese;
+  
+  const seminaryOptions = (member.seminary && seminariesConfig?.[member.seminary]) || null;
+  const hasSeminaryOptions = !!seminaryOptions;
+  
+  const showRector = (isSeminarista && validDiocese) || hasSeminaryOptions;
+  const showSecondaryLogo = validDiocese || (hasSeminaryOptions && seminaryOptions?.logo);
   
   const directorNameText = directorName?.trim() || 'DIRETOR GERAL';
-  const rectorNameText = rectorName?.trim() || 'REITOR';
-  const showSecondaryLogo = validDiocese;
+  const rectorNameText = seminaryOptions?.rectorName?.trim() || rectorName?.trim() || 'REITOR';
+  const displaySecondaryBackLogo = seminaryOptions?.logo || cardSecondaryBackLogo;
+  const displayRectorSignature = seminaryOptions?.signature || rectorSignature;
   
-  const displayInstNameForCard = (isSeminarista && !validDiocese && instName === 'FAJOPA e SPSCJ') ? 'FAJOPA' : instName;
+  const displayLogoFront = cardLogo || instLogo;
+  const displayLogoBack = cardBackLogo || cardLogo || instLogo;
+  
+  const displayInstNameForCard = (isSeminarista && !validDiocese && instName === 'FAJOPA e SPSCJ' && !member.seminary) ? 'FAJOPA' : instName;
 
   useEffect(() => {
     if (exportMode) return;
@@ -282,7 +290,7 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
         )}
         
         {visibleFields.qrcode && (
-          <div className={`flex flex-row items-center mt-[15%] ${isSeminarista && validDiocese && cardSecondaryBackLogo ? 'w-[105%] ml-[5%] gap-0' : 'w-[55%]'}`}>
+          <div className={`flex flex-row items-center mt-[15%] ${showSecondaryLogo && displaySecondaryBackLogo ? 'w-[105%] ml-[5%] gap-0' : 'w-[55%]'}`}>
             <div className="flex-1 aspect-square bg-white border-[2px] border-slate-800 p-1 shadow-sm">
                <QRCodeSVG 
                 value={verificationUrl} 
@@ -292,8 +300,8 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
                 includeMargin={false}
               />
             </div>
-            {isSeminarista && validDiocese && cardSecondaryBackLogo && (
-               <img src={cardSecondaryBackLogo} alt="Logo Diocese" className="flex-none w-[50%] object-contain" />
+            {showSecondaryLogo && displaySecondaryBackLogo && (
+               <img src={displaySecondaryBackLogo} alt="Logo Diocese/Seminário" className="flex-none w-[50%] object-contain" />
             )}
           </div>
         )}
@@ -369,9 +377,9 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
             <div className="flex flex-col items-center min-w-[140px] max-w-[180px]">
                {visibleFields.rectorSignature && (
                 <div className="w-full h-[45px] border-b-[2px] border-slate-800 flex items-center justify-center pb-1">
-                   {rectorSignature && (
+                   {displayRectorSignature && (
                      <img 
-                       src={rectorSignature} 
+                       src={displayRectorSignature} 
                        alt="Assinatura Reitor" 
                        className="w-auto object-contain" 
                        style={{ 

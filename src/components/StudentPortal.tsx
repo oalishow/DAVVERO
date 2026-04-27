@@ -32,6 +32,7 @@ import {
   doc,
   getDoc,
   onSnapshot,
+  updateDoc,
 } from "firebase/firestore";
 import { db, appId, enrollStudent } from "../lib/firebase";
 import type { Member, Event, Attendance } from "../types";
@@ -326,6 +327,66 @@ export default function StudentPortal({
       );
     } finally {
       setIsDownloading(false);
+    }
+  };
+
+  const [isUploadingCert, setIsUploadingCert] = useState(false);
+
+  const handleUploadExternalCertificate = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !member) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      await showConfirm("O arquivo é muito grande. O limite é 2MB.", { type: 'error' });
+      return;
+    }
+
+    setIsUploadingCert(true);
+    try {
+      const reader = new FileReader();
+      reader.onload = async (ev) => {
+        const base64 = ev.target?.result as string;
+        const newCert = {
+          id: 'ext_cert_' + Date.now(),
+          title: file.name.slice(0, 50),
+          fileUrl: base64,
+          uploadedAt: new Date().toISOString()
+        };
+
+        const memberRef = doc(db, `artifacts/${appId}/public/data/students`, member.id);
+        const updatedCerts = [...(member.externalCertificates || []), newCert];
+        
+        await updateDoc(memberRef, {
+          externalCertificates: updatedCerts
+        });
+        
+        await showConfirm("Certificado anexado com sucesso!", { type: 'success' });
+      };
+      reader.readAsDataURL(file);
+    } catch (error) {
+      console.error("Erro ao anexar certificado:", error);
+      await showConfirm("Ocorreu um erro ao anexar o certificado.", { type: 'error' });
+    } finally {
+      setIsUploadingCert(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleDeleteExternalCertificate = async (certId: string) => {
+    if (!member) return;
+    
+    if (await showConfirm("Tem certeza de que deseja excluir este certificado anexado?", { type: 'warning' })) {
+      try {
+        const memberRef = doc(db, `artifacts/${appId}/public/data/students`, member.id);
+        const updatedCerts = (member.externalCertificates || []).filter(c => c.id !== certId);
+        
+        await updateDoc(memberRef, {
+          externalCertificates: updatedCerts
+        });
+      } catch (error) {
+        console.error("Erro ao excluir certificado:", error);
+        await showConfirm("Ocorreu um erro ao excluir o certificado.", { type: 'error' });
+      }
     }
   };
 
@@ -1506,6 +1567,51 @@ export default function StudentPortal({
                     </p>
                   </div>
                 )}
+
+                {/* External Certificates */}
+                <div className="mt-8">
+                  <div className="flex items-center justify-between mb-4 px-1">
+                    <h3 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-widest flex items-center gap-2">
+                       Certificados Anexados
+                    </h3>
+                  </div>
+
+                  <div className="space-y-4">
+                    {(member?.externalCertificates && member.externalCertificates.length > 0) ? (
+                      <div className="space-y-3">
+                        {member.externalCertificates.map(cert => (
+                          <div key={cert.id} className="bg-white dark:bg-slate-800 p-4 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
+                            <div className="flex-1 min-w-0 pr-4">
+                              <h4 className="font-bold text-slate-800 dark:text-slate-100 text-xs truncate mb-1">{cert.title}</h4>
+                              <p className="text-[9px] text-slate-500 uppercase">{formatDateTime(cert.uploadedAt)}</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <a href={cert.fileUrl} target="_blank" rel="noopener noreferrer" className="p-2 text-sky-600 bg-sky-50 rounded-xl hover:bg-sky-100 transition-colors">
+                                <ExternalLink className="w-4 h-4" />
+                              </a>
+                              <button onClick={() => handleDeleteExternalCertificate(cert.id)} className="p-2 text-rose-600 bg-rose-50 rounded-xl hover:bg-rose-100 transition-colors">
+                                <LogOut className="w-4 h-4" /> {/* Or Trash2 if imported, but LogOut is available */}
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    ) : (
+                      <div className="bg-slate-50 dark:bg-slate-800/30 p-8 rounded-3xl border border-dashed border-slate-200 dark:border-slate-700 text-center">
+                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-1">Nenhum certificado anexado</p>
+                      </div>
+                    )}
+
+                    <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-dashed border-sky-300 dark:border-sky-700 text-center">
+                       <label className="cursor-pointer text-xs font-bold text-sky-600 dark:text-sky-400 flex flex-col items-center justify-center gap-2 hover:text-sky-500 transition-colors py-2">
+                         {isUploadingCert ? <Loader2 className="w-6 h-6 animate-spin" /> : <ShieldCheck className="w-6 h-6" />}
+                         <span>{isUploadingCert ? "Anexando..." : "Anexar Novo Certificado (Máx 2MB)"}</span>
+                         <input type="file" className="hidden" accept="image/*,application/pdf" onChange={handleUploadExternalCertificate} disabled={isUploadingCert} />
+                       </label>
+                    </div>
+                  </div>
+                </div>
+
               </motion.div>
             )}
 

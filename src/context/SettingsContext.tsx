@@ -32,6 +32,7 @@ interface AppSettings {
   customDioceses: string[];
   databaseName: string;
   cardZoom?: number;
+  seminariesConfig: Record<string, { logo: string | null; signature: string | null; rectorName: string }>;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -77,7 +78,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   customCourses: [],
   customDioceses: [],
   databaseName: 'FAJOPA e SPSCJ',
-  cardZoom: 1
+  cardZoom: 1,
+  seminariesConfig: {}
 };
 
 interface SettingsContextType {
