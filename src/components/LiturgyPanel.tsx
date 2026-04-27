@@ -5,6 +5,17 @@ export default function LiturgyPanel() {
   const [selectedHour, setSelectedHour] = useState<{ id: string, name: string, url: string } | null>(null);
   const [showYoutube, setShowYoutube] = useState(false);
   const [ytIsExpanded, setYtIsExpanded] = useState(false);
+  const [ytUrl, setYtUrl] = useState("");
+  const [ytVideoId, setYtVideoId] = useState("");
+
+  const handleYtUrl = (url: string) => {
+    setYtUrl(url);
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    if (match && match[2].length === 11) {
+      setYtVideoId(match[2]);
+    }
+  };
 
   const hours = [
     { id: "liturgia-diaria", name: "Liturgia Diária (CNBB)", icon: BookOpen, time: "Missa do Dia", url: "https://www.cnbb.org.br/liturgia-diaria/" },
@@ -65,20 +76,26 @@ export default function LiturgyPanel() {
             <iframe 
               src={selectedHour.url} 
               className="w-full h-full border-none"
-              sandbox="allow-same-origin allow-forms allow-scripts allow-popups"
+              sandbox="allow-same-origin allow-forms allow-scripts allow-popups allow-popups-to-escape-sandbox"
               title={selectedHour.name}
             />
 
             {/* Miniature YouTube Player */}
             {showYoutube && (
               <div 
-                className={`absolute bottom-4 right-4 z-20 bg-black rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 border-2 border-slate-800 dark:border-slate-700 ${
-                  ytIsExpanded ? "w-[90%] h-[300px] sm:w-[480px] sm:h-[270px]" : "w-[160px] h-[90px] sm:w-[240px] sm:h-[135px]"
+                className={`absolute bottom-4 right-4 z-20 bg-black rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 border-2 border-slate-800 dark:border-slate-700 group ${
+                  ytIsExpanded ? "w-[90%] md:w-[640px] aspect-video" : "w-[240px] aspect-video"
                 }`}
               >
-                <div className="absolute top-0 left-0 w-full h-8 flex items-center justify-between px-2 bg-black/60 backdrop-blur-sm opacity-0 hover:opacity-100 transition-opacity z-10">
-                   <span className="text-[10px] text-white font-bold truncate pr-2">Canal Liturgia das Horas</span>
+                <div className="absolute top-0 left-0 w-full h-8 flex flex-row items-center justify-between px-2 bg-black/60 backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity z-10">
+                   <span className="text-[10px] text-white font-bold truncate pr-2">YouTube</span>
                    <div className="flex gap-1">
+                     <button onClick={() => {
+                        setYtUrl(""); 
+                        setYtVideoId("");
+                     }} className="text-white hover:text-sky-400 transition-colors text-[10px] px-1 font-bold">
+                       NOVO
+                     </button>
                      <button onClick={() => setYtIsExpanded(!ytIsExpanded)} className="text-white hover:text-sky-400 transition-colors">
                        {ytIsExpanded ? <Minimize2 className="w-3 h-3" /> : <Maximize2 className="w-3 h-3" />}
                      </button>
@@ -87,12 +104,56 @@ export default function LiturgyPanel() {
                      </button>
                    </div>
                 </div>
-                <iframe
-                  src="https://www.youtube.com/embed?listType=search&list=liturgia+das+horas+ao+vivo"
-                  className="w-full h-full"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
+                {ytVideoId ? (
+                  <div className="w-full h-full relative">
+                    <iframe
+                      src={ytVideoId.startsWith('videoseries') 
+                        ? `https://www.youtube.com/embed?${ytVideoId}&autoplay=1` 
+                        : `https://www.youtube.com/embed/${ytVideoId}?autoplay=1&rel=0`}
+                      className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                      allowFullScreen
+                      title="YouTube video player"
+                    />
+                    <button 
+                      onClick={() => { setYtVideoId(""); setYtUrl(""); }}
+                      className="absolute top-2 right-2 bg-black/60 text-white p-1 rounded-full hover:bg-rose-600 transition-colors opacity-0 group-hover:opacity-100"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-full h-full bg-slate-900 flex flex-col items-center justify-center p-4 relative text-center">
+                    <Youtube className={`text-rose-500 mb-2 transition-all ${ytIsExpanded ? 'w-12 h-12' : 'w-8 h-8'}`} />
+                    <p className={`text-white font-bold mb-3 ${ytIsExpanded ? 'text-sm' : 'text-[10px]'}`}>Cole o Link do Vídeo</p>
+                    
+                    <div className="w-full max-w-xs space-y-2">
+                      <input 
+                        type="text" 
+                        placeholder="Cole o link copiado aqui..." 
+                        className={`w-full ${ytIsExpanded ? 'text-xs' : 'text-[9px]'} p-2 rounded bg-slate-800 text-white border border-slate-700 outline-none focus:border-rose-500 transition-colors`}
+                        value={ytUrl}
+                        onChange={(e) => handleYtUrl(e.target.value)}
+                        autoFocus
+                      />
+                      
+                      <button 
+                        onClick={() => {
+                          const today = new Date().toLocaleDateString('pt-BR');
+                          const query = encodeURIComponent(`liturgia das horas ${today} ao vivo`);
+                          setYtVideoId(`listType=search&list=${query}`);
+                        }}
+                        className={`w-full py-1.5 bg-rose-600/20 hover:bg-rose-600 text-rose-500 hover:text-white border border-rose-600/30 rounded-lg transition-all font-bold uppercase tracking-widest ${ytIsExpanded ? 'text-[10px]' : 'text-[8px]'}`}
+                      >
+                        Buscar Liturgia de Hoje
+                      </button>
+                    </div>
+
+                    <p className={`text-slate-500 mt-4 leading-relaxed ${ytIsExpanded ? 'text-[10px] px-4' : 'text-[8px] px-2'}`}>
+                      <strong className="text-rose-400">Dica:</strong> Se o vídeo da página apresentar "conexão recusada", clique com o botão direito nele (ou segure no celular), escolha <strong>"Copiar endereço do link"</strong> e cole acima.
+                    </p>
+                  </div>
+                )}
               </div>
             )}
           </div>

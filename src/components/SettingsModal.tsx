@@ -20,8 +20,9 @@ import {
   Sun,
   Moon,
   Lock,
+  Type,
 } from "lucide-react";
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import FajopaIDCard from "./FajopaIDCard";
 import { useSettings } from "../context/SettingsContext";
 import { AVAILABLE_SEMINARIES } from "../types";
