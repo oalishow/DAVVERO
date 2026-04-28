@@ -1,0 +1,88 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // Safety net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Helper functions
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      // Check if user has an admin role in the students collection or is the dedicated admin account
+      // Note: This relies on the structure of your students collection
+      return isSignedIn() && (
+        request.auth.token.email == 'admblackjamf@gmail.com' || 
+        get(/databases/$(database)/documents/artifacts/$(appId)/public/data/students/$(request.auth.uid)).data.roles.hasAny(['ADMIN', 'DIRETORIA', 'GESTÃO', 'admin', 'diretoria', 'gestão'])
+      );
+    }
+
+    match /artifacts/{appId}/public/data {
+      
+      // Mural Posts
+      match /mural_posts/{postId} {
+        // Anyone can read approved posts. Admins and owners can read everything.
+        allow read: if resource.data.status == 'approved' || isAdmin() || (isSignedIn() && resource.data.authorId == request.auth.uid);
+        
+        // Creation rules
+        allow create: if isSignedIn() && (
+          // Data validation
+          request.resource.data.text is string &&
+          request.resource.data.authorId == request.auth.uid &&
+          // Force pending status for non-admins
+          (isAdmin() || request.resource.data.status == 'pending')
+        );
+
+        // Update rules
+        allow update: if isSignedIn() && (
+          // Admin can update anything (approve, pin, etc.)
+          isAdmin() || 
+          (
+            // Users can update their own posts (e.g., voting in polls)
+            // But they shouldn't be able to approve their own or change pinning
+            resource.data.authorId == request.auth.uid &&
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pollOptions', 'votedUserIds', 'text'])
+          ) ||
+          (
+            // Any signed in user can vote in a poll if they haven't yet
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pollOptions', 'votedUserIds']) &&
+            !resource.data.votedUserIds.contains(request.auth.uid) &&
+            request.resource.data.votedUserIds.contains(request.auth.uid)
+          )
+        );
+
+        // Delete rules
+        allow delete: if isAdmin() || (isSignedIn() && resource.data.authorId == request.auth.uid);
+      }
+
+      // Students/Members
+      match /students/{studentId} {
+        allow read: if true; // Public directory
+        allow write: if isAdmin() || (isSignedIn() && request.auth.uid == studentId);
+      }
+
+      // Events
+      match /events/{eventId} {
+        allow read: if true;
+        allow write: if isAdmin();
+      }
+
+      // Attendances
+      match /attendances/{attId} {
+        allow read: if true;
+        allow write: if isSignedIn();
+      }
+
+      // Notifications
+      match /notifications/{notifId} {
+        allow read: if isSignedIn() && (resource.data.recipientId == request.auth.uid || resource.data.recipientId == 'todos');
+        allow write: if isAdmin();
+        allow delete: if isSignedIn() && resource.data.recipientId == request.auth.uid;
+      }
+    }
+  }
+}

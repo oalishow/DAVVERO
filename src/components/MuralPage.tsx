@@ -1,8 +1,9 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, ChangeEvent } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import { GraduationCap, Landmark, Image as ImageIcon, FileText, CheckCircle, Trash2, Pin, MessageSquare, BarChart2, Check, ExternalLink, X } from "lucide-react";
 import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, updateDoc, doc, deleteDoc, getDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
+import { signInAnonymously } from "firebase/auth";
 import { db, storage, auth, appId, handleFirestoreError, OperationType } from "../lib/firebase";
 import { MuralPost, Member } from "../types";
 
@@ -18,39 +19,37 @@ export default function MuralPage() {
   const [postText, setPostText] = useState("");
   const [postType, setPostType] = useState<"message" | "poll">("message");
   const [externalLink, setExternalLink] = useState("");
-  const [externalLinkType, setExternalLinkType] = useState<"link" | "image" | "video">("link");
+  const [externalLinkType, setExternalLinkType] = useState<"link" | "image" | "video" | "document">("link");
   const [pollOptions, setPollOptions] = useState<string[]>(["", ""]);
+  const [isAnonymousPoll, setIsAnonymousPoll] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Check if user is admin via Firebase Auth
+    // Check if user is admin via Firebase Auth (Management panel users)
     const unsubAuth = auth.onAuthStateChanged((user) => {
       if (user && !user.isAnonymous) {
         setIsAdmin(true);
+      } else {
+        // If not a management user, check student profile for roles
+        const bondedId = localStorage.getItem("davveroId_student_identity");
+        if (bondedId) {
+          getDoc(doc(db, `artifacts/${appId}/public/data/students`, bondedId)).then(snap => {
+            if (snap.exists()) {
+              const m = snap.data() as Member;
+              setCurrentUserData({ id: m.id, name: m.name });
+              if (m.roles && m.roles.some(r => ['admin', 'diretoria', 'gestão', 'comunicação', 'secretaria'].includes(r.toLowerCase()))) {
+                setIsAdmin(true);
+              }
+            }
+          });
+        }
       }
     });
     return () => unsubAuth();
-  }, []);
-
-  useEffect(() => {
-    // Get current bonded user if any
-    const bondedId = localStorage.getItem("davveroId_student_identity");
-    if (bondedId) {
-      getDoc(doc(db, `artifacts/${appId}/public/data/students`, bondedId)).then(snap => {
-        if (snap.exists()) {
-          const m = snap.data() as Member;
-          setCurrentUserData({ id: m.id, name: m.name });
-          
-          // Check if this student is actually an admin by role
-          if (m.roles && m.roles.some(r => r.toLowerCase() === 'admin' || r.toLowerCase() === 'diretoria' || r.toLowerCase() === 'gestão')) {
-            setIsAdmin(true);
-          }
-        }
-      }).catch(err => {
-        handleFirestoreError(err, OperationType.GET, `artifacts/${appId}/public/data/students`);
-      });
-    }
   }, []);
 
   useEffect(() => {
@@ -98,6 +97,96 @@ export default function MuralPage() {
     setPollOptions(pollOptions.filter((_, i) => i !== index));
   };
 
+  const handleFileUpload = async (e: ChangeEvent<HTMLInputElement>) => {
+    if (!isAdmin) {
+      alert("Apenas administradores podem fazer upload de arquivos.");
+      return;
+    }
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Check size (max 10MB)
+    if (file.size > 10 * 1024 * 1024) {
+      alert("O arquivo é muito grande. O limite é de 10MB.");
+      return;
+    }
+
+    console.log("Preparando upload:", file.name, file.type, file.size);
+    setIsUploading(true);
+    setUploadProgress(10);
+    
+    // Reduce retry time so it doesn't hang forever if CORS fails
+    storage.maxUploadRetryTime = 15000;
+    
+    try {
+      // Ensure we have an auth session
+      if (!auth.currentUser) {
+        console.log("Nenhum usuário detectado, tentando login anônimo...");
+        setUploadProgress(20);
+        await signInAnonymously(auth);
+        console.log("Login anônimo realizado com sucesso.");
+      }
+
+      setUploadProgress(40);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+      // Usar o caminho correto conforme definido nas rules
+      const storageRef = ref(storage, `artifacts/${appId}/mural_uploads/${fileName}`);
+      
+      console.log("Fazendo upload para:", storageRef.fullPath);
+      
+      const uploadPromise = uploadBytes(storageRef, file, {
+        cacheControl: 'public,max-age=31536000',
+        contentType: file.type || 'application/octet-stream'
+      });
+
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => (prev < 90 ? prev + 10 : prev));
+      }, 500);
+
+      try {
+        const uploadResult = await uploadPromise;
+        clearInterval(progressInterval);
+        
+        console.log("Upload bem sucedido!");
+        setUploadProgress(95);
+        
+        const downloadUrl = await getDownloadURL(uploadResult.ref);
+        setExternalLink(downloadUrl);
+        
+        if (file.type.startsWith('image/')) {
+          setExternalLinkType('image');
+        } else if (file.type === 'application/pdf' || file.type.toLowerCase().includes('word') || file.name.toLowerCase().endsWith('.pdf') || file.name.toLowerCase().endsWith('.doc') || file.name.toLowerCase().endsWith('.docx')) {
+          setExternalLinkType('document');
+        } else {
+          setExternalLinkType('link');
+        }
+
+        setUploadProgress(100);
+        console.log("URL de download obtida:", downloadUrl);
+        setTimeout(() => setIsUploading(false), 500);
+      } catch (uploadErr) {
+        clearInterval(progressInterval);
+        throw uploadErr;
+      }
+    } catch (err: any) {
+      console.error("Erro crítico no upload:", err);
+      let msg = "Erro ao enviar arquivo.";
+      
+      if (err.code === "auth/operation-not-allowed") {
+         msg = "Login anônimo não está habilitado no Firebase Authentication.";
+      } else if (err.code === "storage/unauthorized") {
+        msg = "Sem permissão no Firebase Storage. Verifique as regras de segurança.";
+      } else if (err.code === "storage/retry-limit-exceeded" || err.message?.includes("CORS")) {
+        msg = "Não foi possível conectar ao Storage (Tempo Limite/CORS).\n\nPara consertar isso, você precisa configurar o CORS no seu Firebase Storage, autorizando os dominíos da sua aplicação web.";
+      }
+      
+      alert(`⚠️ FALHA NO UPLOAD:\n\n${msg}\n\nDetalhes Técnicos: ${err.code || 'erro_desconhecido'}\n${err.message}`);
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
   const handleSubmit = async () => {
     if (!postText.trim() && !externalLink.trim()) return;
     if (postType === "poll" && pollOptions.filter(o => o.trim()).length < 2) return;
@@ -117,15 +206,19 @@ export default function MuralPage() {
         mediaUrl: externalLink.trim() ? (
           externalLinkType === 'image' && externalLink.includes('drive.google.com/file/d/')
             ? `https://drive.google.com/uc?export=view&id=${externalLink.split('/d/')[1]?.split('/')[0] || ''}`
-            : externalLinkType === 'video' && externalLink.includes('youtube.com/watch')
+          : externalLinkType === 'document' && externalLink.includes('drive.google.com/file/d/')
+            ? `https://drive.google.com/file/d/${externalLink.split('/d/')[1]?.split('/')[0] || ''}/preview`
+          : externalLinkType === 'video' && externalLink.includes('youtube.com/watch')
             ? `https://www.youtube.com/embed/${new URLSearchParams(new URL(externalLink).search).get('v')}`
-            : externalLinkType === 'video' && externalLink.includes('youtu.be/')
+          : externalLinkType === 'video' && externalLink.includes('youtu.be/')
             ? `https://www.youtube.com/embed/${externalLink.split('youtu.be/')[1]?.split('?')[0]}`
-            : externalLink.trim()
+          : externalLink.trim()
         ) : null,
         mediaType: externalLink.trim() ? externalLinkType : null,
         pollOptions: formattedPollOptions,
+        isAnonymousPoll: postType === "poll" ? isAnonymousPoll : undefined,
         votedUserIds: [],
+        voterDetails: [],
         createdAt: serverTimestamp(),
         isPinned: false,
         status: isAdmin ? "approved" : "pending",
@@ -139,6 +232,7 @@ export default function MuralPage() {
       setExternalLinkType("link");
       setPostType("message");
       setPollOptions(["", ""]);
+      setIsAnonymousPoll(true);
       setIsComposing(false);
 
       if (!isAdmin) {
@@ -159,6 +253,7 @@ export default function MuralPage() {
 
   const handleVote = async (post: MuralPost, optionId: string) => {
     const voterId = currentUserData?.id || auth.currentUser?.uid;
+    const voterName = currentUserData?.name || "Usuário";
     if (!voterId) return;
     
     if (post.votedUserIds?.includes(voterId)) {
@@ -170,10 +265,13 @@ export default function MuralPage() {
       opt.id === optionId ? { ...opt, votes: opt.votes + 1 } : opt
     );
 
+    const newVoterDetail = { userId: voterId, userName: voterName, optionId };
+
     try {
       await updateDoc(doc(db, `artifacts/${appId}/public/data/mural_posts`, post.id), {
         pollOptions: updatedOptions,
-        votedUserIds: [...(post.votedUserIds || []), voterId]
+        votedUserIds: [...(post.votedUserIds || []), voterId],
+        voterDetails: [...(post.voterDetails || []), newVoterDetail]
       });
     } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, `artifacts/${appId}/public/data/mural_posts`);
@@ -197,12 +295,11 @@ export default function MuralPage() {
   };
 
   const deletePost = async (id: string) => {
-    if (confirm("Deseja realmente excluir esta publicação?")) {
-      try {
-        await deleteDoc(doc(db, `artifacts/${appId}/public/data/mural_posts`, id));
-      } catch (err) {
-        handleFirestoreError(err, OperationType.DELETE, `artifacts/${appId}/public/data/mural_posts`);
-      }
+    try {
+      await deleteDoc(doc(db, `artifacts/${appId}/public/data/mural_posts`, id));
+      setDeleteConfirmId(null);
+    } catch (err) {
+      handleFirestoreError(err, OperationType.DELETE, `artifacts/${appId}/public/data/mural_posts`);
     }
   };
 
@@ -277,31 +374,90 @@ export default function MuralPage() {
 
              {postType === "message" && (
                 <div className="flex flex-col gap-2">
-                   <p className="text-xs font-bold uppercase text-slate-500">Link Externo (Opcional - Imagem do Drive, Youtube, etc)</p>
-                   <div className="flex flex-col sm:flex-row gap-2">
-                     <select 
-                        value={externalLinkType}
-                        onChange={e => setExternalLinkType(e.target.value as any)}
-                        className="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl text-sm border-none outline-none ring-1 ring-slate-200 dark:ring-slate-700 w-full sm:w-48"
-                     >
-                        <option value="link">Link Comum</option>
-                        <option value="image">Exibir como Imagem</option>
-                        <option value="video">Embutir Vídeo</option>
-                     </select>
-                     <input 
-                        type="url" 
-                        placeholder="https://..."
-                        value={externalLink}
-                        onChange={e => setExternalLink(e.target.value)}
-                        className="w-full p-3 bg-slate-50 dark:bg-slate-900 rounded-xl text-sm border-none outline-none ring-1 ring-slate-200 dark:ring-slate-700 focus:ring-2 focus:ring-indigo-500"
-                     />
-                   </div>
+                   {isAdmin ? (
+                     <>
+                        <div className="flex justify-between items-center">
+                          <p className="text-xs font-bold uppercase text-slate-500 text-left">Anexo ou Link Externo</p>
+                          <div className="relative">
+                             <button 
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={isUploading}
+                                className={`h-8 px-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 ${isUploading ? 'bg-slate-100 text-slate-400 cursor-not-allowed overflow-hidden' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100 active:scale-95'}`}
+                             >
+                                {isUploading ? (
+                                   <>
+                                      <motion.div 
+                                         className="absolute inset-y-0 left-0 bg-indigo-600/10"
+                                         initial={{ width: 0 }}
+                                         animate={{ width: `${uploadProgress}%` }}
+                                      />
+                                      <span className="relative z-10 flex items-center gap-1.5">
+                                         <div className="w-3 h-3 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                                         {Math.round(uploadProgress)}%
+                                      </span>
+                                   </>
+                                ) : (
+                                   <>
+                                      <ImageIcon className="w-3.5 h-3.5" /> Fazer Upload
+                                   </>
+                                )}
+                             </button>
+                          </div>
+                          <input 
+                             type="file" 
+                             ref={fileInputRef} 
+                             className="hidden" 
+                             onChange={handleFileUpload}
+                             accept="image/*,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                          />
+                        </div>
+                        <div className="flex flex-col sm:flex-row gap-2">
+                          <select 
+                             value={externalLinkType}
+                             onChange={e => setExternalLinkType(e.target.value as any)}
+                             className="p-3 bg-slate-50 dark:bg-slate-900 rounded-xl text-sm border-none outline-none ring-1 ring-slate-200 dark:ring-slate-700 w-full sm:w-48"
+                          >
+                             <option value="link">Link Comum</option>
+                             <option value="image">Exibir como Imagem</option>
+                             <option value="video">Embutir Vídeo</option>
+                             <option value="document">Exibir Documento (PDF/Docs)</option>
+                          </select>
+                          <input 
+                             type="url" 
+                             placeholder="https://..."
+                             value={externalLink}
+                             onChange={e => setExternalLink(e.target.value)}
+                             className="w-full p-3 bg-slate-50 dark:bg-slate-900 rounded-xl text-sm border-none outline-none ring-1 ring-slate-200 dark:ring-slate-700 focus:ring-2 focus:ring-indigo-500"
+                          />
+                        </div>
+                     </>
+                   ) : (
+                     <div>
+                        <p className="text-xs font-bold uppercase text-slate-500 text-left mb-1">Link Externo (Opcional)</p>
+                        <input 
+                           type="url" 
+                           placeholder="https://..."
+                           value={externalLink}
+                           onChange={e => {
+                             setExternalLink(e.target.value);
+                             setExternalLinkType("link"); // Forçar link comum para não administradores
+                           }}
+                           className="w-full p-3 bg-slate-50 dark:bg-slate-900 rounded-xl text-sm border-none outline-none ring-1 ring-slate-200 dark:ring-slate-700 focus:ring-2 focus:ring-indigo-500"
+                        />
+                     </div>
+                   )}
                 </div>
              )}
 
              {postType === "poll" && (
                 <div className="space-y-3 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl">
-                   <p className="text-xs font-bold uppercase text-slate-500 mb-2">Opções da Enquete</p>
+                   <div className="flex justify-between items-center mb-2">
+                     <p className="text-xs font-bold uppercase text-slate-500">Opções da Enquete</p>
+                     <label className="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" checked={isAnonymousPoll} onChange={e => setIsAnonymousPoll(e.target.checked)} className="rounded text-indigo-600 focus:ring-indigo-500 outline-none border-slate-300" />
+                        <span className="text-xs font-bold text-slate-600 dark:text-slate-400">Voto Anônimo</span>
+                     </label>
+                   </div>
                    {pollOptions.map((opt, i) => (
                      <div key={i} className="flex gap-2">
                         <input value={opt} onChange={e => updatePollOption(i, e.target.value)} placeholder={`Opção ${i + 1}`} className="flex-1 px-4 py-2 rounded-lg bg-white dark:bg-slate-800 text-sm border border-slate-200 dark:border-slate-700 focus:ring-2 focus:ring-indigo-500 outline-none" />
@@ -338,7 +494,13 @@ export default function MuralPage() {
            </div>
          ) : (
            visiblePosts.map(post => (
-             <div key={post.id} className={`p-5 rounded-3xl border ${post.isPinned ? 'bg-indigo-50/50 dark:bg-indigo-900/10 border-indigo-200 dark:border-indigo-800/50' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'} relative shadow-sm`}>
+            <motion.div 
+              layout
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              key={post.id} 
+              className={`p-5 rounded-3xl border transition-all duration-300 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600 ${post.isPinned ? 'bg-indigo-50/50 dark:bg-indigo-900/10 border-indigo-200 dark:border-indigo-800/50 shadow-sm' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'} relative`}
+            >
                 {post.isPinned && (
                   <div className="absolute top-0 right-8 -translate-y-1/2 bg-indigo-600 text-white px-3 py-1 rounded-full flex items-center gap-1 shadow-sm">
                     <Pin className="w-3 h-3" /> <span className="text-[10px] font-black uppercase tracking-widest">Fixado</span>
@@ -375,7 +537,7 @@ export default function MuralPage() {
                                <Pin className="w-4 h-4"/>
                             </button>
                           )}
-                          <button onClick={() => deletePost(post.id)} className="p-1.5 text-red-400 hover:bg-red-50 hover:text-red-500 rounded-md" title="Apagar Publicação">
+                           <button onClick={() => setDeleteConfirmId(post.id)} className="p-1.5 text-red-400 hover:bg-red-50 hover:text-red-500 rounded-md" title="Apagar Publicação">
                              <Trash2 className="w-4 h-4"/>
                           </button>
                        </div>
@@ -388,15 +550,22 @@ export default function MuralPage() {
                 </div>
 
                 {post.mediaUrl && (
-                  <div className="mt-4">
-                     {(post.mediaType === 'image' || post.mediaUrl.match(/\\.(jpeg|jpg|gif|png|webp|svg)$/i) || post.mediaUrl.includes('drive.google.com/uc?export=view')) ? (
+                   <div className="mt-4">
+                     {(post.mediaType === 'image' || post.mediaUrl.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i) || post.mediaUrl.includes('drive.google.com/uc?export=view')) ? (
                         <div className="rounded-xl overflow-hidden cursor-pointer bg-slate-100 dark:bg-slate-900 flex justify-center" onClick={() => window.open(post.mediaUrl, '_blank')}>
-                          <img src={post.mediaUrl} alt="Visualização" className="max-w-full max-h-96 object-contain hover:opacity-95 transition-opacity" />
-                        </div>
-                     ) : (post.mediaType === 'video' || post.mediaUrl.includes('youtube.com/embed') || post.mediaUrl.includes('youtu.be/')) ? (
-                        <div className="rounded-xl overflow-hidden cursor-pointer" >
-                          <iframe 
+                          <img 
                              src={post.mediaUrl} 
+                             alt="Visualização" 
+                             className="max-w-full max-h-96 object-contain hover:opacity-95 transition-opacity" 
+                             referrerPolicy="no-referrer"
+                          />
+                        </div>
+                     ) : (post.mediaType === 'video' || post.mediaType === 'document' || post.mediaUrl.includes('youtube.com/embed') || post.mediaUrl.includes('youtu.be/') || post.mediaUrl.includes('/preview') || post.mediaUrl.includes('.docx') || post.mediaUrl.includes('.doc')) ? (
+                        <div className="rounded-xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+                          <iframe 
+                             src={post.mediaUrl.includes('firebasestorage') && (post.mediaUrl.toLowerCase().includes('.docx') || post.mediaUrl.toLowerCase().includes('.doc')) 
+                               ? `https://docs.google.com/viewer?url=${encodeURIComponent(post.mediaUrl)}&embedded=true` 
+                               : post.mediaUrl} 
                              className="w-full aspect-video border-0" 
                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
                              allowFullScreen>
@@ -434,13 +603,79 @@ export default function MuralPage() {
                          </button>
                        )
                      })}
-                     <p className="text-[10px] uppercase font-bold text-slate-400 mt-2 text-right">{totalVotes(post)} votos no total</p>
+                     
+                     <div className="flex justify-between items-end mt-2">
+                        {post.isAnonymousPoll === false ? (
+                           <div className="flex-1">
+                              <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1">Quem votou:</p>
+                              <div className="flex flex-wrap gap-1">
+                                {(post.voterDetails || []).map((vote, idx) => {
+                                   const optText = post.pollOptions?.find(o => o.id === vote.optionId)?.text || "Opção";
+                                   return (
+                                     <span key={idx} className="text-[9px] bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded-md text-slate-500" title={optText}>
+                                        {vote.userName}
+                                     </span>
+                                   );
+                                })}
+                                {(!post.voterDetails || post.voterDetails.length === 0) && <span className="text-[9px] text-slate-400">Nenhum voto ainda.</span>}
+                              </div>
+                           </div>
+                        ) : (
+                           <div className="flex-1">
+                             <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mt-2">Enquete Anônima</p>
+                           </div>
+                        )}
+                        <p className="text-[10px] uppercase font-bold text-slate-400 text-right shrink-0">{totalVotes(post)} votos no total</p>
+                     </div>
                   </div>
                 )}
-             </div>
-           ))
-         )}
+              </motion.div>
+            ))
+          )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deleteConfirmId && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setDeleteConfirmId(null)}
+              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              className="relative w-full max-w-sm bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-8 border border-slate-200 dark:border-slate-700 text-center"
+            >
+              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 text-red-600 mx-auto rounded-full flex items-center justify-center mb-4">
+                <Trash2 className="w-8 h-8" />
+              </div>
+              <h3 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-tighter">Excluir Publicação?</h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
+                Esta ação não poderá ser desfeita. O recado será removido permanentemente do mural.
+              </p>
+              <div className="grid grid-cols-2 gap-3 mt-8">
+                <button 
+                  onClick={() => setDeleteConfirmId(null)}
+                  className="py-3 rounded-xl text-xs font-black uppercase tracking-widest text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button 
+                  onClick={() => deletePost(deleteConfirmId)}
+                  className="py-3 rounded-xl text-xs font-black uppercase tracking-widest bg-red-600 text-white hover:bg-red-700 transition-colors shadow-lg shadow-red-600/20"
+                >
+                  Confirmar
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

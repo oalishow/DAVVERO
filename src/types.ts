@@ -140,8 +140,10 @@ export interface MuralPost {
   text: string;
   type: "message" | "poll";
   mediaUrl?: string; // For images/PDFs
-  mediaType?: "image" | "pdf" | "link" | "video";
+  mediaType?: "image" | "pdf" | "link" | "video" | "document";
   pollOptions?: { id: string; text: string; votes: number }[];
+  isAnonymousPoll?: boolean; // Se a enquete é anônima (padrão)
+  voterDetails?: { userId: string; userName: string; optionId: string }[]; // Para enquetes públicas
   votedUserIds?: string[]; // IDs of users who voted
   createdAt: any;
   isPinned: boolean;
