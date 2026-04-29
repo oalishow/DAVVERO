@@ -162,15 +162,8 @@ export default function EventManagement() {
   };
 
   const handleSaveEvent = async () => {
-    if (
-      !title ||
-      !startDate ||
-      !endDate ||
-      !description ||
-      !maxParticipants ||
-      (!location && !link)
-    ) {
-      setStatusMsg({ msg: "Preencha todos os campos.", type: "error" });
+    if (!title || !startDate || !endDate || !format) {
+      setStatusMsg({ msg: "Preencha título, data inicial e final e formato.", type: "error" });
       setTimeout(() => setStatusMsg(null), 4000);
       return;
     }
@@ -190,7 +183,7 @@ export default function EventManagement() {
         link,
         description,
         imageUrl,
-        maxParticipants: Number(maxParticipants),
+        maxParticipants: maxParticipants ? Number(maxParticipants) : 0,
         speaker,
         schedulePdfUrl,
         isSeminary,
@@ -300,7 +293,7 @@ export default function EventManagement() {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div className="space-y-1">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
-              Título
+              Título <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
@@ -312,7 +305,7 @@ export default function EventManagement() {
           </div>
           <div className="space-y-1">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
-              Data e Hora (Início)
+              Data e Hora (Início) <span className="text-red-500">*</span>
             </label>
             <input
               type="datetime-local"
@@ -323,7 +316,7 @@ export default function EventManagement() {
           </div>
           <div className="space-y-1">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
-              Data e Hora (Fim)
+              Data e Hora (Fim) <span className="text-red-500">*</span>
             </label>
             <input
               type="datetime-local"
@@ -334,7 +327,7 @@ export default function EventManagement() {
           </div>
           <div className="space-y-1">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
-              Formato
+              Formato <span className="text-red-500">*</span>
             </label>
             <select
               value={format}
@@ -474,14 +467,14 @@ export default function EventManagement() {
           </div>
           <div className="space-y-1">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
-              Vagas
+              Vagas <span className="text-[10px] text-slate-400 font-normal normal-case">(Deixe em branco para ilimitado)</span>
             </label>
             <input
               type="number"
               value={maxParticipants}
               onChange={(e) => setMaxParticipants(e.target.value)}
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm outline-none focus:border-sky-500 dark:focus:border-sky-500"
-              placeholder="Ex: 50"
+              placeholder="Ilimitado"
             />
           </div>
         </div>
@@ -682,7 +675,7 @@ export default function EventManagement() {
                       </p>
                       <p className="font-black text-slate-700 dark:text-slate-200 text-sm mt-0.5">
                         {attendancesCount[event.id] || 0} /{" "}
-                        {event.maxParticipants}
+                        {event.maxParticipants ? event.maxParticipants : "Ilimitado"}
                       </p>
                     </div>
 
