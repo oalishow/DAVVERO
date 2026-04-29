@@ -29,14 +29,58 @@ export default function MuralPage() {
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
   const [localOrder, setLocalOrder] = useState<MuralPost[]>([]);
+  const [expiresIn, setExpiresIn] = useState<number | null>(null); // Admin auto-delete
+  const [unlockedDragId, setUnlockedDragId] = useState<string | null>(null);
+  const [holdProgress, setHoldProgress] = useState(0);
+  const holdTimerRef = useRef<any>(null);
+  const intervalRef = useRef<any>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const startDragHold = (postId: string) => {
+    if (!isAdmin) return;
+    let elapsed = 0;
+    setHoldProgress(0);
+    setUnlockedDragId(null);
+    
+    intervalRef.current = setInterval(() => {
+      elapsed += 50;
+      setHoldProgress(elapsed / 3000);
+    }, 50);
+
+    holdTimerRef.current = setTimeout(() => {
+      clearInterval(intervalRef.current);
+      setHoldProgress(0);
+      setUnlockedDragId(postId);
+    }, 3000);
+  };
+
+  const cancelDragHold = () => {
+    if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    setHoldProgress(0);
+  };
+
   useEffect(() => {
-    setLocalOrder(posts.filter(post => isAdmin || post.status === "approved" || post.authorId === myUserId));
+    // Delete expired posts cleanly if admin, hide for everyone else
+    if (isAdmin) {
+      posts.forEach(post => {
+         if (post.expiresAt && typeof post.expiresAt === 'number' && Date.now() > post.expiresAt) {
+            deleteDoc(doc(db, `artifacts/${appId}/public/data/mural_posts`, post.id)).catch(console.error);
+         }
+      });
+    }
+
+    setLocalOrder(posts.filter(post => {
+      if (post.expiresAt && typeof post.expiresAt === 'number' && Date.now() > post.expiresAt) {
+        return false;
+      }
+      return isAdmin || post.status === "approved" || post.authorId === myUserId;
+    }));
   }, [posts, isAdmin, myUserId]);
 
   const handleDragEnd = async () => {
     if (!isAdmin) return;
+    setUnlockedDragId(null);
     try {
       // Use firestore's optimistic limits by creating a batch? Wait, running map updateDoc is fine.
       for (let i = 0; i < localOrder.length; i++) {
@@ -332,7 +376,8 @@ export default function MuralPage() {
         createdAt: serverTimestamp(),
         isPinned: false,
         status: isAdmin ? "approved" : "pending",
-        isAdminPost: isAdmin
+        isAdminPost: isAdmin,
+        expiresAt: expiresIn ? Date.now() + expiresIn * 24 * 60 * 60 * 1000 : null
       };
 
       await addDoc(collection(db, `artifacts/${appId}/public/data/mural_posts`), newPost);
@@ -343,6 +388,7 @@ export default function MuralPage() {
       setPostType("message");
       setPollOptions(["", ""]);
       setIsAnonymousPoll(true);
+      setExpiresIn(null);
       setIsComposing(false);
 
       if (!isAdmin) {
@@ -602,6 +648,23 @@ export default function MuralPage() {
                 </div>
              )}
 
+             {isAdmin && (
+                <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-xl flex items-center justify-between">
+                   <p className="text-xs font-bold uppercase text-slate-500">Apagar Automaticamente</p>
+                   <select 
+                      value={expiresIn === null ? "" : expiresIn} 
+                      onChange={e => setExpiresIn(e.target.value ? Number(e.target.value) : null)}
+                      className="p-2 bg-white dark:bg-slate-800 rounded-lg text-sm border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700 dark:text-slate-300"
+                   >
+                     <option value="">Nunca (Fixo)</option>
+                     <option value="15">Em 15 dias</option>
+                     <option value="30">Em 30 dias</option>
+                     <option value="60">Em 60 dias</option>
+                     <option value="150">Em 5 meses</option>
+                   </select>
+                </div>
+             )}
+
              <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-700">
                 <button onClick={() => setIsComposing(false)} className="px-5 py-2.5 rounded-xl text-xs font-bold uppercase text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">Cancelar</button>
                 <motion.button 
@@ -644,7 +707,7 @@ export default function MuralPage() {
                animate={{ opacity: 1, y: 0 }}
                key={post.id} 
                onDragEnd={handleDragEnd}
-               dragListener={isAdmin}
+               dragListener={isAdmin && unlockedDragId === post.id}
                className={`p-5 rounded-3xl border transition-all duration-300 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600 ${post.isPinned ? 'bg-indigo-50/50 dark:bg-indigo-900/10 border-indigo-200 dark:border-indigo-800/50 shadow-sm' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'} relative`}
              >
                 {post.isPinned && (
@@ -690,8 +753,20 @@ export default function MuralPage() {
                              <Trash2 className="w-4 h-4"/>
                           </button>
                           {isAdmin && (
-                            <div className="p-1.5 cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500" title="Arraste para reordenar">
-                              <GripVertical className="w-4 h-4" />
+                            <div 
+                              onPointerDown={() => startDragHold(post.id)}
+                              onPointerUp={cancelDragHold}
+                              onPointerLeave={cancelDragHold}
+                              className={`p-1.5 mt-1 cursor-grab active:cursor-grabbing transition-colors rounded-md relative ${unlockedDragId === post.id ? 'text-indigo-600 bg-indigo-50 ring-2 ring-indigo-200' : 'text-slate-300 hover:text-slate-500 hover:bg-slate-50'}`} 
+                              title={unlockedDragId === post.id ? "Pronto! Solte e arraste pelo card." : "Segure por 3s para arrastar"}
+                            >
+                              <GripVertical className="w-5 h-5" />
+                              {/* Progress indicator */}
+                              {holdProgress > 0 && unlockedDragId !== post.id && (
+                                <div className="absolute inset-x-0 -bottom-1 h-1 bg-slate-200 rounded-full overflow-hidden">
+                                  <div className="h-full bg-indigo-500 transition-all duration-75" style={{ width: `${holdProgress * 100}%` }} />
+                                </div>
+                              )}
                             </div>
                           )}
                        </div>

@@ -148,6 +148,7 @@ export interface MuralPost {
   createdAt: any;
   isPinned: boolean;
   orderIndex?: number; // For manual reordering
+  expiresAt?: any; // Auto delete timestamp
   status: "pending" | "approved"; // Non-admin posts are pending by default
   isAdminPost?: boolean;
 }
