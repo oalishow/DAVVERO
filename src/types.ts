@@ -147,6 +147,7 @@ export interface MuralPost {
   votedUserIds?: string[]; // IDs of users who voted
   createdAt: any;
   isPinned: boolean;
+  orderIndex?: number; // For manual reordering
   status: "pending" | "approved"; // Non-admin posts are pending by default
   isAdminPost?: boolean;
 }

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, ChangeEvent } from "react";
-import { motion, AnimatePresence } from "motion/react";
-import { GraduationCap, Landmark, Image as ImageIcon, FileText, CheckCircle, Trash2, Pin, MessageSquare, BarChart2, Check, ExternalLink, X } from "lucide-react";
+import { motion, AnimatePresence, Reorder } from "motion/react";
+import { GraduationCap, Landmark, Image as ImageIcon, FileText, CheckCircle, Trash2, Pin, MessageSquare, BarChart2, Check, ExternalLink, X, Pencil, GripVertical } from "lucide-react";
 import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, updateDoc, doc, deleteDoc, getDoc } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { signInAnonymously } from "firebase/auth";
@@ -26,10 +26,34 @@ export default function MuralPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [editingPostId, setEditingPostId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
+  const [localOrder, setLocalOrder] = useState<MuralPost[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    // Check if user is admin via Firebase Auth (Management panel users)
+    setLocalOrder(posts.filter(post => isAdmin || post.status === "approved" || post.authorId === myUserId));
+  }, [posts, isAdmin, myUserId]);
+
+  const handleDragEnd = async () => {
+    if (!isAdmin) return;
+    try {
+      // Use firestore's optimistic limits by creating a batch? Wait, running map updateDoc is fine.
+      for (let i = 0; i < localOrder.length; i++) {
+        const post = localOrder[i];
+        if (post.orderIndex !== i) {
+          updateDoc(doc(db, `artifacts/${appId}/public/data/mural_posts`, post.id), { orderIndex: i })
+            .catch(err => console.error("Update error for orderIndex:", err));
+        }
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const totalVotes = (post: MuralPost) => post.pollOptions?.reduce((acc, opt) => acc + opt.votes, 0) || 0;
+
+  useEffect(() => {
     const unsubAuth = auth.onAuthStateChanged((user) => {
       if (user && !user.isAnonymous) {
         setIsAdmin(true);
@@ -62,18 +86,23 @@ export default function MuralPage() {
       const fetched: MuralPost[] = [];
       snap.forEach(doc => fetched.push({ id: doc.id, ...doc.data() } as MuralPost));
       
-      // Sort in memory (descending by createdAt)
-      fetched.sort((a, b) => {
-        const aTime = a.createdAt?.toMillis?.() || 0;
-        const bTime = b.createdAt?.toMillis?.() || 0;
-        return bTime - aTime;
-      });
-
-      // Sort in memory to keep pinned posts at top
+      // Sorting rules:
+      // 1. Pinned posts always stay at the top.
+      // 2. Custom ordering via orderIndex (new posts without orderIndex act as -1 and stay above ordered posts).
+      // 3. Fallback to createdAt.
       fetched.sort((a, b) => {
         if (a.isPinned && !b.isPinned) return -1;
         if (!a.isPinned && b.isPinned) return 1;
-        return 0; // maintain original desc order for others
+
+        const orderA = typeof a.orderIndex === 'number' ? a.orderIndex : -1;
+        const orderB = typeof b.orderIndex === 'number' ? b.orderIndex : -1;
+        if (orderA !== orderB) {
+          return orderA - orderB;
+        }
+        
+        const aTime = a.createdAt?.toMillis?.() || 0;
+        const bTime = b.createdAt?.toMillis?.() || 0;
+        return bTime - aTime;
       });
       setPosts(fetched);
     }, (error) => {
@@ -105,9 +134,87 @@ export default function MuralPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // Check size (max 10MB)
-    if (file.size > 10 * 1024 * 1024) {
-      alert("O arquivo é muito grande. O limite é de 10MB.");
+    // Se for imagem, vamos converter para Base64 comprimido para evitar erros de CORS no Storage
+    if (file.type.startsWith('image/')) {
+      setIsUploading(true);
+      setUploadProgress(20);
+      
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const img = new Image();
+        img.onload = () => {
+          setUploadProgress(50);
+          const canvas = document.createElement('canvas');
+          let width = img.width;
+          let height = img.height;
+          
+          // Redimensionar mantendo proporção (max 1024px)
+          const MAX_SIZE = 1024;
+          if (width > height && width > MAX_SIZE) {
+            height *= MAX_SIZE / width;
+            width = MAX_SIZE;
+          } else if (height > MAX_SIZE) {
+            width *= MAX_SIZE / height;
+            height = MAX_SIZE;
+          }
+          
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx?.drawImage(img, 0, 0, width, height);
+          
+          // Comprimir para JPEG (qualidade 0.7)
+          let dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          
+          // Verificar tamanho (Firestore tem limite de 1MB por documento)
+          if (dataUrl.length > 800000) { 
+             dataUrl = canvas.toDataURL('image/jpeg', 0.4);
+          }
+          
+          if (dataUrl.length > 900000) {
+             alert("⚠️ A imagem é muito grande mesmo após a compressão.\n\nPara enviar arquivos pesados, você precisa configurar o CORS do Firebase Storage (leia REGRAS_CORS_FIREBASE.md).");
+             setIsUploading(false);
+             setUploadProgress(0);
+             return;
+          }
+          
+          setExternalLink(dataUrl);
+          setExternalLinkType('image');
+          setUploadProgress(100);
+          setTimeout(() => setIsUploading(false), 500);
+        };
+        img.src = event.target?.result as string;
+      };
+      reader.readAsDataURL(file);
+      return;
+    }
+
+    // Se for PDF pequeno (< 600KB), também converte para Base64 para evitar erro de CORS
+    if (file.type === 'application/pdf' && file.size < 600000) {
+      setIsUploading(true);
+      setUploadProgress(50);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+         const dataUrl = event.target?.result as string;
+         // Segurança: limite do firestore é 1MB. 600KB de arquivo ~ 800KB em Base64
+         if (dataUrl.length < 900000) {
+            setExternalLink(dataUrl);
+            setExternalLinkType('document');
+            setUploadProgress(100);
+            setTimeout(() => setIsUploading(false), 500);
+         } else {
+            alert("O PDF ficou muito grande após conversão. Para enviar este arquivo, configure o CORS do Firebase Storage.");
+            setIsUploading(false);
+            setUploadProgress(0);
+         }
+      };
+      reader.readAsDataURL(file);
+      return;
+    }
+
+    // Check size (max 5MB via Storage devido ao CORS)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("⚠️ Arquivo maior que 5MB.\n\nPor favor, envie um arquivo menor ou utilize o Google Drive colando o link no chat.");
       return;
     }
 
@@ -115,16 +222,19 @@ export default function MuralPage() {
     setIsUploading(true);
     setUploadProgress(10);
     
-    // Reduce retry time so it doesn't hang forever if CORS fails
-    storage.maxUploadRetryTime = 15000;
+    // Remover maxUploadRetryTime curto para não quebrar uploads lentos com CORS habilitado.
     
     try {
-      // Ensure we have an auth session
+      // Ensure we have an auth session (or ignore if it fails, fallback to rules)
       if (!auth.currentUser) {
-        console.log("Nenhum usuário detectado, tentando login anônimo...");
-        setUploadProgress(20);
-        await signInAnonymously(auth);
-        console.log("Login anônimo realizado com sucesso.");
+        try {
+          console.log("Nenhum usuário detectado, tentando login anônimo...");
+          setUploadProgress(20);
+          await signInAnonymously(auth);
+          console.log("Login anônimo realizado com sucesso.");
+        } catch (authErr) {
+          console.log("Login anônimo falhou (pode estar desabilitado), prosseguindo com upload...", authErr);
+        }
       }
 
       setUploadProgress(40);
@@ -251,6 +361,20 @@ export default function MuralPage() {
     }
   };
 
+  const handleSaveEdit = async () => {
+    if (!editingPostId || !editContent.trim()) return;
+    try {
+      await updateDoc(doc(db, `artifacts/${appId}/public/data/mural_posts`, editingPostId), {
+        text: editContent.trim()
+      });
+      setEditingPostId(null);
+      setEditContent("");
+    } catch (err) {
+      console.error("Erro ao salvar edição:", err);
+      alert("Erro ao atualizar!");
+    }
+  };
+
   const handleVote = async (post: MuralPost, optionId: string) => {
     const voterId = currentUserData?.id || auth.currentUser?.uid;
     const voterName = currentUserData?.name || "Usuário";
@@ -304,8 +428,6 @@ export default function MuralPage() {
   };
 
   // Identify visible posts
-  const visiblePosts = posts.filter(post => isAdmin || post.status === "approved" || post.authorId === myUserId);
-  const totalVotes = (post: MuralPost) => post.pollOptions?.reduce((acc, opt) => acc + opt.votes, 0) || 0;
 
   return (
     <div className="space-y-6">
@@ -347,9 +469,17 @@ export default function MuralPage() {
       </div>
 
       {!isComposing && (
-        <button onClick={() => setIsComposing(true)} className="w-full p-4 rounded-2xl bg-white dark:bg-slate-800 border-2 border-dashed border-slate-200 dark:border-slate-700 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 dark:hover:border-indigo-800 transition-all font-bold text-sm uppercase tracking-wide flex items-center justify-center gap-2">
-           <MessageSquare className="w-4 h-4" /> Nova Publicação
-        </button>
+        <motion.button 
+          whileHover={{ scale: 1.01 }}
+          whileTap={{ scale: 0.99 }}
+          onClick={() => setIsComposing(true)} 
+          className="w-full p-6 rounded-3xl bg-white dark:bg-slate-800 border-2 border-dashed border-indigo-200 dark:border-indigo-900/50 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-50 dark:hover:bg-indigo-900/10 hover:border-indigo-400 transition-all font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 shadow-sm group"
+        >
+           <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900/50 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+             <MessageSquare className="w-5 h-5" />
+           </div>
+           Compartilhar algo com a turma
+        </motion.button>
       )}
 
       <AnimatePresence>
@@ -379,20 +509,22 @@ export default function MuralPage() {
                         <div className="flex justify-between items-center">
                           <p className="text-xs font-bold uppercase text-slate-500 text-left">Anexo ou Link Externo</p>
                           <div className="relative">
-                             <button 
+                             <motion.button 
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
                                 onClick={() => fileInputRef.current?.click()}
                                 disabled={isUploading}
-                                className={`h-8 px-3 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 ${isUploading ? 'bg-slate-100 text-slate-400 cursor-not-allowed overflow-hidden' : 'bg-indigo-50 text-indigo-600 hover:bg-indigo-100 active:scale-95'}`}
+                                className={`h-8 px-4 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 shadow-sm ${isUploading ? 'bg-slate-100 text-slate-400 cursor-not-allowed overflow-hidden' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
                              >
                                 {isUploading ? (
                                    <>
                                       <motion.div 
-                                         className="absolute inset-y-0 left-0 bg-indigo-600/10"
+                                         className="absolute inset-y-0 left-0 bg-white/20"
                                          initial={{ width: 0 }}
                                          animate={{ width: `${uploadProgress}%` }}
                                       />
                                       <span className="relative z-10 flex items-center gap-1.5">
-                                         <div className="w-3 h-3 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                                         <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
                                          {Math.round(uploadProgress)}%
                                       </span>
                                    </>
@@ -401,7 +533,7 @@ export default function MuralPage() {
                                       <ImageIcon className="w-3.5 h-3.5" /> Fazer Upload
                                    </>
                                 )}
-                             </button>
+                             </motion.button>
                           </div>
                           <input 
                              type="file" 
@@ -472,16 +604,27 @@ export default function MuralPage() {
 
              <div className="flex justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-700">
                 <button onClick={() => setIsComposing(false)} className="px-5 py-2.5 rounded-xl text-xs font-bold uppercase text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">Cancelar</button>
-                <button disabled={isSubmitting} onClick={handleSubmit} className="px-5 py-2.5 rounded-xl text-xs font-bold uppercase bg-indigo-600 text-white hover:bg-indigo-700 transition-colors shadow-md disabled:opacity-50">
-                  {isSubmitting ? "Enviando..." : "Publicar"}
-                </button>
+                <motion.button 
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  disabled={isSubmitting} 
+                  onClick={handleSubmit} 
+                  className="px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest bg-indigo-600 text-white hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-500/20 active:scale-95 disabled:opacity-50 flex items-center gap-2 group"
+                >
+                  {isSubmitting ? (
+                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <CheckCircle className="w-4 h-4 group-hover:rotate-12 transition-transform" />
+                  )}
+                  {isSubmitting ? "Enviando..." : "Publicar agora"}
+                </motion.button>
              </div>
           </motion.div>
         )}
       </AnimatePresence>
 
       <div className="space-y-4">
-         {visiblePosts.length === 0 ? (
+         {localOrder.length === 0 ? (
            <div className="min-h-[200px] flex items-center justify-center border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-3xl p-8">
              <div className="text-center space-y-4 max-w-sm">
                <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto text-slate-400">
@@ -493,14 +636,17 @@ export default function MuralPage() {
              </div>
            </div>
          ) : (
-           visiblePosts.map(post => (
-            <motion.div 
-              layout
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              key={post.id} 
-              className={`p-5 rounded-3xl border transition-all duration-300 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600 ${post.isPinned ? 'bg-indigo-50/50 dark:bg-indigo-900/10 border-indigo-200 dark:border-indigo-800/50 shadow-sm' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'} relative`}
-            >
+           <Reorder.Group axis="y" values={localOrder} onReorder={setLocalOrder} className="space-y-4">
+            {localOrder.map(post => (
+             <Reorder.Item 
+               value={post}
+               initial={{ opacity: 0, y: 20 }}
+               animate={{ opacity: 1, y: 0 }}
+               key={post.id} 
+               onDragEnd={handleDragEnd}
+               dragListener={isAdmin}
+               className={`p-5 rounded-3xl border transition-all duration-300 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600 ${post.isPinned ? 'bg-indigo-50/50 dark:bg-indigo-900/10 border-indigo-200 dark:border-indigo-800/50 shadow-sm' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'} relative`}
+             >
                 {post.isPinned && (
                   <div className="absolute top-0 right-8 -translate-y-1/2 bg-indigo-600 text-white px-3 py-1 rounded-full flex items-center gap-1 shadow-sm">
                     <Pin className="w-3 h-3" /> <span className="text-[10px] font-black uppercase tracking-widest">Fixado</span>
@@ -537,17 +683,40 @@ export default function MuralPage() {
                                <Pin className="w-4 h-4"/>
                             </button>
                           )}
+                             <button onClick={() => { setEditingPostId(post.id); setEditContent(post.text); }} className="p-1.5 text-blue-400 hover:bg-blue-50 hover:text-blue-600 rounded-md" title="Editar">
+                               <Pencil className="w-4 h-4"/>
+                             </button>
                            <button onClick={() => setDeleteConfirmId(post.id)} className="p-1.5 text-red-400 hover:bg-red-50 hover:text-red-500 rounded-md" title="Apagar Publicação">
                              <Trash2 className="w-4 h-4"/>
                           </button>
+                          {isAdmin && (
+                            <div className="p-1.5 cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500" title="Arraste para reordenar">
+                              <GripVertical className="w-4 h-4" />
+                            </div>
+                          )}
                        </div>
                      )}
                    </div>
                 </div>
 
-                <div className="mt-4 text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
-                   {post.text}
-                </div>
+                {editingPostId === post.id ? (
+                  <div className="mt-4">
+                    <textarea 
+                      value={editContent} 
+                      onChange={e => setEditContent(e.target.value)}
+                      className="w-full text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
+                      rows={4}
+                    />
+                    <div className="flex justify-end gap-2 mt-2">
+                       <button onClick={() => setEditingPostId(null)} className="px-3 py-1.5 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-lg">Cancelar</button>
+                       <button onClick={handleSaveEdit} className="px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg">Salvar</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-4 text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
+                     {post.text}
+                  </div>
+                )}
 
                 {post.mediaUrl && (
                    <div className="mt-4">
@@ -560,7 +729,7 @@ export default function MuralPage() {
                              referrerPolicy="no-referrer"
                           />
                         </div>
-                     ) : (post.mediaType === 'video' || post.mediaType === 'document' || post.mediaUrl.includes('youtube.com/embed') || post.mediaUrl.includes('youtu.be/') || post.mediaUrl.includes('/preview') || post.mediaUrl.includes('.docx') || post.mediaUrl.includes('.doc')) ? (
+                     ) : (post.mediaType === 'video' || (post.mediaType === 'document' && !post.mediaUrl.startsWith('data:')) || post.mediaUrl.includes('youtube.com/embed') || post.mediaUrl.includes('youtu.be/') || post.mediaUrl.includes('/preview') || post.mediaUrl.includes('.docx') || post.mediaUrl.includes('.doc')) ? (
                         <div className="rounded-xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
                           <iframe 
                              src={post.mediaUrl.includes('firebasestorage') && (post.mediaUrl.toLowerCase().includes('.docx') || post.mediaUrl.toLowerCase().includes('.doc')) 
@@ -571,9 +740,12 @@ export default function MuralPage() {
                              allowFullScreen>
                           </iframe>
                         </div>
-                     ) : post.mediaType === 'pdf' ? (
-                        <a href={post.mediaUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 text-indigo-600 text-sm font-bold hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                           <FileText className="w-5 h-5"/> Abrir Anexo PDF <ExternalLink className="w-3 h-3"/>
+                     ) : (post.mediaType === 'document' && post.mediaUrl.startsWith('data:')) || post.mediaType === 'pdf' ? (
+                        <a href={post.mediaUrl} download="documento.pdf" className="inline-flex items-center gap-3 px-6 py-4 bg-indigo-50 dark:bg-slate-800 rounded-2xl border border-indigo-200 dark:border-indigo-900/50 text-indigo-700 dark:text-indigo-400 text-xs font-black uppercase tracking-widest hover:bg-indigo-100 dark:hover:bg-slate-700 transition-colors group shadow-sm">
+                           <div className="w-10 h-10 bg-indigo-200/50 dark:bg-indigo-900/80 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                              <FileText className="w-5 h-5"/> 
+                           </div>
+                           Baixar Anexo PDF
                         </a>
                      ) : (
                         <a href={post.mediaUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 text-indigo-600 text-sm font-bold truncate max-w-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
@@ -629,10 +801,11 @@ export default function MuralPage() {
                      </div>
                   </div>
                 )}
-              </motion.div>
-            ))
-          )}
-      </div>
+              </Reorder.Item>
+            ))}
+           </Reorder.Group>
+         )}
+     </div>
 
       {/* Delete Confirmation Modal */}
       <AnimatePresence>

@@ -12,9 +12,8 @@ service firebase.storage {
       // Anyone can view the mural attachments
       allow read: if true;
       
-      // Signed in users can upload files
-      allow create: if request.auth != null 
-                    && request.resource.size < 10 * 1024 * 1024 // 10MB limit
+      // Signed in users or anonymous users can upload files
+      allow create: if request.resource.size < 10 * 1024 * 1024 // 10MB limit
                     && (
                       request.resource.contentType.matches('image/.*') || 
                       request.resource.contentType == 'application/pdf' ||
