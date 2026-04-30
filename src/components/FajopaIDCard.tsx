@@ -345,9 +345,9 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
       <div className="absolute top-[28%] w-full flex flex-col items-center z-10">
         <div className="w-full flex justify-center gap-10 px-4">
           {/* Signature 1: Director */}
-          {(visibleFields.signature || visibleFields.director) && (
+          {(visibleFields?.signature !== false || visibleFields?.director !== false) && (
             <div className="flex flex-col items-center min-w-[140px] max-w-[180px]">
-               {visibleFields.signature && (
+               {visibleFields?.signature !== false && (
                 <div className="w-full h-[45px] border-b-[2px] border-slate-800 flex items-center justify-center pb-1">
                    {instSignature && (
                      <img 
@@ -363,7 +363,7 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
                 </div>
               )}
               
-              {visibleFields.director && (
+              {visibleFields?.director !== false && (
                 <div className="flex flex-col items-center mt-1 leading-tight text-center">
                   <div className="text-slate-800 font-bold uppercase tracking-tight text-[9px] leading-tight mb-0.5 whitespace-normal">{directorNameText}</div>
                   <div className="text-blue-900 font-bold text-[7px] leading-tight uppercase">Diretor Geral</div>
@@ -373,9 +373,9 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
           )}
 
           {/* Signature 2: Rector */}
-          {showRector && (visibleFields.rectorSignature || visibleFields.rector) && (
+          {showRector && (visibleFields?.rectorSignature !== false || visibleFields?.rector !== false) && (
             <div className="flex flex-col items-center min-w-[140px] max-w-[180px]">
-               {visibleFields.rectorSignature && (
+               {visibleFields?.rectorSignature !== false && (
                 <div className="w-full h-[45px] border-b-[2px] border-slate-800 flex items-center justify-center pb-1">
                    {displayRectorSignature && (
                      <img 
@@ -391,7 +391,7 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
                 </div>
               )}
               
-              {visibleFields.rector && (
+              {visibleFields?.rector !== false && (
                 <div className="flex flex-col items-center mt-1 leading-tight text-center">
                   <div className="text-slate-800 font-bold uppercase tracking-tight text-[9px] leading-tight mb-0.5 whitespace-normal">{rectorNameText}</div>
                   <div className="text-blue-900 font-bold text-[7px] leading-tight uppercase">Reitor do Seminário</div>

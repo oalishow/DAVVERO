@@ -4,6 +4,9 @@ import App from './App.tsx';
 import { SettingsProvider } from './context/SettingsContext';
 import { DialogProvider } from './context/DialogContext';
 import './index.css';
+import { setupPWA } from './pwa';
+
+setupPWA();
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

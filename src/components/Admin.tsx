@@ -3,6 +3,7 @@ import AdminLogin from "./AdminLogin";
 import AdminPanel from "./AdminPanel";
 import { auth } from "../lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
+import { motion, AnimatePresence } from "motion/react";
 
 export default function Admin() {
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
@@ -21,9 +22,30 @@ export default function Admin() {
 
   if (isAuthenticated === null) return null; // Loading
 
-  if (!isAuthenticated) {
-    return <AdminLogin onLogin={() => setIsAuthenticated(true)} />;
-  }
-
-  return <AdminPanel onLogout={() => setIsAuthenticated(false)} />;
+  return (
+    <div className="relative overflow-hidden min-h-[400px]">
+      <AnimatePresence mode="wait">
+        {!isAuthenticated ? (
+          <motion.div
+            key="login"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, filter: "blur(4px)" }}
+            transition={{ duration: 0.3 }}
+          >
+            <AdminLogin onLogin={() => setIsAuthenticated(true)} />
+          </motion.div>
+        ) : (
+          <motion.div
+            key="panel"
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            transition={{ type: "spring", stiffness: 200, damping: 20 }}
+          >
+            <AdminPanel onLogout={() => setIsAuthenticated(false)} />
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
 }
