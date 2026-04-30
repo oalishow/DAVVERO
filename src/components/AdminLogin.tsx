@@ -8,6 +8,8 @@ import {
   sendPasswordResetEmail
 } from "firebase/auth";
 
+import { useDialog } from "../context/DialogContext";
+
 interface AdminLoginProps {
   onLogin: () => void;
 }
@@ -19,6 +21,7 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const { showAlert } = useDialog();
 
   const handleEmailLogin = async (isRegister = false) => {
     if (!email || !emailPassword) {
@@ -41,8 +44,10 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
     try {
       if (isRegister) {
         await createUserWithEmailAndPassword(auth, email, emailPassword);
+        await showAlert("Administrador registrado com sucesso!", { type: 'success' });
       } else {
         await signInWithEmailAndPassword(auth, email, emailPassword);
+        await showAlert("Logado com sucesso!", { type: 'success', title: 'Bem-vindo(a)' });
       }
       onLogin();
     } catch (err: any) {
