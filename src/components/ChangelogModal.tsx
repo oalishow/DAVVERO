@@ -8,22 +8,40 @@ interface ChangelogModalProps {
 export default function ChangelogModal({ onClose }: ChangelogModalProps) {
   const versions = [
     {
+      version: 'v5.2.0',
+      title: 'Modo Offline e Melhorias Visuais',
+      changes: [
+        'Trabalho Offline: Suporte a operação offline via Service Worker (PWA).',
+        'UI: Animação suave de transição no login de administrador.'
+      ],
+      current: true,
+    },
+    {
+      version: 'v5.1.0',
+      title: 'Liturgia, Eventos e Usabilidade',
+      changes: [
+        'Liturgia: Inclusão da Bíblia de Jerusalém, Catecismo da Igreja Católica, Direito Canônico e Calendário Litúrgico.',
+        'Eventos: Organização em sub-abas (Acadêmico e Seminários) e nova funcionalidade de exportação de eventos para o calendário (.ics).',
+        'Segurança e UX: PIN persistente por sessão no Portal do Aluno.'
+      ],
+      current: false,
+    },
+    {
       version: 'v5.0.0',
       title: 'Refatoração Profunda e Otimização',
       changes: [
-        'Funcionalidade de recuperação de senha: \'Esqueci minha senha\' agora disponível para o painel administrativo através de reset por e-mail.',
-        'Otimização de Banco de Dados: Separação global das coleções de eventos e presenças reduzindo radicalmente o tráfego de rede.',
-        'Real-time aprimorado: Listeners otimizados para sincronização perfeita de novos dados, garantindo que o aplicativo suporte com extrema estabilidade e escalabilidade +200 alunos em simultâneo.',
-        'Segurança: Regras do painel atualizadas, código limpo e testes reforçados focados na escalabilidade.'
+        'Recuperação de senha: \'Esqueci minha senha\' agora disponível para o painel administrativo através de reset por e-mail.',
+        'Otimização de Banco de Dados e Real-time aprimorado, suportando com alta estabilidade +200 alunos em simultâneo.',
+        'Segurança: Regras do painel atualizadas e testes reforçados.'
       ],
-      current: true,
+      current: false,
     },
     {
       version: 'v4.8.0',
       title: 'Performance e Experiência',
       changes: [
-        'Animações de Carregamento: Nova barra de progresso responsiva ao vincular sua conta.',
-        'Privacidade Aprimorada: Exibição focada nas funcionalidades de baixar PDF e nova consulta ao acessar sua carteirinha de estudante.',
+        'Animações de Carregamento responsiva ao vincular conta.',
+        'Privacidade Aprimorada: Exibição focada nas funcionalidades de baixar PDF e nova consulta ao acessar sua carteirinha.',
         'Otimização: Maior fluidez de acesso ao painel do aluno.'
       ],
       current: false,
@@ -33,118 +51,9 @@ export default function ChangelogModal({ onClose }: ChangelogModalProps) {
       title: 'Segurança e LGPD',
       changes: [
         'Privacidade: Implementação de máscara de PII para proteção de CPFs e informações sensíveis no sistema.',
-        'Segurança: Regras do painel reescritas de ponta a ponta garantindo o acesso confidencial unicamente para administradores autorizados.'
+        'Segurança: Regras do painel reescritas de ponta a ponta garantindo acesso unicamente para administradores.'
       ],
       current: false
-    },
-    {
-      version: 'v4.7.0',
-      title: 'Organização de Eventos',
-      changes: [
-        'Navegação: Implementação de sub-abas (Próximos e Histórico)',
-        'Check-in facilitado local'
-      ],
-      current: false
-    },
-    {
-      version: 'v4.5.0',
-      title: 'Padronização Legal e UX',
-      changes: [
-        'Transparência Estudantil: Nova descrição jurídica alinhada à Lei 12.933/2013 em todo o sistema e verso da carteirinha.',
-        'Validade Nacional (DNE): Nova seção no portal para solicitação do Documento Nacional do Estudante (Padrão ITI/UNE).',
-        'Animações Tech: Novo fluxo de autenticação com scanner de QR Code realista e animação de "Gerando Documento".',
-        'Otimização Firestore: Implementado onSnapshot para atualizações em tempo real (Sem refresh).',
-        'Status do Sistema: Informações de build e conexão movidas para o rodapé para um layout mais limpo.',
-        'Persistência: Cache local otimizado e correção do seletor de tema manual.',
-        'Estabilidade: Correção de bugs de exportação PDF em dispositivos móveis e Safari.'
-      ],
-      current: false
-    },
-    {
-      version: 'v4.2.5',
-      title: 'Integração e Estabilidade Visual',
-      changes: [
-        'Centralização iOS: O Modal de Atualização agora usa medidas rígidas para garantir travamento central no Safari.',
-        'Anti-Looping PWA: Verificação de atualizações blindada contra loop contínuo e piscadas na tela.',
-        'Anti-Duplicação: Impede novo cadastro caso o RA inserido já pertença a uma carteirinha ativa.',
-        'Validade Automática: Ao cadastrar um membro ou aprovar um pedido, a data padrão agora é de 1 ano.',
-        'Vencimento Inteligente: Carteirinhas vencidas são inativadas sozinhas e vão para Pendentes, avisando o painel gestor.',
-        'Estabilidade Geral: Correção da exportação de fotos para PDF em iPhones e otimização de toques.'
-      ],
-      current: false
-    },
-    {
-      version: 'v4.1.0',
-      title: 'Identidade FAJOPA & Dupla Assinatura',
-      changes: [
-        'Dupla Assinatura: Verso da carteirinha agora suporta Diretor e Reitor simultaneamente.',
-        'Customização Total: Ajuste independente de escala para cada assinatura digital.',
-        'Branding FAJOPA: Atualização completa do nome da instituição e ícones de instalação.',
-        'Layout Otimizado: Reposicionamento de textos e ampliação da área de assinaturas.'
-      ],
-      current: false
-    },
-    {
-      version: 'v4.0.0',
-      title: 'Nova Identidade Visual',
-      changes: [
-        'Novo Logotipo: Ícones e manifestos atualizados com a nova marca.',
-        'Notificações no Windows: Suporte completo a notificações nativas para novos pedidos.',
-        'Segurança Admin: Login por e-mail agora exige confirmação por Senha Mestra.',
-        'Simplificação Pública: Removida a exigência de senha mestra para pedidos de alunos.'
-      ]
-    },
-    {
-      version: 'v3.0.0',
-      title: 'A Maior Integração até Agora',
-      changes: [
-        'Sincronização de Tema: O sistema agora segue automaticamente as definições do seu telemóvel (Claro/Escuro).',
-        'Tags Personalizadas: Liberdade para criar novos Vínculos Institucionais e Cursos diretamente no cadastro.',
-        'Memória Persistente: Novas tags e cursos são salvos automaticamente para uso em futuros cadastros.',
-        'Dashboard Interativo: Status do painel agora são atalhos clicáveis para facilitar a gestão.',
-        'Contador de Alertas: Novo badge de solicitações com indicador numérico e animação de atenção.',
-        'Correções iOS/Safari: Otimização total do scanner QR e animações de carta para iPhones.'
-      ]
-    },
-    {
-      version: 'v2.8.0',
-      title: 'Relatórios & Impressão',
-      changes: [
-        'Novo sistema de relatórios em modo tabela para impressão profissional.',
-        'Otimização de layout para economia de tinta e papel.',
-        'Ajustes finos na gestão de membros e exportação inteligente.'
-      ]
-    },
-    {
-      version: 'v2.5.1',
-      title: 'Reversão de Autenticação',
-      changes: [
-        'Login Simplificado: O acesso ao painel de administração voltou a exigir apenas a palavra-passe para maior agilidade.'
-      ]
-    },
-    {
-      version: 'v2.5.0',
-      title: 'Modo Claro (Light Mode)',
-      changes: [
-        'Interface Adaptável: O sistema foi totalmente adaptado para suportar o Modo Claro, garantindo leitura otimizada em ambientes iluminados.',
-        'Alternância Inteligente: Botão de tema que guarda a preferência do utilizador no dispositivo.'
-      ]
-    },
-    {
-      version: 'v2.4.0',
-      title: 'Segurança Reforçada',
-      changes: [
-        'Login com E-mail: A segurança administrativa foi reforçada em versões anteriores.',
-        'Gestão de Credenciais: Painel dedicado para troca de senhas e configurações de segurança.'
-      ]
-    },
-    {
-      version: 'v2.0.0',
-      title: 'Solicitações Públicas',
-      changes: [
-        'Central de Solicitações: Membros podem solicitar novos documentos ou sugerir edições que passam por aprovação administrativa.',
-        'Notificações EmailJS: Integração para alertas em tempo real para a secretaria.'
-      ]
     }
   ];
 

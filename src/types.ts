@@ -1,5 +1,5 @@
 export const AVAILABLE_SEMINARIES = [
-  "SPSCJ - Sagrado Coração de Jesus",
+  "SPSCJ - Seminário Provincial Sagrado Coração de Jesus",
   "Seminário Rainha dos Apóstolos",
   "Seminário Diocesano São José"
 ];
