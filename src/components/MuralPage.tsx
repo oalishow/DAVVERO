@@ -1,17 +1,30 @@
 import { useState, useEffect, useRef, ChangeEvent } from "react";
-import { motion, AnimatePresence, Reorder } from "motion/react";
+import { motion, AnimatePresence, Reorder, useDragControls } from "motion/react";
 import { GraduationCap, Landmark, Image as ImageIcon, FileText, CheckCircle, Trash2, Pin, MessageSquare, BarChart2, Check, ExternalLink, X, Pencil, GripVertical } from "lucide-react";
-import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, updateDoc, doc, deleteDoc, getDoc } from "firebase/firestore";
+import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, updateDoc, doc, deleteDoc, getDoc, getDocs, limit } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { signInAnonymously } from "firebase/auth";
 import { db, storage, auth, appId, handleFirestoreError, OperationType } from "../lib/firebase";
 import { MuralPost, Member } from "../types";
 
 export default function MuralPage() {
+  const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  
+  useEffect(() => {
+    const handleOnline = () => setIsOffline(false);
+    const handleOffline = () => setIsOffline(true);
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
   const [activeTab, setActiveTab] = useState<"academico" | "seminario">("academico");
   const [posts, setPosts] = useState<MuralPost[]>([]);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [currentUserData, setCurrentUserData] = useState<{ id: string, name: string } | null>(null);
+  const [currentUserData, setCurrentUserData] = useState<{ id: string, name: string, photoUrl?: string, roles?: string[] } | null>(null);
   const myUserId = currentUserData?.id || auth.currentUser?.uid || "anonymous";
 
   // Form states
@@ -29,36 +42,9 @@ export default function MuralPage() {
   const [editingPostId, setEditingPostId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
   const [localOrder, setLocalOrder] = useState<MuralPost[]>([]);
-  const [expiresIn, setExpiresIn] = useState<number | null>(null); // Admin auto-delete
-  const [unlockedDragId, setUnlockedDragId] = useState<string | null>(null);
-  const [holdProgress, setHoldProgress] = useState(0);
-  const holdTimerRef = useRef<any>(null);
-  const intervalRef = useRef<any>(null);
+  const getDefaultSemester = () => new Date().getMonth() <= 6 ? -1 : -2;
+  const [expiresIn, setExpiresIn] = useState<number | null>(getDefaultSemester()); // Admin auto-delete
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const startDragHold = (postId: string) => {
-    if (!isAdmin) return;
-    let elapsed = 0;
-    setHoldProgress(0);
-    setUnlockedDragId(null);
-    
-    intervalRef.current = setInterval(() => {
-      elapsed += 50;
-      setHoldProgress(elapsed / 3000);
-    }, 50);
-
-    holdTimerRef.current = setTimeout(() => {
-      clearInterval(intervalRef.current);
-      setHoldProgress(0);
-      setUnlockedDragId(postId);
-    }, 3000);
-  };
-
-  const cancelDragHold = () => {
-    if (holdTimerRef.current) clearTimeout(holdTimerRef.current);
-    if (intervalRef.current) clearInterval(intervalRef.current);
-    setHoldProgress(0);
-  };
 
   useEffect(() => {
     // Delete expired posts cleanly if admin, hide for everyone else
@@ -80,9 +66,7 @@ export default function MuralPage() {
 
   const handleDragEnd = async () => {
     if (!isAdmin) return;
-    setUnlockedDragId(null);
     try {
-      // Use firestore's optimistic limits by creating a batch? Wait, running map updateDoc is fine.
       for (let i = 0; i < localOrder.length; i++) {
         const post = localOrder[i];
         if (post.orderIndex !== i) {
@@ -98,9 +82,25 @@ export default function MuralPage() {
   const totalVotes = (post: MuralPost) => post.pollOptions?.reduce((acc, opt) => acc + opt.votes, 0) || 0;
 
   useEffect(() => {
-    const unsubAuth = auth.onAuthStateChanged((user) => {
+    const unsubAuth = auth.onAuthStateChanged(async (user) => {
       if (user && !user.isAnonymous) {
         setIsAdmin(true);
+        if (user.email) {
+          try {
+            const q = query(
+              collection(db, `artifacts/${appId}/public/data/students`),
+              where("email", "==", user.email),
+              limit(1)
+            );
+            const snapshot = await getDocs(q);
+            if (!snapshot.empty) {
+              const m = snapshot.docs[0].data() as Member;
+              setCurrentUserData({ id: snapshot.docs[0].id, name: m.name, photoUrl: m.photoUrl, roles: m.roles });
+            }
+          } catch(e) {
+            console.error("Failed to fetch admin profile:", e);
+          }
+        }
       } else {
         // If not a management user, check student profile for roles
         const bondedId = localStorage.getItem("davveroId_student_identity");
@@ -108,7 +108,7 @@ export default function MuralPage() {
           getDoc(doc(db, `artifacts/${appId}/public/data/students`, bondedId)).then(snap => {
             if (snap.exists()) {
               const m = snap.data() as Member;
-              setCurrentUserData({ id: m.id, name: m.name });
+              setCurrentUserData({ id: m.id, name: m.name, photoUrl: m.photoUrl, roles: m.roles });
               if (m.roles && m.roles.some(r => ['admin', 'diretoria', 'gestão', 'comunicação', 'secretaria'].includes(r.toLowerCase()))) {
                 setIsAdmin(true);
               }
@@ -126,9 +126,9 @@ export default function MuralPage() {
       where("tabFn", "==", activeTab)
     );
 
-    const unsub = onSnapshot(q, (snap) => {
+    const unsub = onSnapshot(q, { includeMetadataChanges: true }, (snap) => {
       const fetched: MuralPost[] = [];
-      snap.forEach(doc => fetched.push({ id: doc.id, ...doc.data() } as MuralPost));
+      snap.forEach(doc => fetched.push({ id: doc.id, ...doc.data({ serverTimestamps: 'estimate' }) } as MuralPost));
       
       // Sorting rules:
       // 1. Pinned posts always stay at the top.
@@ -192,8 +192,8 @@ export default function MuralPage() {
           let width = img.width;
           let height = img.height;
           
-          // Redimensionar mantendo proporção (max 1024px)
-          const MAX_SIZE = 1024;
+          // Redimensionar mantendo proporção (max 800px para evitar travamentos)
+          const MAX_SIZE = 800;
           if (width > height && width > MAX_SIZE) {
             height *= MAX_SIZE / width;
             width = MAX_SIZE;
@@ -207,12 +207,12 @@ export default function MuralPage() {
           const ctx = canvas.getContext('2d');
           ctx?.drawImage(img, 0, 0, width, height);
           
-          // Comprimir para JPEG (qualidade 0.7)
-          let dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+          // Comprimir para JPEG mais agressivamente para não sobrecarregar Firebase/Navegador
+          let dataUrl = canvas.toDataURL('image/jpeg', 0.5);
           
-          // Verificar tamanho (Firestore tem limite de 1MB por documento)
-          if (dataUrl.length > 800000) { 
-             dataUrl = canvas.toDataURL('image/jpeg', 0.4);
+          // Verificar tamanho (Firestore tem limite de 1MB por documento, mas mantermos bem abaixo para performance)
+          if (dataUrl.length > 500000) { 
+             dataUrl = canvas.toDataURL('image/jpeg', 0.3);
           }
           
           if (dataUrl.length > 900000) {
@@ -353,8 +353,9 @@ export default function MuralPage() {
 
       const newPost = {
         tabFn: activeTab,
-        authorId: isAdmin ? "admin" : myUserId,
-        authorName: isAdmin ? "Administração" : (currentUserData?.name || "Estudante"),
+        authorId: currentUserData?.id || (isAdmin ? "admin" : myUserId),
+        authorName: currentUserData?.name || (isAdmin ? "Administração" : "Estudante"),
+        authorPhotoUrl: currentUserData?.photoUrl || null,
         text: postText.trim(),
         type: postType,
         mediaUrl: externalLink.trim() ? (
@@ -377,7 +378,21 @@ export default function MuralPage() {
         isPinned: false,
         status: isAdmin ? "approved" : "pending",
         isAdminPost: isAdmin,
-        expiresAt: expiresIn ? Date.now() + expiresIn * 24 * 60 * 60 * 1000 : null
+        expiresAt: expiresIn === -1 
+          ? (() => {
+              const now = new Date();
+              let year = now.getFullYear();
+              if (now.getMonth() > 6) year++; // if beyond July, next year's 1st semester
+              return new Date(year, 6, 31, 23, 59, 59).getTime(); // July 31st
+            })()
+          : expiresIn === -2
+          ? (() => {
+              const now = new Date();
+              return new Date(now.getFullYear(), 11, 31, 23, 59, 59).getTime(); // December 31st
+            })()
+          : expiresIn 
+          ? Date.now() + expiresIn * 24 * 60 * 60 * 1000 
+          : null
       };
 
       await addDoc(collection(db, `artifacts/${appId}/public/data/mural_posts`), newPost);
@@ -388,7 +403,7 @@ export default function MuralPage() {
       setPostType("message");
       setPollOptions(["", ""]);
       setIsAnonymousPoll(true);
-      setExpiresIn(null);
+      setExpiresIn(getDefaultSemester());
       setIsComposing(false);
 
       if (!isAdmin) {
@@ -478,6 +493,11 @@ export default function MuralPage() {
   return (
     <div className="space-y-6">
       <div className="p-6 bg-slate-900 rounded-3xl border border-slate-800 text-center relative overflow-hidden">
+        {isOffline && (
+          <div className="absolute top-0 left-0 w-full bg-amber-500 text-amber-950 font-bold text-[10px] uppercase tracking-widest py-1 flex items-center justify-center z-20">
+             Modo Offline (As publicações serão enviadas quando conectar)
+          </div>
+        )}
         <div className="absolute top-0 right-0 p-8 transform translate-x-4 -translate-y-4 opacity-10">
            <MessageSquare className="w-32 h-32 text-indigo-400" />
         </div>
@@ -559,8 +579,8 @@ export default function MuralPage() {
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => fileInputRef.current?.click()}
-                                disabled={isUploading}
-                                className={`h-8 px-4 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 shadow-sm ${isUploading ? 'bg-slate-100 text-slate-400 cursor-not-allowed overflow-hidden' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
+                                disabled={isUploading || isOffline}
+                                className={`h-8 px-4 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all flex items-center gap-1.5 shadow-sm ${(isUploading || isOffline) ? 'bg-slate-100 text-slate-400 cursor-not-allowed overflow-hidden' : 'bg-indigo-600 text-white hover:bg-indigo-700'}`}
                              >
                                 {isUploading ? (
                                    <>
@@ -657,6 +677,8 @@ export default function MuralPage() {
                       className="p-2 bg-white dark:bg-slate-800 rounded-lg text-sm border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700 dark:text-slate-300"
                    >
                      <option value="">Nunca (Fixo)</option>
+                     <option value="-1">Fim do 1º Semestre (Julho)</option>
+                     <option value="-2">Fim do 2º Semestre (Dezembro)</option>
                      <option value="15">Em 15 dias</option>
                      <option value="30">Em 30 dias</option>
                      <option value="60">Em 60 dias</option>
@@ -701,182 +723,23 @@ export default function MuralPage() {
          ) : (
            <Reorder.Group axis="y" values={localOrder} onReorder={setLocalOrder} className="space-y-4">
             {localOrder.map(post => (
-             <Reorder.Item 
-               value={post}
-               initial={{ opacity: 0, y: 20 }}
-               animate={{ opacity: 1, y: 0 }}
-               key={post.id} 
-               onDragEnd={handleDragEnd}
-               dragListener={isAdmin && unlockedDragId === post.id}
-               className={`p-5 rounded-3xl border transition-all duration-300 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600 ${post.isPinned ? 'bg-indigo-50/50 dark:bg-indigo-900/10 border-indigo-200 dark:border-indigo-800/50 shadow-sm' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'} relative`}
-             >
-                {post.isPinned && (
-                  <div className="absolute top-0 right-8 -translate-y-1/2 bg-indigo-600 text-white px-3 py-1 rounded-full flex items-center gap-1 shadow-sm">
-                    <Pin className="w-3 h-3" /> <span className="text-[10px] font-black uppercase tracking-widest">Fixado</span>
-                  </div>
-                )}
-                
-                <div className="flex justify-between items-start mb-4">
-                   <div className="flex items-center gap-3">
-                      <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-inner ${post.isAdminPost ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-600'}`}>
-                         {post.isAdminPost ? <CheckCircle className="w-5 h-5"/> : <GraduationCap className="w-5 h-5"/>}
-                      </div>
-                      <div>
-                         <p className="font-bold text-sm text-slate-800 dark:text-white flex items-center gap-1.5">{post.authorName} {post.isAdminPost && <span className="bg-indigo-600 text-white text-[8px] px-1.5 py-0.5 rounded-sm uppercase tracking-widest">Admin</span>}</p>
-                         <p className="text-[10px] text-slate-500 font-medium">
-                            {post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString('pt-BR') : 'Aguarde...'}
-                         </p>
-                      </div>
-                   </div>
-                   
-                   {/* Status Badge & Admn Controls */}
-                   <div className="flex items-center gap-2">
-                     {post.status === "pending" && (
-                       <span className="px-2 py-1 bg-amber-100 text-amber-700 text-[10px] rounded-lg font-bold uppercase">Pendente</span>
-                     )}
-                     {(isAdmin || post.authorId === myUserId) && (
-                       <div className="flex items-center gap-1">
-                          {isAdmin && post.status === "pending" && (
-                            <button onClick={() => approvePost(post.id)} className="p-1.5 text-green-600 hover:bg-green-50 rounded-md" title="Aprovar">
-                              <Check className="w-4 h-4"/>
-                            </button>
-                          )}
-                          {isAdmin && (
-                            <button onClick={() => togglePin(post)} className={`p-1.5 rounded-md ${post.isPinned ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400 hover:bg-slate-100'}`} title={post.isPinned ? "Desafixar" : "Fixar no topo"}>
-                               <Pin className="w-4 h-4"/>
-                            </button>
-                          )}
-                             <button onClick={() => { setEditingPostId(post.id); setEditContent(post.text); }} className="p-1.5 text-blue-400 hover:bg-blue-50 hover:text-blue-600 rounded-md" title="Editar">
-                               <Pencil className="w-4 h-4"/>
-                             </button>
-                           <button onClick={() => setDeleteConfirmId(post.id)} className="p-1.5 text-red-400 hover:bg-red-50 hover:text-red-500 rounded-md" title="Apagar Publicação">
-                             <Trash2 className="w-4 h-4"/>
-                          </button>
-                          {isAdmin && (
-                            <div 
-                              onPointerDown={() => startDragHold(post.id)}
-                              onPointerUp={cancelDragHold}
-                              onPointerLeave={cancelDragHold}
-                              className={`p-1.5 mt-1 cursor-grab active:cursor-grabbing transition-colors rounded-md relative ${unlockedDragId === post.id ? 'text-indigo-600 bg-indigo-50 ring-2 ring-indigo-200' : 'text-slate-300 hover:text-slate-500 hover:bg-slate-50'}`} 
-                              title={unlockedDragId === post.id ? "Pronto! Solte e arraste pelo card." : "Segure por 3s para arrastar"}
-                            >
-                              <GripVertical className="w-5 h-5" />
-                              {/* Progress indicator */}
-                              {holdProgress > 0 && unlockedDragId !== post.id && (
-                                <div className="absolute inset-x-0 -bottom-1 h-1 bg-slate-200 rounded-full overflow-hidden">
-                                  <div className="h-full bg-indigo-500 transition-all duration-75" style={{ width: `${holdProgress * 100}%` }} />
-                                </div>
-                              )}
-                            </div>
-                          )}
-                       </div>
-                     )}
-                   </div>
-                </div>
-
-                {editingPostId === post.id ? (
-                  <div className="mt-4">
-                    <textarea 
-                      value={editContent} 
-                      onChange={e => setEditContent(e.target.value)}
-                      className="w-full text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
-                      rows={4}
-                    />
-                    <div className="flex justify-end gap-2 mt-2">
-                       <button onClick={() => setEditingPostId(null)} className="px-3 py-1.5 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-lg">Cancelar</button>
-                       <button onClick={handleSaveEdit} className="px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg">Salvar</button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="mt-4 text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
-                     {post.text}
-                  </div>
-                )}
-
-                {post.mediaUrl && (
-                   <div className="mt-4">
-                     {(post.mediaType === 'image' || post.mediaUrl.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i) || post.mediaUrl.includes('drive.google.com/uc?export=view')) ? (
-                        <div className="rounded-xl overflow-hidden cursor-pointer bg-slate-100 dark:bg-slate-900 flex justify-center" onClick={() => window.open(post.mediaUrl, '_blank')}>
-                          <img 
-                             src={post.mediaUrl} 
-                             alt="Visualização" 
-                             className="max-w-full max-h-96 object-contain hover:opacity-95 transition-opacity" 
-                             referrerPolicy="no-referrer"
-                          />
-                        </div>
-                     ) : (post.mediaType === 'video' || (post.mediaType === 'document' && !post.mediaUrl.startsWith('data:')) || post.mediaUrl.includes('youtube.com/embed') || post.mediaUrl.includes('youtu.be/') || post.mediaUrl.includes('/preview') || post.mediaUrl.includes('.docx') || post.mediaUrl.includes('.doc')) ? (
-                        <div className="rounded-xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
-                          <iframe 
-                             src={post.mediaUrl.includes('firebasestorage') && (post.mediaUrl.toLowerCase().includes('.docx') || post.mediaUrl.toLowerCase().includes('.doc')) 
-                               ? `https://docs.google.com/viewer?url=${encodeURIComponent(post.mediaUrl)}&embedded=true` 
-                               : post.mediaUrl} 
-                             className="w-full aspect-video border-0" 
-                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
-                             allowFullScreen>
-                          </iframe>
-                        </div>
-                     ) : (post.mediaType === 'document' && post.mediaUrl.startsWith('data:')) || post.mediaType === 'pdf' ? (
-                        <a href={post.mediaUrl} download="documento.pdf" className="inline-flex items-center gap-3 px-6 py-4 bg-indigo-50 dark:bg-slate-800 rounded-2xl border border-indigo-200 dark:border-indigo-900/50 text-indigo-700 dark:text-indigo-400 text-xs font-black uppercase tracking-widest hover:bg-indigo-100 dark:hover:bg-slate-700 transition-colors group shadow-sm">
-                           <div className="w-10 h-10 bg-indigo-200/50 dark:bg-indigo-900/80 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
-                              <FileText className="w-5 h-5"/> 
-                           </div>
-                           Baixar Anexo PDF
-                        </a>
-                     ) : (
-                        <a href={post.mediaUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 text-indigo-600 text-sm font-bold truncate max-w-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                           <ExternalLink className="w-5 h-5 flex-shrink-0"/> <span className="truncate">{post.mediaUrl}</span>
-                        </a>
-                     )}
-                  </div>
-                )}
-
-                {post.type === "poll" && post.pollOptions && (
-                  <div className="mt-5 space-y-2">
-                     {post.pollOptions.map((opt) => {
-                       const vTotal = totalVotes(post);
-                       const percentage = vTotal > 0 ? Math.round((opt.votes / vTotal) * 100) : 0;
-                       
-                       return (
-                         <button 
-                           key={opt.id} 
-                           onClick={() => handleVote(post, opt.id)}
-                           className="w-full relative group overflow-hidden bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-left hover:border-indigo-400 dark:hover:border-indigo-500 transition-colors"
-                         >
-                            <div className="absolute top-0 left-0 bottom-0 bg-indigo-100 dark:bg-indigo-900/30 transition-all duration-500 ease-out" style={{ width: `${percentage}%` }} />
-                            <div className="relative z-10 flex justify-between items-center text-sm font-medium">
-                               <span className="text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 transition-colors">{opt.text}</span>
-                               <span className="text-xs font-bold text-slate-500">{percentage}% ({opt.votes})</span>
-                            </div>
-                         </button>
-                       )
-                     })}
-                     
-                     <div className="flex justify-between items-end mt-2">
-                        {post.isAnonymousPoll === false ? (
-                           <div className="flex-1">
-                              <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1">Quem votou:</p>
-                              <div className="flex flex-wrap gap-1">
-                                {(post.voterDetails || []).map((vote, idx) => {
-                                   const optText = post.pollOptions?.find(o => o.id === vote.optionId)?.text || "Opção";
-                                   return (
-                                     <span key={idx} className="text-[9px] bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded-md text-slate-500" title={optText}>
-                                        {vote.userName}
-                                     </span>
-                                   );
-                                })}
-                                {(!post.voterDetails || post.voterDetails.length === 0) && <span className="text-[9px] text-slate-400">Nenhum voto ainda.</span>}
-                              </div>
-                           </div>
-                        ) : (
-                           <div className="flex-1">
-                             <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mt-2">Enquete Anônima</p>
-                           </div>
-                        )}
-                        <p className="text-[10px] uppercase font-bold text-slate-400 text-right shrink-0">{totalVotes(post)} votos no total</p>
-                     </div>
-                  </div>
-                )}
-              </Reorder.Item>
+              <MuralPostItem
+                key={post.id}
+                post={post}
+                isAdmin={isAdmin}
+                myUserId={myUserId}
+                approvePost={approvePost}
+                togglePin={togglePin}
+                setEditingPostId={setEditingPostId}
+                setEditContent={setEditContent}
+                editingPostId={editingPostId}
+                editContent={editContent}
+                handleSaveEdit={handleSaveEdit}
+                setDeleteConfirmId={setDeleteConfirmId}
+                handleVote={handleVote}
+                totalVotes={totalVotes}
+                handleDragEnd={handleDragEnd}
+              />
             ))}
            </Reorder.Group>
          )}
@@ -925,5 +788,242 @@ export default function MuralPage() {
         )}
       </AnimatePresence>
     </div>
+  );
+}
+
+interface MuralPostItemProps {
+  key?: string | number;
+  post: MuralPost;
+  isAdmin: boolean;
+  myUserId?: string;
+  approvePost: (id: string) => Promise<void>;
+  togglePin: (post: MuralPost) => Promise<void>;
+  setEditingPostId: (id: string | null) => void;
+  setEditContent: (content: string) => void;
+  editingPostId: string | null;
+  editContent: string;
+  handleSaveEdit: () => Promise<void>;
+  setDeleteConfirmId: (id: string | null) => void;
+  handleVote: (post: MuralPost, optionId: string) => Promise<void>;
+  totalVotes: (post: MuralPost) => number;
+  handleDragEnd: () => Promise<void>;
+}
+
+function MuralPostItem({
+  post,
+  isAdmin,
+  myUserId,
+  approvePost,
+  togglePin,
+  setEditingPostId,
+  setEditContent,
+  editingPostId,
+  editContent,
+  handleSaveEdit,
+  setDeleteConfirmId,
+  handleVote,
+  totalVotes,
+  handleDragEnd
+}: MuralPostItemProps) {
+  const controls = useDragControls();
+  
+  return (
+    <Reorder.Item 
+      value={post}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      onDragEnd={handleDragEnd}
+      dragListener={false}
+      dragControls={controls}
+      className={`p-5 rounded-3xl border transition-all duration-300 hover:shadow-md hover:border-slate-300 dark:hover:border-slate-600 ${post.isPinned ? 'bg-indigo-50/50 dark:bg-indigo-900/10 border-indigo-200 dark:border-indigo-800/50 shadow-sm' : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'} relative`}
+    >
+       {post.isPinned && (
+         <div className="absolute top-0 right-8 -translate-y-1/2 bg-indigo-600 text-white px-3 py-1 rounded-full flex items-center gap-1 shadow-sm">
+           <Pin className="w-3 h-3" /> <span className="text-[10px] font-black uppercase tracking-widest">Fixado</span>
+         </div>
+       )}
+       
+       <div className="flex justify-between items-start mb-4">
+          <div className="flex items-center gap-3">
+             <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-inner overflow-hidden ${post.isAdminPost ? 'bg-indigo-100 text-indigo-600' : 'bg-slate-100 text-slate-600'}`}>
+                {post.authorPhotoUrl ? (
+                  <img src={post.authorPhotoUrl} alt={post.authorName} loading="lazy" className="w-full h-full object-cover" />
+                ) : (
+                  post.isAdminPost ? <CheckCircle className="w-5 h-5"/> : <GraduationCap className="w-5 h-5"/>
+                )}
+             </div>
+             <div>
+                <p className="font-bold text-sm text-slate-800 dark:text-white flex items-center gap-1.5">{post.authorName} {post.isAdminPost && <span className="bg-indigo-600 text-white text-[8px] px-1.5 py-0.5 rounded-sm uppercase tracking-widest">Admin</span>}</p>
+                <p className="text-[10px] text-slate-500 font-medium">
+                   {post.createdAt?.toDate ? post.createdAt.toDate().toLocaleString('pt-BR') : 'Aguarde...'}
+                </p>
+             </div>
+          </div>
+          
+          {/* Status Badge & Admn Controls */}
+          <div className="flex items-center gap-2">
+            {post.status === "pending" && (
+              <span className="px-2 py-1 bg-amber-100 text-amber-700 text-[10px] rounded-lg font-bold uppercase">Pendente</span>
+            )}
+            {(isAdmin || post.authorId === myUserId) && (
+              <div className="flex items-center gap-1">
+                 {isAdmin && post.status === "pending" && (
+                   <button onClick={() => approvePost(post.id)} className="p-1.5 text-green-600 hover:bg-green-50 rounded-md" title="Aprovar">
+                     <Check className="w-4 h-4"/>
+                   </button>
+                 )}
+                 {isAdmin && (
+                   <button onClick={() => togglePin(post)} className={`p-1.5 rounded-md ${post.isPinned ? 'text-indigo-600 bg-indigo-50' : 'text-slate-400 hover:bg-slate-100'}`} title={post.isPinned ? "Desafixar" : "Fixar no topo"}>
+                      <Pin className="w-4 h-4"/>
+                   </button>
+                 )}
+                    <button onClick={() => { setEditingPostId(post.id); setEditContent(post.text); }} className="p-1.5 text-blue-400 hover:bg-blue-50 hover:text-blue-600 rounded-md" title="Editar">
+                      <Pencil className="w-4 h-4"/>
+                    </button>
+                  <button onClick={() => setDeleteConfirmId(post.id)} className="p-1.5 text-red-400 hover:bg-red-50 hover:text-red-500 rounded-md" title="Apagar Publicação">
+                    <Trash2 className="w-4 h-4"/>
+                 </button>
+                 {isAdmin && (
+                   <div 
+                     onPointerDown={(e) => controls.start(e)}
+                     className="p-1.5 mt-1 cursor-grab active:cursor-grabbing transition-colors rounded-md text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700" 
+                     title="Arraste para reordenar"
+                     style={{ touchAction: 'none' }}
+                   >
+                     <GripVertical className="w-5 h-5" />
+                   </div>
+                 )}
+              </div>
+            )}
+          </div>
+       </div>
+
+       {editingPostId === post.id ? (
+         <div className="mt-4">
+           <textarea 
+             value={editContent} 
+             onChange={e => setEditContent(e.target.value)}
+             className="w-full text-sm bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-3 focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
+             rows={4}
+           />
+           <div className="flex justify-end gap-2 mt-2">
+              <button onClick={() => setEditingPostId(null)} className="px-3 py-1.5 text-xs font-bold text-slate-500 hover:bg-slate-100 rounded-lg">Cancelar</button>
+              <button onClick={handleSaveEdit} className="px-3 py-1.5 text-xs font-bold text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg">Salvar</button>
+           </div>
+         </div>
+       ) : (
+         <div className="mt-4 text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap leading-relaxed">
+            {post.text}
+         </div>
+       )}
+
+       {post.mediaUrl && (
+          <div className="mt-4">
+            {(post.mediaType === 'image' || post.mediaUrl.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i) || post.mediaUrl.includes('drive.google.com/uc?export=view')) ? (
+               <div className="rounded-xl overflow-hidden cursor-pointer bg-slate-100 dark:bg-slate-900 flex justify-center" onClick={() => window.open(post.mediaUrl!, '_blank')}>
+                 <img 
+                    src={post.mediaUrl} 
+                    alt="Visualização" 
+                    loading="lazy"
+                    className="max-w-full max-h-96 object-contain hover:opacity-95 transition-opacity" 
+                    referrerPolicy="no-referrer"
+                 />
+               </div>
+            ) : post.mediaType === 'pdf' || post.mediaUrl.match(/\.pdf$/i) || post.mediaUrl.startsWith('data:application/pdf') ? (
+               <div className="rounded-xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex flex-col">
+                 <object 
+                    data={post.mediaUrl} 
+                    type="application/pdf"
+                    className="w-full h-[60vh] min-h-[500px] border-0" 
+                 >
+                    <div className="p-8 flex flex-col items-center justify-center text-center bg-slate-50 dark:bg-slate-800">
+                       <FileText className="w-12 h-12 text-slate-400 mb-3"/>
+                       <p className="text-sm font-medium text-slate-600 dark:text-slate-300 mb-4">Pré-visualização não suportada pelo navegador no momento.</p>
+                       <a href={post.mediaUrl} download="documento.pdf" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-5 py-2.5 bg-indigo-600 text-white hover:bg-indigo-700 transition-colors rounded-xl font-bold text-xs shadow-sm">
+                          Baixar Documento PDF
+                       </a>
+                    </div>
+                 </object>
+                 <div className="p-3 bg-slate-50 dark:bg-slate-900/50 border-t border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                   <span className="text-xs font-medium text-slate-500 uppercase tracking-widest pl-2">Documento PDF</span>
+                   <a href={post.mediaUrl} target="_blank" rel="noopener noreferrer" download="documento.pdf" className="text-xs font-bold text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors flex items-center gap-2 px-3 py-1.5 rounded-lg hover:bg-indigo-50 dark:hover:bg-indigo-900/30">
+                     <ExternalLink className="w-3.5 h-3.5" /> 
+                     Abrir / Baixar
+                   </a>
+                 </div>
+               </div>
+            ) : (post.mediaType === 'video' || (post.mediaType === 'document' && !post.mediaUrl.startsWith('data:')) || post.mediaUrl.includes('youtube.com/embed') || post.mediaUrl.includes('youtu.be/') || post.mediaUrl.includes('/preview') || post.mediaUrl.includes('.docx') || post.mediaUrl.includes('.doc')) ? (
+               <div className="rounded-xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
+                 <iframe 
+                    src={post.mediaUrl.includes('firebasestorage') && (post.mediaUrl.toLowerCase().includes('.docx') || post.mediaUrl.toLowerCase().includes('.doc')) 
+                      ? `https://docs.google.com/viewer?url=${encodeURIComponent(post.mediaUrl)}&embedded=true` 
+                      : post.mediaUrl} 
+                    className="w-full aspect-video border-0" 
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" 
+                    allowFullScreen>
+                 </iframe>
+               </div>
+            ) : (post.mediaType === 'document' && post.mediaUrl.startsWith('data:')) ? (
+               <a href={post.mediaUrl} download="documento.pdf" className="inline-flex items-center gap-3 px-6 py-4 bg-indigo-50 dark:bg-slate-800 rounded-2xl border border-indigo-200 dark:border-indigo-900/50 text-indigo-700 dark:text-indigo-400 text-xs font-black uppercase tracking-widest hover:bg-indigo-100 dark:hover:bg-slate-700 transition-colors group shadow-sm">
+                  <div className="w-10 h-10 bg-indigo-200/50 dark:bg-indigo-900/80 rounded-full flex items-center justify-center group-hover:scale-110 transition-transform">
+                     <FileText className="w-5 h-5"/> 
+                  </div>
+                  Baixar Anexo
+               </a>
+            ) : (
+               <a href={post.mediaUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 px-4 py-3 bg-slate-50 dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-700 text-indigo-600 text-sm font-bold truncate max-w-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+                  <ExternalLink className="w-5 h-5 flex-shrink-0"/> <span className="truncate">{post.mediaUrl}</span>
+               </a>
+            )}
+         </div>
+       )}
+
+       {post.type === "poll" && post.pollOptions && (
+         <div className="mt-5 space-y-2">
+            {post.pollOptions.map((opt) => {
+              const vTotal = totalVotes(post);
+              const percentage = vTotal > 0 ? Math.round((opt.votes / vTotal) * 100) : 0;
+              
+              return (
+                <button 
+                  key={opt.id} 
+                  onClick={() => handleVote(post, opt.id)}
+                  className="w-full relative group overflow-hidden bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-left hover:border-indigo-400 dark:hover:border-indigo-500 transition-colors"
+                >
+                   <div className="absolute top-0 left-0 bottom-0 bg-indigo-100 dark:bg-indigo-900/30 transition-all duration-500 ease-out" style={{ width: `${percentage}%` }} />
+                   <div className="relative z-10 flex justify-between items-center text-sm font-medium">
+                      <span className="text-slate-700 dark:text-slate-200 group-hover:text-indigo-600 transition-colors">{opt.text}</span>
+                      <span className="text-xs font-bold text-slate-500">{percentage}% ({opt.votes})</span>
+                   </div>
+                </button>
+              )
+            })}
+            
+            <div className="flex justify-between items-end mt-2">
+               {post.isAnonymousPoll === false ? (
+                  <div className="flex-1">
+                     <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mb-1">Quem votou:</p>
+                     <div className="flex flex-wrap gap-1">
+                       {(post.voterDetails || []).map((vote, idx) => {
+                          const optText = post.pollOptions?.find(o => o.id === vote.optionId)?.text || "Opção";
+                          return (
+                            <span key={idx} className="text-[9px] bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-1.5 py-0.5 rounded-md text-slate-500" title={optText}>
+                               {vote.userName}
+                            </span>
+                          );
+                       })}
+                       {(!post.voterDetails || post.voterDetails.length === 0) && <span className="text-[9px] text-slate-400">Nenhum voto ainda.</span>}
+                     </div>
+                  </div>
+               ) : (
+                  <div className="flex-1">
+                    <p className="text-[10px] uppercase tracking-widest font-bold text-slate-400 mt-2">Enquete Anônima</p>
+                  </div>
+               )}
+               <p className="text-[10px] uppercase font-bold text-slate-400 text-right shrink-0">{totalVotes(post)} votos no total</p>
+            </div>
+         </div>
+       )}
+    </Reorder.Item>
   );
 }

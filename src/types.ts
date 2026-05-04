@@ -137,6 +137,7 @@ export interface MuralPost {
   tabFn: "academico" | "seminario"; // Which tab it belongs to
   authorId?: string; // If known (memberId)
   authorName: string; // The selected or provided name
+  authorPhotoUrl?: string;
   text: string;
   type: "message" | "poll";
   mediaUrl?: string; // For images/PDFs

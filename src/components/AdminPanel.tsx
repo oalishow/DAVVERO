@@ -26,6 +26,7 @@ import {
   getDocs,
   onSnapshot,
   where,
+  limit,
   Timestamp,
 } from "firebase/firestore";
 import { db, appId, auth, registerVisitor, createNotification } from "../lib/firebase";
@@ -39,6 +40,9 @@ import SettingsModal from "./SettingsModal";
 import RecycleBinModal from "./RecycleBinModal";
 import BackupModal from "./BackupModal";
 import AdminRequestsModal from "./AdminRequestsModal";
+import FajopaIDCard from "./FajopaIDCard";
+import { motion, AnimatePresence } from "motion/react";
+import { X } from "lucide-react";
 import ImageCropperModal from "./ImageCropperModal";
 import PrintReportModal from "./PrintReportModal";
 import EventManagement from "./EventManagement";
@@ -92,6 +96,38 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
     totalTrash: 0,
   });
   const [newRole, setNewRole] = useState("");
+  const [adminMember, setAdminMember] = useState<Member | null>(null);
+  const [showMyCard, setShowMyCard] = useState(false);
+
+  useEffect(() => {
+    const fetchAdminMember = async () => {
+      if (auth.currentUser && !auth.currentUser.isAnonymous && auth.currentUser.email) {
+        try {
+          const q = query(
+            collection(db, `artifacts/${appId}/public/data/students`),
+            where("email", "==", auth.currentUser.email),
+            limit(1)
+          );
+          const snapshot = await getDocs(q);
+          if (!snapshot.empty) {
+            setAdminMember({ ...snapshot.docs[0].data(), id: snapshot.docs[0].id } as Member);
+          } else if (auth.currentUser.photoURL) {
+            // Fallback to Firebase Auth profile if not in students collection
+            setAdminMember({ 
+              name: auth.currentUser.displayName || "Administrador",
+              photoUrl: auth.currentUser.photoURL,
+              email: auth.currentUser.email,
+              roles: ["Admin"],
+              isActive: true
+            } as any);
+          }
+        } catch (e) {
+          console.error("Failed to load admin member info:", e);
+        }
+      }
+    };
+    fetchAdminMember();
+  }, []);
 
   const customRoles = settings.customRoles;
   const customCourses = settings.customCourses;
@@ -410,19 +446,46 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
       )}
 
       <div className="flex justify-between items-center mb-6 border-b border-slate-200 dark:border-slate-700/60 pb-3 sm:pb-4 no-print gap-2">
-        <div className="flex flex-col">
-          <h2 className="text-lg sm:text-xl font-semibold text-slate-800 dark:text-slate-200">
-            Painel de Gestão
-          </h2>
-          <div className="flex items-center gap-1.5 mt-0.5">
-            <div
-              className={`w-1.5 h-1.5 rounded-full ${auth.currentUser && !auth.currentUser.isAnonymous ? "bg-emerald-500" : "bg-amber-500"}`}
-            ></div>
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">
-              {auth.currentUser && !auth.currentUser.isAnonymous
-                ? `Logado como: ${auth.currentUser.email}`
-                : "Acesso via Senha Mestre"}
-            </span>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+          {adminMember ? (
+            <motion.div 
+              whileHover={{ scale: 1.05 }}
+              onClick={() => setShowMyCard(true)}
+              className="w-12 h-12 rounded-full overflow-hidden border-2 border-emerald-500 shadow-sm flex-shrink-0 cursor-pointer"
+              title="Clique para ver sua Identidade"
+            >
+              {adminMember.photoUrl ? (
+                <img src={adminMember.photoUrl} alt="Admin" className="w-full h-full object-cover" />
+              ) : (
+                <div className="w-full h-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center">
+                  <UserCheck className="w-6 h-6 text-slate-400" />
+                </div>
+              )}
+            </motion.div>
+          ) : (
+            <div className="hidden sm:flex w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 border-2 border-slate-300 dark:border-slate-600 items-center justify-center shadow-sm flex-shrink-0">
+              <Settings className="w-6 h-6 text-slate-500" />
+            </div>
+          )}
+          <div className="flex flex-col">
+            <h2 className="text-lg sm:text-xl font-semibold text-slate-800 dark:text-slate-200 uppercase tracking-tight">
+              {adminMember ? adminMember.name : "Mural da Administração"}
+            </h2>
+            <div className="flex flex-wrap items-center gap-1.5 mt-0.5 text-xs">
+              <div
+                className={`w-2 h-2 rounded-full ${auth.currentUser && !auth.currentUser.isAnonymous ? "bg-emerald-500" : "bg-amber-500"}`}
+              ></div>
+              <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tight">
+                {auth.currentUser && !auth.currentUser.isAnonymous
+                  ? `Gestão: ${auth.currentUser.email}`
+                  : "Acesso via Senha Mestre"}
+              </span>
+              {adminMember?.roles && adminMember.roles.length > 0 && (
+                <span className="text-[10px] bg-slate-200 dark:bg-slate-700 font-bold px-1.5 py-0.5 rounded text-slate-600 dark:text-slate-300 ml-1 truncate max-w-[120px]">
+                  {adminMember.roles.join(', ')}
+                </span>
+              )}
+            </div>
           </div>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
@@ -959,6 +1022,27 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
       {showBackup && <BackupModal onClose={() => setShowBackup(false)} />}
       {showRequests && (
         <AdminRequestsModal onClose={() => setShowRequests(false)} />
+      )}
+      {showMyCard && adminMember && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm no-print">
+          <motion.div 
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-2xl relative max-w-lg w-full"
+          >
+            <button 
+              onClick={() => setShowMyCard(false)}
+              className="absolute top-4 right-4 p-2 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-500 hover:text-slate-800 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            <h3 className="text-lg font-bold text-slate-800 dark:text-white mb-6 uppercase tracking-widest text-center">Sua Identidade</h3>
+            <div className="flex justify-center">
+               <FajopaIDCard member={adminMember} />
+            </div>
+            <p className="text-[10px] text-slate-500 mt-6 text-center font-medium uppercase italic">Este card reflete o cadastro vinculado ao seu e-mail de acesso.</p>
+          </motion.div>
+        </div>
       )}
       {showPrintReport && (
         <PrintReportModal onClose={() => setShowPrintReport(false)} />
