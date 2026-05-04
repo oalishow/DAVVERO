@@ -123,9 +123,12 @@ export interface Appointment {
   id: string;
   availabilityId: string; // Referência à Availability
   memberId: string;       // Referência ao Member (Seminarian)
+  studentName?: string;   // Desnormalizado para agendamentos Whatsapp sem vínculo
   professionalId: string; // Desnormalizado para facilitar queries
   date: string;           // Desnormalizado
   startTime: string;      // Desnormalizado
+  endTime?: string;       // Desnormalizado
+  location?: string;      // Desnormalizado
   status: "CONFIRMADO" | "CANCELADO";
   notes?: string;
   createdAt: string;

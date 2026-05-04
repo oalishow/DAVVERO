@@ -273,7 +273,7 @@ export default function Header({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
                                   else trigger('student');
                                 }
                                 else if (n.type === 'certificado') trigger('student');
-                                else if (n.type === 'inscricao') trigger('admin');
+                                else if (n.type === 'inscricao' || n.type === 'appointment_swap') trigger('admin');
                               }
                               setShowDropdown(false);
                             }}

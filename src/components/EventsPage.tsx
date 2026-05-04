@@ -31,11 +31,12 @@ import type { Event, Attendance, Member } from "../types";
 import PublicAttendeesModal from "./PublicAttendeesModal";
 import Modal from "./Modal";
 import { useDialog } from "../context/DialogContext";
+import PublicAppointmentsList from "./PublicAppointmentsList";
 
 export default function EventsPage({ onNavigateToStudent, renderSeminary = false }: { onNavigateToStudent?: () => void, renderSeminary?: boolean }) {
   const { showAlert } = useDialog();
   const [events, setEvents] = useState<Event[]>([]);
-  const [eventTypeTab, setEventTypeTab] = useState<"general" | "seminary">(renderSeminary ? "seminary" : "general");
+  const [eventTypeTab, setEventTypeTab] = useState<"general" | "seminary" | "appointments">(renderSeminary ? "seminary" : "general");
   const [subTab, setSubTab] = useState<"upcoming" | "past">("upcoming");
   const [myAttendances, setMyAttendances] = useState<Attendance[]>([]);
   const [member, setMember] = useState<Member | null>(null);
@@ -263,6 +264,16 @@ END:VCALENDAR`;
           >
             SEMINÁRIO
           </button>
+          <button
+            onClick={() => setEventTypeTab("appointments")}
+            className={`flex-1 py-3 rounded-xl text-xs sm:text-sm font-black uppercase tracking-widest transition-all ${
+              eventTypeTab === "appointments"
+                ? "bg-white dark:bg-slate-700 text-purple-600 dark:text-purple-400 shadow-md transform scale-[1.02]"
+                : "text-slate-400 hover:text-slate-600 hover:bg-slate-200/50 dark:hover:bg-slate-700/30"
+            }`}
+          >
+            Atendimentos
+          </button>
         </div>
       )}
 
@@ -285,7 +296,7 @@ END:VCALENDAR`;
         </div>
       )}
 
-      {!(eventTypeTab === "seminary" && !renderSeminary && !member) && (
+      {!(eventTypeTab === "seminary" && !renderSeminary && !member) && eventTypeTab !== "appointments" && (
         <>
           <div className="flex gap-2 p-1.5 bg-slate-100 dark:bg-slate-800/50 rounded-2xl mb-6 shadow-inner no-print border border-slate-200/50 dark:border-slate-700/50">
         <button
@@ -571,6 +582,11 @@ END:VCALENDAR`;
       </div>
       </>
       )}
+
+      {eventTypeTab === "appointments" && (
+        <PublicAppointmentsList member={member} onNavigateToStudent={onNavigateToStudent} />
+      )}
+
       <Modal
         isOpen={!!confirmModal?.isOpen}
         onClose={() => setConfirmModal(null)}

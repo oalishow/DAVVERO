@@ -3,7 +3,8 @@ import { collection, query, where, getDocs, addDoc, updateDoc, doc, orderBy, del
 import { db, appId } from "../lib/firebase";
 import { useDialog } from "../context/DialogContext";
 import { Member, Appointment, Availability } from "../types";
-import { Clock, Calendar as CalendarIcon, User, Plus, CheckCircle, Trash2, HeartHandshake, ShieldCheck } from "lucide-react";
+import { Clock, Calendar as CalendarIcon, User, Plus, CheckCircle, Trash2, HeartHandshake, ShieldCheck, CalendarPlus } from "lucide-react";
+import { DEFAULT_PROFESSIONALS } from "../lib/defaultProfessionals";
 
 interface AppointmentsPanelProps {
   member: Member;
@@ -79,10 +80,17 @@ export default function AppointmentsPanel({ member }: AppointmentsPanelProps) {
         // Load all professionals
         const profsQ = query(collection(db, `artifacts/${appId}/public/data/students`));
         const profsSnap = await getDocs(profsQ);
-        const profList = profsSnap.docs
+        const dbProfList = profsSnap.docs
           .map(d => ({ id: d.id, ...d.data() } as Member))
           .filter(m => m.roles?.some(r => ["REITOR", "VICE-REITOR", "PSICÓLOGA", "PSICÓLOGO", "DIRETOR ESPIRITUAL", "DIRETORA ESPIRITUAL", "PADRE"].includes(r.toUpperCase())));
-        setProfessionals(profList);
+        
+        const combinedProfs = [...DEFAULT_PROFESSIONALS];
+        dbProfList.forEach(m => {
+           if (!combinedProfs.some(pm => pm.name.toLowerCase() === m.name.toLowerCase())) {
+             combinedProfs.push(m);
+           }
+        });
+        setProfessionals(combinedProfs);
       }
     } catch (err) {
       console.error(err);
@@ -168,6 +176,8 @@ export default function AppointmentsPanel({ member }: AppointmentsPanelProps) {
         professionalId: avail.professionalId,
         date: avail.date,
         startTime: avail.startTime,
+        endTime: avail.endTime,
+        location: avail.location,
         status: "CONFIRMADO",
         createdAt: new Date().toISOString()
       };
@@ -202,6 +212,53 @@ export default function AppointmentsPanel({ member }: AppointmentsPanelProps) {
        console.error(err);
        showAlert("Erro ao cancelar.", { type: "error" });
     }
+  };
+
+  const handleAddToCalendar = (appt: Appointment, roleName: string, isGoogle: boolean = false) => {
+    const startDate = appt.date.replace(/-/g, '');
+    const startTime = appt.startTime.replace(':', '') + '00';
+    const endDate = appt.date.replace(/-/g, '');
+    let endTime = '';
+    
+    if (appt.endTime) {
+      endTime = appt.endTime.replace(':', '') + '00';
+    } else {
+      let h = parseInt(appt.startTime.split(':')[0]) + 1;
+      let m = appt.startTime.split(':')[1];
+      endTime = h.toString().padStart(2, '0') + m + '00';
+    }
+
+    const summary = `Atendimento com ${roleName}`;
+    const description = `Agendamento confirmado via sistema FAJOPA.`;
+    const location = appt.location || '';
+    
+    if (isGoogle) {
+      const url = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(summary)}&dates=${startDate}T${startTime}/${endDate}T${endTime}&details=${encodeURIComponent(description)}&location=${encodeURIComponent(location)}`;
+      window.open(url, '_blank');
+      return;
+    }
+
+    const icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//FAJOPA//Atendimento//PT-BR
+BEGIN:VEVENT
+DTSTART:${startDate}T${startTime}
+DTEND:${endDate}T${endTime}
+SUMMARY:${summary}
+DESCRIPTION:${description}
+LOCATION:${location}
+END:VEVENT
+END:VCALENDAR`;
+
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.setAttribute('download', `atendimento_${startDate}.ics`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   };
 
   if (loading) {
@@ -316,7 +373,15 @@ export default function AppointmentsPanel({ member }: AppointmentsPanelProps) {
                           </span>
                         </div>
                         {appt.status === 'CONFIRMADO' && (
-                          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end pl-2">
+                          <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center pl-2">
+                            <div className="flex gap-2">
+                              <button onClick={() => handleAddToCalendar(appt, student ? student.name : 'Aluno', false)} className="text-[11px] font-bold text-slate-500 hover:text-purple-600 flex items-center gap-1">
+                                <CalendarPlus className="w-3 h-3" /> Arquivo .ics
+                              </button>
+                              <button onClick={() => handleAddToCalendar(appt, student ? student.name : 'Aluno', true)} className="text-[11px] font-bold text-slate-500 hover:text-purple-600 flex items-center gap-1">
+                                Google
+                              </button>
+                            </div>
                             <button onClick={() => handleCancelAppointment(appt.id, appt.availabilityId)} className="text-[11px] font-bold text-red-600 hover:text-red-700 hover:underline">
                               Cancelar Consulta
                             </button>
@@ -420,7 +485,15 @@ export default function AppointmentsPanel({ member }: AppointmentsPanelProps) {
                         </span>
                       </div>
                       {appt.status === 'CONFIRMADO' && (
-                        <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end pl-2">
+                        <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-between items-center pl-2">
+                          <div className="flex gap-2">
+                            <button onClick={() => handleAddToCalendar(appt, prof ? prof.name : 'Atendimento', false)} className="text-[11px] font-bold text-slate-500 hover:text-purple-600 flex items-center gap-1">
+                              <CalendarPlus className="w-3 h-3" /> Arquivo .ics
+                            </button>
+                            <button onClick={() => handleAddToCalendar(appt, prof ? prof.name : 'Atendimento', true)} className="text-[11px] font-bold text-slate-500 hover:text-purple-600 flex items-center gap-1">
+                              Google
+                            </button>
+                          </div>
                           <button onClick={() => handleCancelAppointment(appt.id, appt.availabilityId)} className="text-[11px] font-bold text-red-600 hover:text-red-700 hover:underline">
                             Cancelar Agendamento
                           </button>

@@ -48,7 +48,8 @@ import PrintReportModal from "./PrintReportModal";
 import EventManagement from "./EventManagement";
 import EventsRecycleBin from "./EventsRecycleBin";
 import NotificationsManager from "./NotificationsManager";
-import { Calendar } from "lucide-react";
+import AdminAppointments from "./AdminAppointments";
+import { Calendar, BriefcaseMedical } from "lucide-react";
 
 export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const { settings, updateSettings } = useSettings();
@@ -546,6 +547,15 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
       {activeTab === "events" ? (
         <div className="space-y-12">
           <EventManagement />
+          <div className="pt-8 border-t border-slate-200 dark:border-slate-800/60 mt-8">
+            <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 mb-6 font-display flex items-center gap-3">
+              <span className="bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400 p-2 rounded-xl">
+                <BriefcaseMedical className="w-5 h-5" />
+              </span>
+              Painel de Agendamentos (WhatsApp)
+            </h2>
+            <AdminAppointments />
+          </div>
           <div className="pt-8 border-t border-slate-200 dark:border-slate-800/60 mt-8">
             <EventsRecycleBin />
           </div>

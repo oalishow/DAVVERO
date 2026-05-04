@@ -8,13 +8,22 @@ interface ChangelogModalProps {
 export default function ChangelogModal({ onClose }: ChangelogModalProps) {
   const versions = [
     {
+      version: 'v5.3.0',
+      title: 'Agendamentos e Trocas de Horário',
+      changes: [
+        'Atendimentos: Visualização de horários vagos e profissionais diretamente pelo mural de Eventos/Atendimentos.',
+        'Flexibilidade: Alunos agora podem trocar sua data/hora de atendimento, notificando automaticamente o profissional.'
+      ],
+      current: true,
+    },
+    {
       version: 'v5.2.0',
       title: 'Modo Offline e Melhorias Visuais',
       changes: [
         'Trabalho Offline: Suporte a operação offline via Service Worker (PWA).',
         'UI: Animação suave de transição no login de administrador.'
       ],
-      current: true,
+      current: false,
     },
     {
       version: 'v5.1.0',
