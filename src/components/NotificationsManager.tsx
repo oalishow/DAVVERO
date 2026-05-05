@@ -75,11 +75,17 @@ export default function NotificationsManager() {
 
       // 2. Send Push Notification Broadcast (Native)
       try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
         await fetch("/api/push/broadcast", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ title, message, url: "/" }),
+          signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
       } catch (pushErr) {
         console.error("Cloud Push error:", pushErr);
         // We don't block the UI if push fails, as business logic (Firestore) succeeded

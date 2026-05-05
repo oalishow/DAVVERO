@@ -1,10 +1,10 @@
 import { precacheAndRoute } from 'workbox-precaching';
 
-declare let self: ServiceWorkerGlobalScope;
+declare const self: ServiceWorkerGlobalScope & { __WB_MANIFEST: any };
 
 precacheAndRoute(self.__WB_MANIFEST);
 
-self.addEventListener("push", (event) => {
+self.addEventListener("push", (event: any) => {
   const data = event.data ? event.data.json() : { title: "Nova Notificação", body: "Você recebeu uma mensagem." };
 
   const options = {
@@ -22,7 +22,7 @@ self.addEventListener("push", (event) => {
   );
 });
 
-self.addEventListener("notificationclick", (event) => {
+self.addEventListener("notificationclick", (event: any) => {
   event.notification.close();
   event.waitUntil(
     self.clients.openWindow(event.notification.data.url)

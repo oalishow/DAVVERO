@@ -214,7 +214,7 @@ export default function PublicAppointmentsList({ member, onNavigateToStudent }: 
           className="w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm outline-none font-bold text-slate-700 dark:text-slate-300"
         >
           <option value="all">Todos os Profissionais</option>
-          {Object.values(professionals).map(prof => (
+          {Object.values(professionals as Record<string, any>).map(prof => (
             <option key={prof.id} value={prof.id}>{prof.name}</option>
           ))}
         </select>
