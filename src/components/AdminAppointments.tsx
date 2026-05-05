@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from "motion/react";
 
 import { DEFAULT_PROFESSIONALS } from "../lib/defaultProfessionals";
 import ImportWhatsappModal from "./ImportWhatsappModal";
+import DeleteAvailabilitiesModal from "./DeleteAvailabilitiesModal";
 import EditAppointmentModal from "./EditAppointmentModal";
 import { useDialog } from "../context/DialogContext";
 
@@ -26,7 +27,9 @@ export default function AdminAppointments() {
   
   const [allStudents, setAllStudents] = useState<Member[]>([]);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [editingItem, setEditingItem] = useState<{ avail: Availability, appt: Appointment | null } | null>(null);
+  const [deleteProgress, setDeleteProgress] = useState<{current: number, total: number} | null>(null);
   
   const [filterMonth, setFilterMonth] = useState(() => {
     const d = new Date();
@@ -131,6 +134,9 @@ export default function AdminAppointments() {
     let current = 0;
     const total = slots.length;
 
+    let createdCount = 0;
+    let updatedCount = 0;
+
     for (const slot of slots) {
        let calcEndTime = "";
        let h = parseInt(slot.timeStr.split(':')[0]) + 1;
@@ -148,27 +154,72 @@ export default function AdminAppointments() {
           createdAt: new Date().toISOString()
        };
        
-       const availRef = await addDoc(collection(db, `artifacts/${appId}/public/data/availabilities`), availabilityData);
+       // Verify if this availability already exists for this professional
+       const qAvail = query(
+         collection(db, `artifacts/${appId}/public/data/availabilities`),
+         where("professionalId", "==", prof.id),
+         where("date", "==", slot.dateStr),
+         where("startTime", "==", slot.timeStr)
+       );
+       const snapAvail = await getDocs(qAvail);
        
-       if (slot.status === 'OCUPADO') {
-          const apptData = {
-             availabilityId: availRef.id,
-             memberId: slot.matchedMemberId || "unmatched",
-             studentName: slot.rawName || "Desconhecido",
-             professionalId: prof.id,
-             date: slot.dateStr,
-             startTime: slot.timeStr,
-             endTime: calcEndTime,
-             location: importedLocation || "",
-             status: "CONFIRMADO",
-             createdAt: new Date().toISOString()
-          };
-          await addDoc(collection(db, `artifacts/${appId}/public/data/appointments`), apptData);
+       let availId = "";
+
+       if (snapAvail.empty) {
+         // Create new availability
+         const docRef = await addDoc(collection(db, `artifacts/${appId}/public/data/availabilities`), availabilityData);
+         availId = docRef.id;
+         createdCount++;
+       } else {
+         // Update existing availability
+         availId = snapAvail.docs[0].id;
+         await updateDoc(doc(db, `artifacts/${appId}/public/data/availabilities`, availId), {
+           status: slot.status,
+           location: importedLocation || snapAvail.docs[0].data().location || ""
+         });
+         updatedCount++;
        }
+
+       // Handle appointments
+       const qAppt = query(
+         collection(db, `artifacts/${appId}/public/data/appointments`),
+         where("availabilityId", "==", availId)
+       );
+       const snapAppt = await getDocs(qAppt);
+
+       if (slot.status === "LIVRE") {
+         // If marked as 'Livre', delete old appointments related to this availability
+         for (const apptDoc of snapAppt.docs) {
+           await deleteDoc(doc(db, `artifacts/${appId}/public/data/appointments`, apptDoc.id));
+         }
+       } else if (slot.status === "OCUPADO") {
+         const apptData = {
+            availabilityId: availId,
+            memberId: slot.matchedMemberId || "unmatched",
+            studentName: slot.rawName || "Desconhecido",
+            professionalId: prof.id,
+            date: slot.dateStr,
+            startTime: slot.timeStr,
+            endTime: calcEndTime,
+            location: importedLocation || snapAvail.docs[0]?.data()?.location || "",
+            status: "CONFIRMADO",
+         };
+         
+         if (snapAppt.empty) {
+            await addDoc(collection(db, `artifacts/${appId}/public/data/appointments`), {
+              ...apptData,
+              createdAt: new Date().toISOString()
+            });
+         } else {
+            // Update existing appointment
+            await updateDoc(doc(db, `artifacts/${appId}/public/data/appointments`, snapAppt.docs[0].id), apptData);
+         }
+       }
+
        if (onProgress) onProgress(++current, total);
     }
     
-    showAlert("Agendamentos importados com sucesso!", { type: "success", title: "Sucesso" });
+    showAlert(`${total} horários processados. Criados: ${createdCount} | Atualizados: ${updatedCount}`, { type: "success", title: "Sincronização Concluída" });
   };
 
   const handleDeleteAvailability = async (avail: Availability) => {
@@ -222,17 +273,25 @@ export default function AdminAppointments() {
   return (
     <div className="space-y-6">
       <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700/50 p-6">
-        <div className="flex justify-between items-center mb-4">
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-4">
           <h3 className="text-base font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
             <Plus className="w-5 h-5 text-indigo-500 flex-shrink-0" />
             Disponibilizar Horário(s)
           </h3>
-          <button 
-             onClick={() => setShowImportModal(true)}
-             className="bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-green-200 dark:hover:bg-green-900/60 transition"
-          >
-             <MessageSquare className="w-4 h-4"/> Importar WhatsApp
-          </button>
+          <div className="flex flex-wrap gap-2 w-full sm:w-auto">
+            <button
+               onClick={() => setShowDeleteModal(true)}
+               className="flex-1 sm:flex-none justify-center bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-400 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-red-200 dark:hover:bg-red-900/60 transition"
+            >
+               <Trash2 className="w-4 h-4"/> Apagar Todos
+            </button>
+            <button 
+               onClick={() => setShowImportModal(true)}
+               className="flex-1 sm:flex-none justify-center bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400 px-4 py-2 rounded-xl text-sm font-bold flex items-center gap-2 hover:bg-green-200 dark:hover:bg-green-900/60 transition"
+            >
+               <MessageSquare className="w-4 h-4"/> Importar WhatsApp
+            </button>
+          </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="lg:col-span-2">
@@ -416,6 +475,34 @@ export default function AdminAppointments() {
         />
       )}
 
+      {deleteProgress && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden border border-slate-200 dark:border-slate-700/50">
+            <div className="p-6">
+              <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-2 flex items-center gap-2">
+                <Trash2 className="w-5 h-5 text-red-500" /> Apagando Dados...
+              </h3>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-6 font-medium">
+                Por favor, aguarde o processamento não feche esta página.
+              </p>
+              
+              <div className="space-y-2">
+                <div className="flex justify-between text-xs font-bold text-slate-500 dark:text-slate-400 tabular-nums">
+                  <span>{deleteProgress.current} de {deleteProgress.total}</span>
+                  <span className="text-indigo-600 dark:text-indigo-400">{Math.round((deleteProgress.current / Math.max(1, deleteProgress.total)) * 100)}%</span>
+                </div>
+                <div className="w-full bg-slate-100 dark:bg-slate-700/50 rounded-full h-3.5 overflow-hidden shadow-inner">
+                  <div 
+                    className="bg-indigo-500 dark:bg-indigo-600 h-full rounded-full transition-all duration-300 ease-out" 
+                    style={{ width: `${Math.max(5, (deleteProgress.current / Math.max(1, deleteProgress.total)) * 100)}%` }} 
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {editingItem && (
         <EditAppointmentModal
           avail={editingItem.avail}
@@ -425,6 +512,18 @@ export default function AdminAppointments() {
           onClose={() => setEditingItem(null)}
           onSuccess={() => {
             showAlert("Horário atualizado com sucesso!", { type: 'success' });
+          }}
+        />
+      )}
+
+      {showDeleteModal && (
+        <DeleteAvailabilitiesModal
+          professionals={professionals}
+          onClose={() => setShowDeleteModal(false)}
+          onProgress={(current, total) => setDeleteProgress({ current, total })}
+          onSuccess={() => {
+            setDeleteProgress(null);
+            showAlert("Registros apagados com sucesso.", { type: "success" });
           }}
         />
       )}

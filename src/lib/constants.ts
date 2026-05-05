@@ -26,12 +26,14 @@ export const INSTITUTION_DESCRIPTION_KEY = "davveroId_institution_description";
 export const CARD_DESCRIPTION_KEY = "davveroId_card_description";
 export const CUSTOM_ROLES_KEY = "davveroId_custom_roles";
 export const CUSTOM_COURSES_KEY = "davveroId_custom_courses";
-export const APP_VERSION = "5.3";
+export const APP_VERSION = "5.4";
 export const SETTINGS_DOC_PATH = (appId: string) =>
   `artifacts/${appId}/public/data/students/_settings_global`;
 export const ASSETS_DOC_PATH = (appId: string, assetType: string) =>
   `artifacts/${appId}/public/data/students/_asset_${assetType}`;
 export const CHANGELOG = [
+  "Versão 5.4.0 - Notificações Push e IA em Português",
+  "Push Nativo: Receba avisos no celular e Windows mesmo fora do aplicativo. IA: Chat agora responde nativamente em Português.",
   "Versão 5.3.0 - Agendamentos e Trocas de Horário",
   "Atendimentos: Visualização de horários vagos e alteração de data/hora pelo aluno com notificação ao profissional.",
   "Versão 5.2 - Modo Offline e Melhorias Visuais",

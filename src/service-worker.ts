@@ -1,10 +1,16 @@
+import { precacheAndRoute } from 'workbox-precaching';
+
+declare let self: ServiceWorkerGlobalScope;
+
+precacheAndRoute(self.__WB_MANIFEST);
+
 self.addEventListener("push", (event) => {
   const data = event.data ? event.data.json() : { title: "Nova Notificação", body: "Você recebeu uma mensagem." };
 
   const options = {
     body: data.body,
-    icon: "/icon-192x192.png", // Ensure this exists or use a generic one
-    badge: "/icon-192x192.png",
+    icon: "/logo192.png",
+    badge: "/logo192.png",
     vibrate: [100, 50, 100],
     data: {
       url: data.url || "/"
@@ -19,6 +25,6 @@ self.addEventListener("push", (event) => {
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
   event.waitUntil(
-    clients.openWindow(event.notification.data.url)
+    self.clients.openWindow(event.notification.data.url)
   );
 });

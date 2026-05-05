@@ -8,13 +8,23 @@ interface ChangelogModalProps {
 export default function ChangelogModal({ onClose }: ChangelogModalProps) {
   const versions = [
     {
+      version: 'v5.4.0',
+      title: 'Notificações Push e Diálogos em Português',
+      changes: [
+        'Notificações Push: Suporte a avisos nativos no Windows, Android e iOS (Web Push).',
+        'IA & Chat: Respostas da inteligência artificial agora padronizadas em Português Brasileiro (PT-BR).',
+        'Sincronização: Melhorias no Service Worker para entrega em tempo real de mensagens prioritárias.'
+      ],
+      current: true,
+    },
+    {
       version: 'v5.3.0',
       title: 'Agendamentos e Trocas de Horário',
       changes: [
         'Atendimentos: Visualização de horários vagos e profissionais diretamente pelo mural de Eventos/Atendimentos.',
         'Flexibilidade: Alunos agora podem trocar sua data/hora de atendimento, notificando automaticamente o profissional.'
       ],
-      current: true,
+      current: false,
     },
     {
       version: 'v5.2.0',

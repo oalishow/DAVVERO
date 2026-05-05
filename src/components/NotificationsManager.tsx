@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { Send, Sparkles, AlertCircle, RefreshCw, Wand2, X } from "lucide-react";
+import { Send, Sparkles, AlertCircle, RefreshCw, Wand2, X, Bell, BellOff } from "lucide-react";
 import { createNotification } from "../lib/firebase";
 import { useDialog } from "../context/DialogContext";
 import { GoogleGenAI, Type } from "@google/genai";
+import { usePushNotifications } from "../hooks/usePushNotifications";
 
 const NOTIFICATION_TEMPLATES = [
   {
@@ -53,6 +54,7 @@ export default function NotificationsManager() {
   const [showAiModal, setShowAiModal] = useState(false);
   
   const { showAlert } = useDialog();
+  const { isSupported, subscription, subscribe } = usePushNotifications();
 
   const handleSendNotification = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -63,13 +65,27 @@ export default function NotificationsManager() {
 
     setSending(true);
     try {
+      // 1. Create Firestore notification (for in-app display)
       await createNotification({
-        recipientId: "todos", // Special recipient ID to target all members
+        recipientId: "todos",
         title,
         message,
         type,
       });
-      showAlert("Notificação enviada a todos os alunos com sucesso!", { type: "success" });
+
+      // 2. Send Push Notification Broadcast (Native)
+      try {
+        await fetch("/api/push/broadcast", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ title, message, url: "/" }),
+        });
+      } catch (pushErr) {
+        console.error("Cloud Push error:", pushErr);
+        // We don't block the UI if push fails, as business logic (Firestore) succeeded
+      }
+
+      showAlert("Notificação enviada a todos com sucesso (In-app + Push)!", { type: "success" });
       setTitle("");
       setMessage("");
     } catch (err: any) {
@@ -106,7 +122,7 @@ IDEIA DO AVISO: "${promptAi}"
 Retorne o resultado estritamente em um JSON com os campos 'title' (o título) e 'message' (a mensagem completa). Crie algo amigável e caloroso.`;
 
       const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
+        model: "gemini-1.5-flash",
         contents: prompt,
         config: {
           responseMimeType: "application/json",
@@ -148,6 +164,35 @@ Retorne o resultado estritamente em um JSON com os campos 'title' (o título) e 
           Envie avisos, atualizações e informações em tempo real para todos os alunos conectados no aplicativo.
         </p>
       </div>
+
+      {isSupported && !subscription && (
+        <div className="bg-sky-50 dark:bg-sky-900/30 border border-sky-200 dark:border-sky-800 rounded-2xl p-4 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="bg-sky-500 p-2 rounded-xl text-white shadow-lg shadow-sky-500/20">
+              <Bell className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-sm font-bold text-slate-800 dark:text-white">Ativar Notificações no Desktop/Celular</h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400">Receba avisos nativos mesmo com o navegador fechado.</p>
+            </div>
+          </div>
+          <button
+            onClick={subscribe}
+            className="bg-white dark:bg-slate-800 text-sky-600 dark:text-sky-400 px-4 py-2 rounded-xl text-xs font-bold shadow-sm hover:shadow-md transition active:scale-95 border border-sky-100 dark:border-sky-800"
+          >
+            Ativar Agora
+          </button>
+        </div>
+      )}
+
+      {subscription && (
+        <div className="bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800 rounded-2xl p-3 flex items-center gap-3">
+          <div className="bg-emerald-500 p-1.5 rounded-lg text-white">
+            <Bell className="w-3.5 h-3.5" />
+          </div>
+          <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-tight">Push Native Ativo neste dispositivo</span>
+        </div>
+      )}
 
       <div className="flex flex-col xl:flex-row gap-6">
         <div className="flex-1 space-y-4">

@@ -302,10 +302,11 @@ export default function ImportWhatsappModal({ onClose, onImport, professionals, 
           )}
         </div>
 
-        <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex justify-end gap-3 rounded-b-3xl">
+        <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex justify-between items-center gap-3 rounded-b-3xl h-[84px]">
            <button 
              onClick={onClose}
-             className="px-5 py-2.5 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 transition"
+             disabled={isImporting}
+             className="px-5 py-2.5 rounded-xl font-bold text-sm text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 transition disabled:opacity-50"
            >
              Cancelar
            </button>
@@ -317,24 +318,28 @@ export default function ImportWhatsappModal({ onClose, onImport, professionals, 
                 Avançar <ChevronRight className="w-4 h-4"/>
              </button>
            ) : (
-             <div className="flex-grow flex justify-end items-center gap-3">
+             <div className="flex justify-end items-center gap-4 flex-1">
                {isImporting && totalItems > 0 && (
-                 <div className="flex-grow max-w-xs mr-4">
-                   <div className="flex justify-between text-xs font-bold text-slate-500 mb-1">
+                 <div className="flex-1 max-w-[200px]">
+                   <div className="flex justify-between text-xs font-bold text-slate-500 mb-1.5">
                      <span>Importando...</span>
                      <span>{progress} / {totalItems}</span>
                    </div>
-                   <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
-                     <div className="bg-green-500 h-2 rounded-full transition-all duration-300" style={{ width: `${Math.max(5, (progress / totalItems) * 100)}%` }}></div>
+                   <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2.5 overflow-hidden">
+                     <div className="bg-green-500 h-full rounded-full transition-all duration-300" style={{ width: `${Math.max(5, (progress / Math.max(1, totalItems)) * 100)}%` }}></div>
                    </div>
                  </div>
                )}
                <button 
                  onClick={handleConfirm}
                  disabled={isImporting}
-                 className="bg-green-600 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-sm hover:bg-green-700 transition disabled:opacity-50 flex items-center gap-2"
+                 className="bg-green-600 text-white px-6 py-2.5 rounded-xl font-bold text-sm shadow-sm hover:bg-green-700 transition disabled:opacity-50 flex items-center justify-center gap-2 min-w-[210px]"
                >
-                 {isImporting ? "Importando..." : <><Check className="w-4 h-4"/> Confirmar e Importar</>}
+                 {isImporting ? (
+                   "Importando..."
+                 ) : (
+                   <><Check className="w-4 h-4"/> Confirmar e Importar</>
+                 )}
                </button>
              </div>
            )}

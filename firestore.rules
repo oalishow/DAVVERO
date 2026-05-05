@@ -77,6 +77,18 @@ service cloud.firestore {
         allow write: if isSignedIn();
       }
 
+      // Availabilities
+      match /availabilities/{availId} {
+        allow read: if true;
+        allow write: if isSignedIn();
+      }
+
+      // Appointments
+      match /appointments/{apptId} {
+        allow read: if true;
+        allow write: if isSignedIn();
+      }
+
       // Notifications
       match /notifications/{notifId} {
         allow read: if isSignedIn() && (resource.data.recipientId == request.auth.uid || resource.data.recipientId == 'todos');

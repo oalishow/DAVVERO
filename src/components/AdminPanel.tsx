@@ -53,7 +53,7 @@ import { Calendar, BriefcaseMedical } from "lucide-react";
 
 export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const { settings, updateSettings } = useSettings();
-  const [activeTab, setActiveTab] = useState<"members" | "events" | "notifications">("members");
+  const [activeTab, setActiveTab] = useState<"members" | "events" | "appointments" | "notifications">("members");
   const [name, setName] = useState("");
   const [ra, setRa] = useState("");
   const [cpf, setCpf] = useState("");
@@ -532,6 +532,18 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
         </button>
 
         <button
+          onClick={() => setActiveTab("appointments")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl font-bold text-sm transition-colors ${
+            activeTab === "appointments"
+              ? "bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border-b-2 border-sky-600 dark:border-sky-400"
+              : "text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+          }`}
+        >
+          <Clock className="w-4 h-4" />
+          Agendamentos
+        </button>
+
+        <button
           onClick={() => setActiveTab("notifications")}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl font-bold text-sm transition-colors ${
             activeTab === "notifications"
@@ -544,25 +556,32 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
         </button>
       </div>
 
-      {activeTab === "events" ? (
+      {activeTab === "events" && (
         <div className="space-y-12">
           <EventManagement />
-          <div className="pt-8 border-t border-slate-200 dark:border-slate-800/60 mt-8">
-            <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 mb-6 font-display flex items-center gap-3">
-              <span className="bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400 p-2 rounded-xl">
-                <BriefcaseMedical className="w-5 h-5" />
-              </span>
-              Painel de Agendamentos (WhatsApp)
-            </h2>
-            <AdminAppointments />
-          </div>
           <div className="pt-8 border-t border-slate-200 dark:border-slate-800/60 mt-8">
             <EventsRecycleBin />
           </div>
         </div>
-      ) : activeTab === "notifications" ? (
+      )}
+
+      {activeTab === "appointments" && (
+        <div className="space-y-4">
+          <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 mb-6 font-display flex items-center gap-3">
+            <span className="bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400 p-2 rounded-xl">
+              <BriefcaseMedical className="w-5 h-5" />
+            </span>
+            Painel de Agendamentos (WhatsApp)
+          </h2>
+          <AdminAppointments />
+        </div>
+      )}
+
+      {activeTab === "notifications" && (
         <NotificationsManager />
-      ) : (
+      )}
+      
+      {activeTab === "members" && (
         <>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 mb-8 no-print">
             <button

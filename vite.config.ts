@@ -11,10 +11,10 @@ export default defineConfig(({mode}) => {
       react(), 
       tailwindcss(),
       VitePWA({
+        strategies: 'injectManifest',
+        srcDir: 'src',
+        filename: 'service-worker.ts',
         registerType: 'autoUpdate',
-        workbox: {
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
-        },
         manifest: {
           name: 'ID Estudantil',
           short_name: 'Minha ID',
