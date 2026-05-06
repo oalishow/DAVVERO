@@ -272,9 +272,13 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
         localStorage.setItem(DIRECTOR_SIGNATURE_KEY, instSignature);
 
       showStatus("Configurações aplicadas globalmente!", "success");
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      showStatus("Erro ao salvar no banco de dados.", "error");
+      if (e?.code === 'invalid-argument' || e?.message?.includes('too large')) {
+         showStatus("Erro: Imagens muito grandes anexadas. Tente removê-las e recarregar.", "error");
+      } else {
+         showStatus("Erro ao salvar no banco de dados.", "error");
+      }
     }
   };
 
@@ -364,7 +368,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
   const handleFileUpload = (
     e: React.ChangeEvent<HTMLInputElement>,
     setter: (val: string | null) => void,
-    maxSizeKB = 5120, // Increased default to 5MB
+    maxSizeKB = 5120, // Initial check, but we will compress it down
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -376,10 +380,44 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
 
     const reader = new FileReader();
     reader.onload = (ev) => {
-      setter(ev.target?.result as string);
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        let width = img.width;
+        let height = img.height;
+
+        // Máximo 800px para redimensionamento
+        const MAX_DIM = 800;
+        if (width > height) {
+          if (width > MAX_DIM) {
+            height *= MAX_DIM / width;
+            width = MAX_DIM;
+          }
+        } else {
+          if (height > MAX_DIM) {
+            width *= MAX_DIM / height;
+            height = MAX_DIM;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+
+        const ctx = canvas.getContext("2d");
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          // Compress to low quality JPEG if not transparent png, otherwise use PNG
+          const dataUrl = file.type === "image/png" ? canvas.toDataURL("image/png", 0.8) : canvas.toDataURL("image/jpeg", 0.7);
+          setter(dataUrl);
+        } else {
+          setter(ev.target?.result as string);
+        }
+      };
+      img.src = ev.target?.result as string;
     };
     reader.readAsDataURL(file);
   };
+
 
   const handleSeminaryFileWrapper = (
     e: React.ChangeEvent<HTMLInputElement>,
@@ -1289,14 +1327,9 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                                             <label className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 flex items-center justify-center cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-700 transition">
                                               <Upload className="w-3 h-3 text-slate-500" />
                                               <input type="file" className="hidden" accept="image/*" onChange={(e) => {
-                                                const file = e.target.files?.[0];
-                                                if (file) {
-                                                  const reader = new FileReader();
-                                                  reader.onloadend = () => {
-                                                    updateSeminaryProfessional(sem, prof.id, "photoUrl", reader.result as string);
-                                                  };
-                                                  reader.readAsDataURL(file);
-                                                }
+                                                handleFileUpload(e, (val) => {
+                                                  updateSeminaryProfessional(sem, prof.id, "photoUrl", val);
+                                                });
                                               }} />
                                             </label>
                                           )}
