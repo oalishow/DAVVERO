@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { Send, Sparkles, AlertCircle, RefreshCw, Wand2, X, Bell, BellOff } from "lucide-react";
-import { createNotification } from "../lib/firebase";
+import { createNotification, db } from "../lib/firebase";
+import { collection, getDocs } from "firebase/firestore";
 import { useDialog } from "../context/DialogContext";
 import { GoogleGenAI, Type } from "@google/genai";
 import { usePushNotifications } from "../hooks/usePushNotifications";
@@ -73,22 +74,40 @@ export default function NotificationsManager() {
         type,
       });
 
-      // 2. Send Push Notification Broadcast (Native)
+      // 2. Fetch subscriptions from Firestore
+      let targetSubscriptions: any[] = [];
       try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+        const subsSnapshot = await getDocs(collection(db, "artifacts/banco-de-dados-fajopa/public/data/push_subscriptions"));
+        targetSubscriptions = subsSnapshot.docs.map(doc => doc.data());
+      } catch (subErr) {
+        console.error("Error fetching subscriptions:", subErr);
+      }
 
-        await fetch("/api/push/broadcast", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ title, message, url: "/" }),
-          signal: controller.signal
-        });
-        
-        clearTimeout(timeoutId);
-      } catch (pushErr) {
-        console.error("Cloud Push error:", pushErr);
-        // We don't block the UI if push fails, as business logic (Firestore) succeeded
+      // 3. Send Push Notification Broadcast (Native)
+      if (targetSubscriptions.length > 0) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
+
+          const resp = await fetch("/api/push/broadcast", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ title, message, url: "/", subscriptions: targetSubscriptions }),
+            signal: controller.signal
+          });
+          
+          clearTimeout(timeoutId);
+
+          const result = await resp.json();
+          if (result.expiredEndpoints && result.expiredEndpoints.length > 0) {
+             // Subscriptions that returned 410 Gone / expired
+             // You can optionally clean them up from Firestore
+             console.log("Cleanup expired subscriptions:", result.expiredEndpoints);
+          }
+
+        } catch (pushErr) {
+          console.error("Cloud Push error:", pushErr);
+        }
       }
 
       showAlert("Notificação enviada a todos com sucesso (In-app + Push)!", { type: "success" });

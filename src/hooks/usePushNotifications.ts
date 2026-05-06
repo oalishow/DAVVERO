@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { db, auth } from "../lib/firebase";
+import { doc, setDoc } from "firebase/firestore";
 
 export function usePushNotifications() {
   const [isSupported, setIsSupported] = useState(false);
@@ -34,18 +36,24 @@ export function usePushNotifications() {
         applicationServerKey: urlBase64ToUint8Array(publicKey),
       });
 
-      // Save to backend
-      await fetch("/api/push/subscribe", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(sub),
-      });
+      // Save to backend via Firestore Client SDK
+      // Using btoa securely for subscription id
+      const subJson = JSON.parse(JSON.stringify(sub));
+      const subId = btoa(sub.endpoint).replace(/\+/g, '-').replace(/\//g, '_').substring(0, 100);
+      
+      // Use the global artifacts structure that has liberal permissions
+      await setDoc(doc(db, "artifacts/banco-de-dados-fajopa/public/data/push_subscriptions", subId), {
+        ...subJson,
+        userId: auth.currentUser?.uid || "anonymous",
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
 
       setSubscription(sub);
       setPermission(Notification.permission);
       return sub;
     } catch (error) {
       console.error("Error subscribing to push:", error);
+      alert("Falha ao se inscrever nas notificações. Verifique a permissão do seu navegador.");
     }
   };
 
