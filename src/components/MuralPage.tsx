@@ -550,7 +550,7 @@ export default function MuralPage() {
           onClick={() => setActiveTab("academico")}
           className={`flex-1 flex items-center justify-center gap-2 py-3 lg:py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
             activeTab === "academico"
-              ? "bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-sm"
+              ? "bg-green-600 text-white shadow-lg shadow-green-600/20"
               : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
           }`}
         >
@@ -561,7 +561,7 @@ export default function MuralPage() {
           onClick={() => setActiveTab("seminario")}
           className={`flex-1 flex items-center justify-center gap-2 py-3 lg:py-4 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
             activeTab === "seminario"
-              ? "bg-white dark:bg-indigo-600 text-indigo-600 dark:text-white shadow-sm"
+              ? "bg-green-600 text-white shadow-lg shadow-green-600/20"
               : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
           }`}
         >
@@ -730,7 +730,7 @@ export default function MuralPage() {
                   whileTap={{ scale: 0.98 }}
                   disabled={isSubmitting} 
                   onClick={handleSubmit} 
-                  className="px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest bg-indigo-600 text-white hover:bg-indigo-700 transition-all shadow-xl shadow-indigo-500/20 active:scale-95 disabled:opacity-50 flex items-center gap-2 group"
+                  className="px-8 py-3 rounded-2xl text-xs font-black uppercase tracking-widest bg-green-600 text-white hover:bg-green-700 transition-all shadow-xl shadow-green-500/20 active:scale-95 disabled:opacity-50 flex items-center gap-2 group"
                 >
                   {isSubmitting ? (
                     <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
@@ -873,7 +873,6 @@ function MuralPostItem({
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editCommentText, setEditCommentText] = useState("");
   const [isSavingEditComment, setIsSavingEditComment] = useState(false);
-  const [commentToDelete, setCommentToDelete] = useState<string | null>(null);
   const [isDeletingComment, setIsDeletingComment] = useState(false);
 
   const hasLiked = post.likes?.includes(myUserId || "");
@@ -933,14 +932,16 @@ function MuralPostItem({
   };
 
   const handleDeleteComment = async (commentId: string) => {
+    if (!window.confirm("Deseja apagar este comentário?")) return;
     setIsDeletingComment(true);
     try {
+      console.log(`Tentando excluir comentário ${commentId} do post ${post.id}`);
       await deleteDoc(doc(db, `artifacts/${appId}/public/data/mural_posts/${post.id}/comments`, commentId));
       const postRef = doc(db, `artifacts/${appId}/public/data/mural_posts`, post.id);
       await updateDoc(postRef, { 
         commentsCount: (post.commentsCount && post.commentsCount > 0) ? (post.commentsCount - 1) : 0 
       });
-      setCommentToDelete(null);
+      console.log("Comentário excluído com sucesso");
     } catch (err: any) {
       console.error("Erro ao apagar comentário", err);
       alert("Erro ao excluir: " + (err.message || "Permissão negada"));
@@ -1225,10 +1226,10 @@ function MuralPostItem({
                                    <Pencil className="w-3 h-3" />
                                  </button>
                                  <button 
-                                   onClick={() => setCommentToDelete(c.id)}
+                                   onClick={() => handleDeleteComment(c.id)}
                                    className="p-1 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded transition-all"
                                    title="Apagar comentário"
-                                   disabled={isDeletingComment || !!commentToDelete}
+                                   disabled={isDeletingComment}
                                  >
                                    <Trash2 className="w-3 h-3" />
                                  </button>
@@ -1237,35 +1238,6 @@ function MuralPostItem({
                            </div>
                          </div>
                          
-                         {/* Confirmation Overlay for individual comment */}
-                         <AnimatePresence>
-                           {commentToDelete === c.id && (
-                             <motion.div 
-                               initial={{ opacity: 0, scale: 0.95 }}
-                               animate={{ opacity: 1, scale: 1 }}
-                               exit={{ opacity: 0, scale: 0.95 }}
-                               className="absolute inset-x-0 bottom-0 top-0 z-10 flex flex-col items-center justify-center bg-white/95 dark:bg-slate-800/95 rounded-2xl p-2 gap-2 backdrop-blur-sm"
-                             >
-                               <span className="text-[10px] font-bold text-slate-700 dark:text-slate-200">Apagar este comentário?</span>
-                               <div className="flex gap-2">
-                                 <button 
-                                   onClick={() => setCommentToDelete(null)}
-                                   disabled={isDeletingComment}
-                                   className="px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
-                                 >
-                                   Cancelar
-                                 </button>
-                                 <button 
-                                   onClick={() => handleDeleteComment(c.id)}
-                                   disabled={isDeletingComment}
-                                   className="px-2 py-1 text-[9px] font-bold uppercase tracking-wider bg-rose-600 text-white rounded shadow-sm hover:bg-rose-700 disabled:opacity-50 transition-colors"
-                                 >
-                                   {isDeletingComment ? "Aguarde..." : "Sim, apagar"}
-                                 </button>
-                               </div>
-                             </motion.div>
-                           )}
-                         </AnimatePresence>
                          {editingCommentId === c.id ? (
                            <div className="mt-2 space-y-2">
                              <textarea 

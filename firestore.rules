@@ -13,11 +13,10 @@ service cloud.firestore {
     }
 
     function isAdmin(appId) {
-      // Check if user has an admin role in the students collection or is the dedicated admin account
-      // Note: This relies on the structure of your students collection
       return isSignedIn() && (
         request.auth.token.email == 'admblackjamf@gmail.com' || 
         (exists(/databases/$(database)/documents/artifacts/$(appId)/public/data/students/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/artifacts/$(appId)/public/data/students/$(request.auth.uid)).data.roles is list &&
          get(/databases/$(database)/documents/artifacts/$(appId)/public/data/students/$(request.auth.uid)).data.roles.hasAny(['ADMIN', 'DIRETORIA', 'GESTÃO', 'admin', 'diretoria', 'gestão']))
       );
     }
