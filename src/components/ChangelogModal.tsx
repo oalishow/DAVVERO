@@ -8,12 +8,21 @@ interface ChangelogModalProps {
 export default function ChangelogModal({ onClose }: ChangelogModalProps) {
   const versions = [
     {
+      version: 'v5.6.0',
+      title: 'Melhorias na Gestão de Conta e Configurações',
+      changes: [
+        'Adicionado painel \'Minha Conta\' para edição de dados pessoais do aluno.',
+        'Ajustes na interface e sistema de backup do painel administrativo.',
+      ],
+      current: true,
+    },
+    {
       version: 'v5.5.0',
       title: 'Atualização do Sistema',
       changes: [
         'Simplificação e Foco: Redução de campos obsoletos (RG) em formulários e otimização do modal de novidades.'
       ],
-      current: true,
+      current: false,
     },
     {
       version: 'v5.4.0',

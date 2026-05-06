@@ -41,6 +41,7 @@ import VerificationResult from "./VerificationResult";
 import Modal from "./Modal";
 import AppointmentsPanel from "./AppointmentsPanel";
 import EventsPage from "./EventsPage";
+import SuggestEditModal from "./SuggestEditModal";
 import { ASSETS_DOC_PATH } from "../lib/constants";
 import { CertificateRenderer } from "./CertificateRenderer";
 import { useDialog } from "../context/DialogContext";
@@ -171,7 +172,7 @@ export default function StudentPortal({
   const [alphaCode, setAlphaCode] = useState("");
   const [isPrePinAnimation, setIsPrePinAnimation] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [activeTab, setActiveTab] = useState<"id" | "events" | "certificates" | "academic" | "appointments" | "seminary_events" | "liturgy">(
+  const [activeTab, setActiveTab] = useState<"id" | "events" | "certificates" | "academic" | "appointments" | "seminary_events" | "liturgy" | "account">(
     "id",
   );
   const [eventsSubTab, setEventsSubTab] = useState<"upcoming" | "past">(
@@ -183,6 +184,7 @@ export default function StudentPortal({
   const [modalHelpOpen, setModalHelpOpen] = useState(false);
   const [modalPinReset, setModalPinReset] = useState(false);
   const [modalDNEOpen, setModalDNEOpen] = useState(false);
+  const [showAccountEditModal, setShowAccountEditModal] = useState(false);
 
   // Fallback PIN state
   const [pinMode, setPinMode] = useState<"create" | "verify" | "none">("none");
@@ -1159,6 +1161,17 @@ export default function StudentPortal({
                 </button>
               </>
             )}
+            <button
+              onClick={() => setActiveTab("account")}
+              className={`flex-1 min-w-[100px] flex items-center justify-center gap-2 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${
+                activeTab === "account"
+                  ? "bg-white dark:bg-slate-700 text-rose-600 dark:text-rose-400 shadow-sm"
+                  : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+              }`}
+            >
+              <User className="w-4 h-4" />
+              Minha Conta
+            </button>
           </div>
 
           <div className="w-full mt-2">
@@ -1718,6 +1731,80 @@ export default function StudentPortal({
               </motion.div>
             )}
 
+            {activeTab === "account" && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-4"
+              >
+                <div className="bg-white dark:bg-slate-800 p-6 rounded-3xl shadow-sm border border-slate-200 dark:border-slate-700">
+                  <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6">
+                    <div className="relative">
+                      <div className="w-24 h-24 rounded-full overflow-hidden border-4 border-slate-100 dark:border-slate-700 shadow-xl bg-white">
+                        <img 
+                            src={member?.photoUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(member?.name || 'User')}&background=e2e8f0&color=475569&size=200`} 
+                            alt={member?.name} 
+                            className="w-full h-full object-cover"
+                        />
+                      </div>
+                    </div>
+                    
+                    <div className="flex-1 text-center sm:text-left">
+                      <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase mb-1">
+                        {member?.name}
+                      </h3>
+                      <p className="text-sm font-semibold text-slate-500 mb-1">{member?.email || 'Nenhum e-mail cadastrado'}</p>
+                      
+                      <div className="flex items-center justify-center sm:justify-start gap-2 flex-wrap mt-3">
+                         {member?.roles?.map((r, i) => (
+                           <span key={i} className="bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 text-[10px] font-bold px-2 py-1 rounded-md uppercase">
+                             {r}
+                           </span>
+                         ))}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col gap-2 w-full sm:w-auto">
+                        <button 
+                           onClick={() => setShowAccountEditModal(true)}
+                           className="btn-modern px-5 py-2.5 bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-900/20 dark:text-rose-400 dark:hover:bg-rose-900/40 rounded-xl font-bold flex items-center justify-center gap-2 transition"
+                        >
+                            <User className="w-4 h-4 inline-block -mt-0.5 mr-1" />
+                            Editar Informações
+                        </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-8 pt-8 border-t border-slate-100 dark:border-slate-700/50">
+                     <div>
+                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">RA / Matrícula</p>
+                       <p className="font-semibold text-slate-700 dark:text-slate-300 text-sm">{member?.ra}</p>
+                     </div>
+                     <div>
+                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">CPF</p>
+                       <p className="font-semibold text-slate-700 dark:text-slate-300 text-sm">{member?.cpf}</p>
+                     </div>
+                     <div>
+                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Data de Nascimento</p>
+                       <p className="font-semibold text-slate-700 dark:text-slate-300 text-sm">{member?.birthdate}</p>
+                     </div>
+                     <div>
+                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Curso</p>
+                       <p className="font-semibold text-slate-700 dark:text-slate-300 text-sm">{member?.course || '-'}</p>
+                     </div>
+                     <div>
+                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Diocese</p>
+                       <p className="font-semibold text-slate-700 dark:text-slate-300 text-sm">{member?.diocese || '-'}</p>
+                     </div>
+                     <div>
+                       <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Seminário</p>
+                       <p className="font-semibold text-slate-700 dark:text-slate-300 text-sm">{member?.seminary || '-'}</p>
+                     </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+
             {activeTab === "seminary_events" && (
               <motion.div
                 initial={{ opacity: 0, y: 10 }}
@@ -1729,6 +1816,17 @@ export default function StudentPortal({
             )}
           </div>
         </div>
+
+        {showAccountEditModal && member && (
+          <SuggestEditModal 
+            member={member} 
+            onClose={() => setShowAccountEditModal(false)}
+            onSubmitSuccess={() => {
+              setShowAccountEditModal(false);
+              alert("A sua sugestão de alteração foi enviada. Por favor, aguarde a aprovação do administrador."); 
+            }}
+          />
+        )}
 
         <Modal
           isOpen={modalDNEOpen}
