@@ -1221,7 +1221,7 @@ function MuralPostItem({
                                    }}
                                    className="p-1 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded transition-all"
                                    title="Editar comentário"
-                                   disabled={isDeletingComment || !!commentToDelete}
+                                   disabled={isDeletingComment}
                                  >
                                    <Pencil className="w-3 h-3" />
                                  </button>

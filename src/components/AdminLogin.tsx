@@ -52,8 +52,8 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
       onLogin();
     } catch (err: any) {
       console.error(err);
-      if (err.code === "auth/user-not-found") {
-        setError("Usuário não encontrado. Se for seu primeiro acesso, registre-se.");
+      if (err.code === "auth/user-not-found" || err.code === "auth/invalid-credential") {
+        setError("Credenciais inválidas. Verifique seu e-mail e senha. Se for seu primeiro acesso, registre-se.");
       } else if (err.code === "auth/wrong-password") {
         setError("Senha incorreta.");
       } else if (err.code === "auth/email-already-in-use") {

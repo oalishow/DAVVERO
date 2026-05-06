@@ -22,9 +22,11 @@ import {
   Lock,
   Type,
   Plus,
+  Database,
 } from "lucide-react";
 import { GoogleGenAI } from "@google/genai";
 import FajopaIDCard from "./FajopaIDCard";
+import BackupModal from "./BackupModal";
 import { useSettings } from "../context/SettingsContext";
 import { AVAILABLE_SEMINARIES } from "../types";
 import {
@@ -176,6 +178,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
 
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [unlockPassword, setUnlockPassword] = useState("");
+  const [showBackup, setShowBackup] = useState(false);
 
   const handleUnlock = () => {
     const current =
@@ -1456,6 +1459,22 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                     </div>
                   </div>
 
+                  {/* Backups */}
+                  <div className="bg-indigo-50 dark:bg-indigo-900/10 p-5 rounded-2xl border border-indigo-200 dark:border-indigo-500/20">
+                    <h3 className="text-sm font-bold flex items-center gap-2 mb-4 text-indigo-700 dark:text-indigo-300 uppercase tracking-widest text-[10px]">
+                      <Database className="w-4 h-4" /> Gerenciamento de Backups
+                    </h3>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 mb-4">
+                      Exporte ou importe a base de dados completa (incluindo membros e lixeira).
+                    </p>
+                    <button
+                      onClick={() => setShowBackup(true)}
+                      className="btn-modern w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-sm font-medium flex items-center justify-center gap-2"
+                    >
+                      <Database className="w-4 h-4" /> Abrir Painel de Backups
+                    </button>
+                  </div>
+
                   {/* Segurança */}
                   <div className="bg-rose-50 dark:bg-rose-900/10 p-5 rounded-2xl border border-rose-200 dark:border-rose-500/20">
                     <h3 className="text-sm font-bold flex items-center gap-2 mb-4 text-rose-700 dark:text-rose-300 uppercase tracking-widest text-[10px]">
@@ -1601,6 +1620,8 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                   </div>
                 </div>
               )}
+
+              {showBackup && <BackupModal onClose={() => setShowBackup(false)} />}
 
               <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
                 <button

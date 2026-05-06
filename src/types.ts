@@ -1,7 +1,9 @@
 export const AVAILABLE_SEMINARIES = [
   "SPSCJ - Seminário Provincial Sagrado Coração de Jesus",
   "Seminário Rainha dos Apóstolos",
-  "Seminário Diocesano São José"
+  "Seminário Diocesano São José",
+  "Religiosos",
+  "Sem Vínculo de Seminário"
 ];
 
 export interface Member {

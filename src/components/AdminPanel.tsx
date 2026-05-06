@@ -16,6 +16,8 @@ import {
   LogOut,
   Share2,
   Check,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import {
   doc,
@@ -49,11 +51,12 @@ import EventManagement from "./EventManagement";
 import EventsRecycleBin from "./EventsRecycleBin";
 import NotificationsManager from "./NotificationsManager";
 import AdminAppointments from "./AdminAppointments";
-import { Calendar, BriefcaseMedical } from "lucide-react";
+import DashboardPanel from "./DashboardPanel";
+import { Calendar, BriefcaseMedical, LayoutDashboard } from "lucide-react";
 
 export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const { settings, updateSettings } = useSettings();
-  const [activeTab, setActiveTab] = useState<"members" | "events" | "appointments" | "notifications">("members");
+  const [activeTab, setActiveTab] = useState<"dashboard" | "members" | "events" | "appointments" | "notifications">("dashboard");
   const [name, setName] = useState("");
   const [ra, setRa] = useState("");
   const [cpf, setCpf] = useState("");
@@ -88,6 +91,8 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const [showBackup, setShowBackup] = useState(false);
   const [showRequests, setShowRequests] = useState(false);
   const [showPrintReport, setShowPrintReport] = useState(false);
+  const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
+  const [isVisitorOpen, setIsVisitorOpen] = useState(false);
 
   const [stats, setStats] = useState({
     totalActive: 0,
@@ -507,6 +512,17 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
 
       <div className="flex gap-2 mb-6 border-b border-slate-200 dark:border-slate-700/60 no-print overflow-x-auto scrollbar-hide">
         <button
+          onClick={() => setActiveTab("dashboard")}
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl font-bold text-sm transition-colors ${
+            activeTab === "dashboard"
+              ? "bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border-b-2 border-sky-600 dark:border-sky-400"
+              : "text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+          }`}
+        >
+          <LayoutDashboard className="w-4 h-4" />
+          Dashboard
+        </button>
+        <button
           onClick={() => setActiveTab("members")}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl font-bold text-sm transition-colors ${
             activeTab === "members"
@@ -553,6 +569,10 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
           Enviar Notificações
         </button>
       </div>
+
+      {activeTab === "dashboard" && (
+        <DashboardPanel />
+      )}
 
       {activeTab === "events" && (
         <div className="space-y-12">
@@ -652,14 +672,22 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
             </button>
           </div>
 
-          <div className="space-y-4 sm:space-y-5 bg-white dark:bg-slate-800/40 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-700/50 no-print">
-            <h3 className="text-base sm:text-lg font-medium text-slate-800 dark:text-slate-200 flex items-center gap-2">
-              <UserPlus className="w-5 h-5 text-sky-600 dark:text-sky-400" />
-              Registo Direto de Membro
-            </h3>
+          <div className="bg-white dark:bg-slate-800/40 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-700/50 no-print">
+            <button 
+              onClick={() => setIsRegistrationOpen(!isRegistrationOpen)}
+              className="w-full flex items-center justify-between text-base sm:text-lg font-medium text-slate-800 dark:text-slate-200"
+            >
+              <div className="flex items-center gap-2">
+                <UserPlus className="w-5 h-5 text-sky-600 dark:text-sky-400" />
+                Registo Direto de Membro
+              </div>
+              {isRegistrationOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+            </button>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-              <div>
+            {isRegistrationOpen && (
+              <div className="space-y-4 sm:space-y-5 mt-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+                  <div>
                 <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
                   Nome Completo *
                 </label>
@@ -895,16 +923,26 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
               )}
               Criar Registo Direto & Gerar QR Code
             </button>
+            </div>
+            )}
           </div>
 
-          <div className="space-y-4 sm:space-y-5 bg-emerald-50 dark:bg-emerald-900/10 p-4 sm:p-6 rounded-2xl border border-emerald-200 dark:border-emerald-500/30 no-print mt-6">
-            <h3 className="text-base sm:text-lg font-medium text-slate-800 dark:text-slate-200 flex items-center gap-2">
-              <UserPlus className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
-              Cadastro Rápido de Visitante
-            </h3>
+          <div className="bg-emerald-50 dark:bg-emerald-900/10 p-4 sm:p-6 rounded-2xl border border-emerald-200 dark:border-emerald-500/30 no-print mt-6">
+            <button 
+              onClick={() => setIsVisitorOpen(!isVisitorOpen)}
+              className="w-full flex items-center justify-between text-base sm:text-lg font-medium text-slate-800 dark:text-slate-200"
+            >
+              <div className="flex items-center gap-2">
+                <UserPlus className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                Cadastro Rápido de Visitante
+              </div>
+              {isVisitorOpen ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
+            </button>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-              <div>
+            {isVisitorOpen && (
+              <div className="space-y-4 sm:space-y-5 mt-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
+                  <div>
                 <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1">
                   Nome do Visitante *
                 </label>
@@ -940,6 +978,8 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
               )}
               Cadastrar Visitante
             </button>
+            </div>
+            )}
           </div>
 
           {status && status.type !== "loading" && (
