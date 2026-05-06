@@ -23,8 +23,28 @@ export default function MuralPage() {
 
   const [activeTab, setActiveTab] = useState<"academico" | "seminario">("academico");
   const [posts, setPosts] = useState<MuralPost[]>([]);
-  const [isAdmin, setIsAdmin] = useState(false);
-  const [currentUserData, setCurrentUserData] = useState<{ id: string, name: string, photoUrl?: string, roles?: string[] } | null>(null);
+  const [isAdmin, setIsAdmin] = useState<boolean>(() => {
+    const cachedMemberStr = localStorage.getItem("davveroId_cached_member");
+    if (cachedMemberStr) {
+      try {
+        const m = JSON.parse(cachedMemberStr) as Member;
+        if (m.roles && m.roles.some(r => ['admin', 'diretoria', 'gestão', 'comunicação', 'secretaria'].includes(r.toLowerCase()))) {
+          return true;
+        }
+      } catch(e) {}
+    }
+    return false;
+  });
+  const [currentUserData, setCurrentUserData] = useState<{ id: string, name: string, photoUrl?: string, roles?: string[] } | null>(() => {
+    const cachedMemberStr = localStorage.getItem("davveroId_cached_member");
+    if (cachedMemberStr) {
+      try {
+        const m = JSON.parse(cachedMemberStr) as Member;
+        return { id: m.id, name: m.name, photoUrl: m.photoUrl, roles: m.roles };
+      } catch(e) {}
+    }
+    return null;
+  });
   const myUserId = currentUserData?.id || auth.currentUser?.uid || "anonymous";
 
   // Form states
@@ -121,7 +141,7 @@ export default function MuralPage() {
             where("alphaCode", "==", bondedId),
             limit(1)
           );
-          getDocs(q).then(snap => {
+          onSnapshot(q, { includeMetadataChanges: true }, (snap) => {
             if (!snap.empty) {
               const m = snap.docs[0].data() as Member;
               setCurrentUserData({ id: snap.docs[0].id, name: m.name, photoUrl: m.photoUrl, roles: m.roles });
