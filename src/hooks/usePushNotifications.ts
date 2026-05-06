@@ -22,6 +22,13 @@ export function usePushNotifications() {
 
   const subscribe = async () => {
     try {
+      const perm = await Notification.requestPermission();
+      if (perm !== "granted") {
+        console.warn("User denied push notifications");
+        alert("Permissão para notificações foi negada. Por favor, libere nas configurações do navegador (ícone de cadeado na barra de endereços).");
+        return;
+      }
+
       const response = await fetch("/api/push/public-key");
       const { publicKey } = await response.json();
 
