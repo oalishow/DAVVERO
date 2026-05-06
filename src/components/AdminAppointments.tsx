@@ -28,6 +28,10 @@ export default function AdminAppointments() {
   const [location, setLocation] = useState("");
   const [seminary, setSeminary] = useState(AVAILABLE_SEMINARIES[0]);
   
+  const [creationMode, setCreationMode] = useState<"single" | "batch">("single");
+  const [batchEndTime, setBatchEndTime] = useState("");
+  const [batchDuration, setBatchDuration] = useState("60"); // minutos
+
   const [allStudents, setAllStudents] = useState<Member[]>([]);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -129,27 +133,73 @@ export default function AdminAppointments() {
     if (!prof) return;
 
     try {
-      let calcEndTime = endTime;
-      if (!calcEndTime) {
-         let h = parseInt(startTime.split(':')[0]) + 1;
-         let m = startTime.split(':')[1];
-         calcEndTime = h.toString().padStart(2, '0') + ':' + m;
+      if (creationMode === "single") {
+        let calcEndTime = endTime;
+        if (!calcEndTime) {
+           let h = parseInt(startTime.split(':')[0]) + 1;
+           let m = startTime.split(':')[1];
+           calcEndTime = h.toString().padStart(2, '0') + ':' + m;
+        }
+
+        await addDoc(collection(db, `artifacts/${appId}/public/data/availabilities`), {
+          professionalId: prof.id,
+          professionalName: prof.name,
+          date,
+          startTime,
+          endTime: calcEndTime,
+          location: location || "",
+          seminary: seminary || null,
+          status: "LIVRE",
+          createdAt: new Date().toISOString()
+        });
+      } else {
+        // Batch Mode
+        if (!batchEndTime || !batchDuration) {
+          showAlert("Para gerar lote, informe H. Fim Final e a Duração.", { type: "warning" });
+          return;
+        }
+
+        const durationMinutes = parseInt(batchDuration);
+        if (durationMinutes <= 0) return;
+
+        let [sh, sm] = startTime.split(':').map(Number);
+        let [eh, em] = batchEndTime.split(':').map(Number);
+
+        let currentTotalMins = sh * 60 + sm;
+        const endTotalMins = eh * 60 + em;
+
+        let createdCount = 0;
+
+        while (currentTotalMins + durationMinutes <= endTotalMins) {
+           const sfH = Math.floor(currentTotalMins / 60).toString().padStart(2, '0');
+           const sfM = (currentTotalMins % 60).toString().padStart(2, '0');
+           
+           const nextTotalMins = currentTotalMins + durationMinutes;
+           const efH = Math.floor(nextTotalMins / 60).toString().padStart(2, '0');
+           const efM = (nextTotalMins % 60).toString().padStart(2, '0');
+
+           await addDoc(collection(db, `artifacts/${appId}/public/data/availabilities`), {
+            professionalId: prof.id,
+            professionalName: prof.name,
+            date,
+            startTime: `${sfH}:${sfM}`,
+            endTime: `${efH}:${efM}`,
+            location: location || "",
+            seminary: seminary || null,
+            status: "LIVRE",
+            createdAt: new Date().toISOString()
+          });
+
+           currentTotalMins = nextTotalMins;
+           createdCount++;
+        }
+        showAlert(`Foram criados ${createdCount} horários com sucesso.`, { type: "success" });
       }
 
-      await addDoc(collection(db, `artifacts/${appId}/public/data/availabilities`), {
-        professionalId: prof.id,
-        professionalName: prof.name,
-        date,
-        startTime,
-        endTime: calcEndTime,
-        location: location || "",
-        seminary: seminary || null,
-        status: "LIVRE",
-        createdAt: new Date().toISOString()
-      });
       // Clear time
       setStartTime("");
       setEndTime("");
+      setBatchEndTime("");
     } catch(e) {
       console.error(e);
       showAlert("Erro ao criar disponibilidade.", { type: "error", title: "Erro" });
@@ -323,6 +373,22 @@ export default function AdminAppointments() {
           </div>
         </div>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="lg:col-span-4 mb-2 flex justify-center sm:justify-start">
+             <div className="flex bg-slate-100 dark:bg-slate-900 rounded-lg p-1 w-full sm:w-auto">
+                <button
+                   onClick={() => setCreationMode("single")}
+                   className={`flex-1 sm:flex-none px-4 py-1.5 text-xs font-bold rounded-md transition-all ${creationMode === "single" ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}
+                >
+                   Único
+                </button>
+                <button
+                   onClick={() => setCreationMode("batch")}
+                   className={`flex-1 sm:flex-none px-4 py-1.5 text-xs font-bold rounded-md transition-all ${creationMode === "batch" ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm" : "text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"}`}
+                >
+                   Gerar em Lote (Automático)
+                </button>
+             </div>
+          </div>
           <div className="lg:col-span-2">
              <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">Profissional / Atendente *</label>
              <select 
@@ -354,15 +420,47 @@ export default function AdminAppointments() {
               className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-sm outline-none"
             />
           </div>
-          <div>
-            <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">Fim <span className="opacity-50">(opcional)</span></label>
-            <input 
-              type="time" 
-              value={endTime} 
-              onChange={e => setEndTime(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-sm outline-none"
-            />
-          </div>
+          {creationMode === "single" ? (
+             <div>
+               <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">Fim <span className="opacity-50">(opcional)</span></label>
+               <input 
+                 type="time" 
+                 value={endTime} 
+                 onChange={e => setEndTime(e.target.value)}
+                 className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-sm outline-none"
+               />
+             </div>
+          ) : (
+             <>
+               <div>
+                 <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1 text-indigo-500">Início do Último Horário *</label>
+                 <input 
+                   type="time" 
+                   value={batchEndTime} 
+                   onChange={e => setBatchEndTime(e.target.value)}
+                   className="w-full bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800/50 rounded-xl p-2.5 text-sm outline-none text-indigo-700 dark:text-indigo-300"
+                 />
+               </div>
+               <div>
+                 <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1 text-indigo-500">Duração (min) *</label>
+                 <select 
+                   value={batchDuration} 
+                   onChange={e => setBatchDuration(e.target.value)}
+                   className="w-full bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800/50 rounded-xl p-2.5 text-sm outline-none text-indigo-700 dark:text-indigo-300"
+                 >
+                    <option value="15">15 minutos</option>
+                    <option value="20">20 minutos</option>
+                    <option value="30">30 minutos</option>
+                    <option value="40">40 minutos</option>
+                    <option value="45">45 minutos</option>
+                    <option value="50">50 minutos</option>
+                    <option value="60">1 Hora</option>
+                    <option value="90">1h 30m</option>
+                    <option value="120">2 Horas</option>
+                 </select>
+               </div>
+             </>
+          )}
           <div className="lg:col-span-2">
             <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">Local (Opcional)</label>
             <input 

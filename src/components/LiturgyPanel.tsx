@@ -1,8 +1,9 @@
 import React, { useState } from "react";
-import { BookHeart, Sunrise, Sun, Sunset, Moon, ExternalLink, BookOpen, CalendarHeart, X } from "lucide-react";
+import { BookHeart, ExternalLink, BookOpen, CalendarHeart, X, Youtube, Play } from "lucide-react";
 
 export default function LiturgyPanel() {
-  const [selectedHour, setSelectedHour] = useState<{ id: string, name: string, url: string } | null>(null);
+  const [selectedHour, setSelectedHour] = useState<{ id: string, name: string, url: string, isYoutube?: boolean } | null>(null);
+  const [youtubeLink, setYoutubeLink] = useState("");
 
   const hours = [
     { id: "liturgia-diaria", name: "Liturgia Diária (CNBB)", icon: BookOpen, time: "Missa do Dia", url: "https://www.cnbb.org.br/liturgia-diaria/" },
@@ -14,6 +15,29 @@ export default function LiturgyPanel() {
     { id: "calendario-liturgico", name: "Calendário Litúrgico", icon: CalendarHeart, time: "Ano Litúrgico", url: "https://liturgiadashoras.online/calendario-liturgia-da-missa-2023-ano-a/" },
   ];
 
+  const getYoutubeEmbedUrl = (url: string) => {
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+    const match = url.match(regExp);
+    if (match && match[2].length === 11) {
+      return `https://www.youtube.com/embed/${match[2]}?autoplay=1&rel=0`;
+    }
+    return url;
+  };
+
+  const handleOpenYoutube = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!youtubeLink) return;
+    
+    const embedUrl = getYoutubeEmbedUrl(youtubeLink);
+    setSelectedHour({
+      id: "youtube-custom",
+      name: "Vídeo / Formação",
+      url: embedUrl,
+      isYoutube: true
+    });
+    setYoutubeLink("");
+  };
+
   return (
     <div className="space-y-6">
       {selectedHour && (
@@ -21,16 +45,22 @@ export default function LiturgyPanel() {
           <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
             <div className="flex items-center gap-3">
               <div className="bg-rose-100 dark:bg-rose-900/30 p-2 rounded-lg">
-                <BookHeart className="w-5 h-5 text-rose-600 dark:text-rose-400" />
+                {selectedHour.isYoutube ? (
+                   <Youtube className="w-5 h-5 text-rose-600 dark:text-rose-400" />
+                ) : (
+                   <BookHeart className="w-5 h-5 text-rose-600 dark:text-rose-400" />
+                )}
               </div>
               <div>
                 <h3 className="font-bold text-slate-800 dark:text-white leading-none mb-1">{selectedHour.name}</h3>
-                <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">Modo Leitura Sem Anúncios</p>
+                <p className="text-[10px] text-slate-500 uppercase tracking-wider font-semibold">
+                  {selectedHour.isYoutube ? "Modo Sem Anúncios (Embed)" : "Modo Leitura Sem Anúncios"}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-2">
                <a 
-                 href={`${selectedHour.url}?t=${Date.now()}`}
+                 href={selectedHour.isYoutube ? selectedHour.url : `${selectedHour.url}?t=${Date.now()}`}
                  target="_blank" 
                  rel="noopener noreferrer"
                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold text-slate-600 bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:hover:bg-slate-700 transition-colors"
@@ -47,13 +77,23 @@ export default function LiturgyPanel() {
               </button>
             </div>
           </div>
-          <div className="flex-1 bg-slate-100 dark:bg-slate-950 relative overflow-hidden">
-            <iframe 
-              src={`${selectedHour.url}?t=${Date.now()}`} 
-              className="w-full h-full border-none"
-              sandbox="allow-same-origin allow-forms allow-scripts allow-popups allow-popups-to-escape-sandbox"
-              title={selectedHour.name}
-            />
+          <div className="flex-1 bg-slate-100 dark:bg-slate-950 relative overflow-hidden flex items-center justify-center">
+            {selectedHour.isYoutube ? (
+              <iframe 
+                src={selectedHour.url} 
+                className="w-full h-full max-w-6xl aspect-video border-none shadow-2xl"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+                title={selectedHour.name}
+              />
+            ) : (
+              <iframe 
+                src={`${selectedHour.url}?t=${Date.now()}`} 
+                className="w-full h-full border-none"
+                sandbox="allow-same-origin allow-forms allow-scripts allow-popups allow-popups-to-escape-sandbox"
+                title={selectedHour.name}
+              />
+            )}
           </div>
         </div>
       )}
@@ -76,6 +116,32 @@ export default function LiturgyPanel() {
             Acesse rapidamente a Liturgia Diária, o Santo do Dia e as orações do ofício divino para rezar em comunhão com toda a Igreja.
           </p>
         </div>
+      </div>
+
+      <div className="bg-white dark:bg-slate-800 rounded-2xl p-4 sm:p-5 border border-slate-200 dark:border-slate-700 shadow-sm flex flex-col sm:flex-row gap-4 items-center">
+        <div className="flex-1 w-full">
+          <h3 className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-2 mb-1">
+            <Youtube className="w-4 h-4 text-rose-500" />
+            Ver Vídeo (YouTube) sem Anúncios
+          </h3>
+          <p className="text-[10px] text-slate-500 dark:text-slate-400 uppercase tracking-wider font-semibold">Aulas, homilias e formações</p>
+        </div>
+        <form onSubmit={handleOpenYoutube} className="w-full sm:w-auto flex flex-col sm:flex-row gap-2">
+          <input 
+            type="url" 
+            placeholder="Cole o link do YouTube aqui..." 
+            value={youtubeLink}
+            onChange={(e) => setYoutubeLink(e.target.value)}
+            className="w-full sm:w-64 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-sm outline-none transition-all focus:border-rose-400 dark:focus:border-rose-500"
+          />
+          <button 
+            type="submit"
+            disabled={!youtubeLink}
+            className="btn-modern bg-rose-600 hover:bg-rose-500 disabled:bg-slate-300 dark:disabled:bg-slate-700 text-white px-4 py-2.5 rounded-xl font-bold flex items-center justify-center gap-2 transition-all shrink-0"
+          >
+            <Play className="w-4 h-4" /> Assistir
+          </button>
+        </form>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
