@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { db, auth } from "../lib/firebase";
+import { db, auth, appId } from "../lib/firebase";
 import { doc, setDoc } from "firebase/firestore";
 
 export function usePushNotifications() {
@@ -49,7 +49,7 @@ export function usePushNotifications() {
       const subId = btoa(sub.endpoint).replace(/\+/g, '-').replace(/\//g, '_').substring(0, 100);
       
       // Use the global artifacts structure that has liberal permissions
-      await setDoc(doc(db, "artifacts/banco-de-dados-fajopa/public/data/push_subscriptions", subId), {
+      await setDoc(doc(db, `artifacts/${appId}/public/data/push_subscriptions`, subId), {
         ...subJson,
         userId: auth.currentUser?.uid || "anonymous",
         updatedAt: new Date().toISOString()

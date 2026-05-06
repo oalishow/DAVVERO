@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Send, Sparkles, AlertCircle, RefreshCw, Wand2, X, Bell, BellOff } from "lucide-react";
-import { createNotification, db } from "../lib/firebase";
+import { createNotification, db, appId } from "../lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
 import { useDialog } from "../context/DialogContext";
 import { GoogleGenAI, Type } from "@google/genai";
@@ -77,7 +77,7 @@ export default function NotificationsManager() {
       // 2. Fetch subscriptions from Firestore
       let targetSubscriptions: any[] = [];
       try {
-        const subsSnapshot = await getDocs(collection(db, "artifacts/banco-de-dados-fajopa/public/data/push_subscriptions"));
+        const subsSnapshot = await getDocs(collection(db, `artifacts/${appId}/public/data/push_subscriptions`));
         targetSubscriptions = subsSnapshot.docs.map(doc => doc.data());
       } catch (subErr) {
         console.error("Error fetching subscriptions:", subErr);
