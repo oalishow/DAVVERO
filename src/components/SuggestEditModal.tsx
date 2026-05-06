@@ -23,7 +23,6 @@ export default function SuggestEditModal({ member, onClose, onSubmitSuccess }: S
   const [diocese, setDiocese] = useState(member.diocese || '');
   const [seminary, setSeminary] = useState(member.seminary || '');
   const [cpf, setCpf] = useState(member.cpf || '');
-  const [rg, setRg] = useState(member.rg || '');
   const [birthdate, setBirthdate] = useState(() => {
     let bd = member.birthdate || '';
     if (bd.includes('/')) {
@@ -72,11 +71,10 @@ export default function SuggestEditModal({ member, onClose, onSubmitSuccess }: S
     const dioceseMatch = (diocese || '') === (member.diocese || '');
     const seminaryMatch = (seminary || '') === (member.seminary || '');
     const cpfMatch = (cpf || '').trim() === (member.cpf || '').trim();
-    const rgMatch = (rg || '').trim() === (member.rg || '').trim();
     const birthdateMatch = (birthdate || '').trim() === (member.birthdate || '').trim();
     const emailMatch = (email || '').trim() === (member.email || '').trim();
 
-    if (nameMatch && raMatch && courseMatch && dioceseMatch && seminaryMatch && cpfMatch && rgMatch && birthdateMatch && emailMatch && !rolesChanged && !photoBase64) {
+    if (nameMatch && raMatch && courseMatch && dioceseMatch && seminaryMatch && cpfMatch && birthdateMatch && emailMatch && !rolesChanged && !photoBase64) {
       setError('Altere pelo menos um dado antes de enviar.');
       return;
     }
@@ -92,7 +90,6 @@ export default function SuggestEditModal({ member, onClose, onSubmitSuccess }: S
       if (!dioceseMatch) pendingChanges.diocese = diocese;
       if (!seminaryMatch) pendingChanges.seminary = seminary;
       if (!cpfMatch) pendingChanges.cpf = cpf.trim();
-      if (!rgMatch) pendingChanges.rg = rg.trim();
       if (!birthdateMatch) pendingChanges.birthdate = birthdate.trim();
       if (!emailMatch) pendingChanges.email = email.trim();
       if (rolesChanged) pendingChanges.roles = roles;

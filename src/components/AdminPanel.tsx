@@ -57,7 +57,6 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const [name, setName] = useState("");
   const [ra, setRa] = useState("");
   const [cpf, setCpf] = useState("");
-  const [rg, setRg] = useState("");
   const [birthdate, setBirthdate] = useState("");
   const getDefaultValidity = () => {
     const d = new Date();
@@ -68,7 +67,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const [roles, setRoles] = useState<string[]>([]);
   const [course, setCourse] = useState("");
   const [diocese, setDiocese] = useState("");
-  const [seminary, setSeminary] = useState("");
+  const [seminary, setSeminary] = useState(AVAILABLE_SEMINARIES[0]);
   
   const [visitorName, setVisitorName] = useState("");
   const [visitorCpf, setVisitorCpf] = useState("");
@@ -354,7 +353,6 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
         name: name.trim(),
         ra: formattedRa,
         cpf: cpf ? cpf.replace(/\D/g, "") : "",
-        rg: rg.trim() || "",
         birthdate,
         validityDate: validity,
         alphaCode,
@@ -382,12 +380,11 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
       setName("");
       setRa("");
       setCpf("");
-      setRg("");
       setBirthdate("");
       setValidity("");
       setCourse("");
       setDiocese("");
-      setSeminary("");
+      setSeminary(AVAILABLE_SEMINARIES[0]);
       setRoles([]);
       setPhotoBase64(null);
       setTimeout(() => setStatus(null), 4000);

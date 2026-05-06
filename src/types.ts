@@ -9,7 +9,6 @@ export interface Member {
   name: string;
   ra?: string;
   cpf?: string;
-  rg?: string;
   birthdate?: string;
   email?: string;
   validityDate?: string;
@@ -115,6 +114,7 @@ export interface Availability {
   endTime: string;    // Formato HH:mm
   status: AvailabilityStatus;
   location?: string;
+  seminary?: string;
   createdAt?: string;
   updatedAt?: string;
 }

@@ -6,9 +6,11 @@ import { Member, Appointment, Availability } from "../types";
 import { Calendar, Clock, User, HeartHandshake, ShieldCheck, RefreshCw } from "lucide-react";
 
 import { DEFAULT_PROFESSIONALS } from "../lib/defaultProfessionals";
+import { useSettings } from "../context/SettingsContext";
 
 export default function PublicAppointmentsList({ member, onNavigateToStudent }: { member: Member | null; onNavigateToStudent?: () => void }) {
   const { showAlert, showConfirm } = useDialog();
+  const { settings: cloudSettings } = useSettings();
   const [loading, setLoading] = useState(true);
   const [availabilities, setAvailabilities] = useState<Availability[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -42,6 +44,24 @@ export default function PublicAppointmentsList({ member, onNavigateToStudent }: 
       DEFAULT_PROFESSIONALS.forEach(p => {
         profMap[p.id] = { ...p };
       });
+      
+      if (cloudSettings?.seminariesConfig) {
+        Object.values(cloudSettings.seminariesConfig).forEach((semConfig: any) => {
+          if (semConfig.professionals) {
+            semConfig.professionals.forEach((p: any) => {
+              if (!Object.values(profMap).some((pm: any) => pm.name.toLowerCase() === p.name.toLowerCase())) {
+                profMap[p.id] = {
+                  id: p.id,
+                  name: p.name,
+                  roles: [p.role],
+                  photoUrl: p.photoUrl || undefined,
+                  isActive: true,
+                } as Member;
+              }
+            });
+          }
+        });
+      }
       
       studentsSnap.docs.forEach(d => {
         const data = d.data() as Member;
@@ -250,14 +270,30 @@ export default function PublicAppointmentsList({ member, onNavigateToStudent }: 
                         <div className="flex items-start gap-4">
                           <div className="text-center min-w-[70px] bg-slate-100 dark:bg-slate-700/50 p-2 rounded-xl border border-slate-200 dark:border-slate-700">
                             <p className="font-black text-xl text-slate-800 dark:text-white leading-none">{slot.startTime}</p>
-                            <p className="text-[10px] uppercase font-bold text-sky-600 dark:text-sky-400 mt-1 truncate max-w-[60px]" title={slot.professionalName}>{slot.professionalName.split(' ')[0]}</p>
+                            
+                            {/* PROFESSIONAL INFO */}
+                            <div className="mt-2 flex flex-col items-center gap-1">
+                              {(professionals[slot.professionalId]?.photoUrl || Object.values(professionals as Record<string, any>).find(p => p.name === slot.professionalName)?.photoUrl) ? (
+                                <img src={professionals[slot.professionalId]?.photoUrl || Object.values(professionals as Record<string, any>).find(p => p.name === slot.professionalName)?.photoUrl} alt="Foto" className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 object-cover" />
+                              ) : (
+                                <div className="w-8 h-8 rounded-full bg-sky-200 dark:bg-sky-900/50 flex items-center justify-center">
+                                  <ShieldCheck className="w-5 h-5 text-sky-600 dark:text-sky-400" />
+                                </div>
+                              )}
+                              <p className="text-[10px] sm:text-xs text-center uppercase font-bold text-sky-600 dark:text-sky-400 leading-tight" title={slot.professionalName}>{slot.professionalName}</p>
+                            </div>
                           </div>
                           
                           <div className="border-l border-slate-200 dark:border-slate-700 pl-4 py-1 flex flex-col justify-center">
                             {slot.isBooked ? (
-                              <div>
-                                <p className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                                  <User className="w-4 h-4 text-slate-400" />
+                              <div className="mt-2 text-left">
+                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1">Agendado com</div>
+                                <p className="text-sm font-bold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                                  {slot.appointmentMemberId && students[slot.appointmentMemberId]?.photoUrl ? (
+                                    <img src={students[slot.appointmentMemberId].photoUrl} alt="Foto" className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 object-cover" />
+                                  ) : (
+                                    <User className="w-5 h-5 text-slate-400" />
+                                  )}
                                   {slot.studentName}
                                   {isMyAppointment && (
                                     <span className="ml-2 text-[9px] bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400 px-2 py-0.5 rounded-full uppercase tracking-wider">Meu Horário</span>

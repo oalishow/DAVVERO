@@ -22,7 +22,6 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
   const [name, setName] = useState(member.name || '');
   const [ra, setRa] = useState(member.ra || '');
   const [cpf, setCpf] = useState(member.cpf || '');
-  const [rg, setRg] = useState(member.rg || '');
   const [birthdate, setBirthdate] = useState(() => {
     let bd = member.birthdate || '';
     if (bd.includes('/')) {
@@ -116,7 +115,7 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
     try {
       const docRef = doc(db, `artifacts/${appId}/public/data/students`, member.id);
       await updateDoc(docRef, {
-        name, ra, cpf, rg, birthdate, email, validityDate: validity, isActive, course, diocese, seminary, roles,
+        name, ra, cpf, birthdate, email, validityDate: validity, isActive, course, diocese, seminary, roles,
         legacyQrCode,
         photoUrl: photoUrl || null
       });

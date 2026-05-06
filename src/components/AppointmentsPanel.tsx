@@ -2,9 +2,10 @@ import React, { useState, useEffect } from "react";
 import { collection, query, where, getDocs, addDoc, updateDoc, doc, orderBy, deleteDoc } from "firebase/firestore";
 import { db, appId } from "../lib/firebase";
 import { useDialog } from "../context/DialogContext";
-import { Member, Appointment, Availability } from "../types";
+import { Member, Appointment, Availability, AVAILABLE_SEMINARIES } from "../types";
 import { Clock, Calendar as CalendarIcon, User, Plus, CheckCircle, Trash2, HeartHandshake, ShieldCheck, CalendarPlus } from "lucide-react";
 import { DEFAULT_PROFESSIONALS } from "../lib/defaultProfessionals";
+import { useSettings } from "../context/SettingsContext";
 
 interface AppointmentsPanelProps {
   member: Member;
@@ -12,6 +13,7 @@ interface AppointmentsPanelProps {
 
 export default function AppointmentsPanel({ member }: AppointmentsPanelProps) {
   const { showAlert, showConfirm } = useDialog();
+  const { settings: cloudSettings } = useSettings();
   const [loading, setLoading] = useState(true);
   
   const isProfessional = member.roles?.some(r => ["REITOR", "VICE-REITOR", "PSICÓLOGA", "PSICÓLOGO", "DIRETOR ESPIRITUAL", "DIRETORA ESPIRITUAL", "PADRE"].includes(r.toUpperCase()));
@@ -23,6 +25,7 @@ export default function AppointmentsPanel({ member }: AppointmentsPanelProps) {
   const [newStartTime, setNewStartTime] = useState("");
   const [newEndTime, setNewEndTime] = useState("");
   const [newLocation, setNewLocation] = useState("");
+  const [newSeminary, setNewSeminary] = useState(AVAILABLE_SEMINARIES[0]);
 
   // Student State
   const [professionals, setProfessionals] = useState<Member[]>([]);
@@ -38,6 +41,13 @@ export default function AppointmentsPanel({ member }: AppointmentsPanelProps) {
   const loadData = async () => {
     setLoading(true);
     try {
+      // Load all students into map for photo resolution
+      const studentQ = query(collection(db, `artifacts/${appId}/public/data/students`));
+      const studentSnap = await getDocs(studentQ);
+      const studMap: Record<string, Member> = {};
+      studentSnap.forEach(doc => { studMap[doc.id] = { ...doc.data(), id: doc.id } as Member; });
+      setStudents(studMap);
+
       if (isProfessional) {
         // Load professional's availabilities
         const availQ = query(
@@ -56,16 +66,6 @@ export default function AppointmentsPanel({ member }: AppointmentsPanelProps) {
         const apptSnap = await getDocs(apptQ);
         const appts = apptSnap.docs.map(d => ({ id: d.id, ...d.data() } as Appointment));
         setAppointmentsAsProf(appts.sort((a, b) => b.date.localeCompare(a.date)));
-        
-        // Fetch student details for appointments
-        const studentIds = [...new Set(appts.map(a => a.memberId))];
-        if (studentIds.length > 0) {
-          const studentQ = query(collection(db, `artifacts/${appId}/public/data/students`), where("id", "in", studentIds.slice(0, 10)));
-          const studentSnap = await getDocs(studentQ);
-          const studMap: Record<string, Member> = {};
-          studentSnap.forEach(doc => { studMap[doc.id] = doc.data() as Member; });
-          setStudents(studMap);
-        }
 
       } else {
         // Load student's appointments
@@ -84,7 +84,31 @@ export default function AppointmentsPanel({ member }: AppointmentsPanelProps) {
           .map(d => ({ id: d.id, ...d.data() } as Member))
           .filter(m => m.roles?.some(r => ["REITOR", "VICE-REITOR", "PSICÓLOGA", "PSICÓLOGO", "DIRETOR ESPIRITUAL", "DIRETORA ESPIRITUAL", "PADRE"].includes(r.toUpperCase())));
         
+        // Merge custom professionals from settings
+        const customProfs: Member[] = [];
+        if (cloudSettings.seminariesConfig) {
+          Object.values(cloudSettings.seminariesConfig).forEach((semConfig: any) => {
+            if (semConfig.professionals) {
+              semConfig.professionals.forEach((p: any) => {
+                customProfs.push({
+                  id: p.id,
+                  name: p.name,
+                  roles: [p.role],
+                  photoUrl: p.photoUrl || undefined,
+                  isActive: true,
+                } as Member);
+              });
+            }
+          });
+        }
+
         const combinedProfs = [...DEFAULT_PROFESSIONALS];
+        customProfs.forEach(cp => {
+          if (!combinedProfs.some(m => m.name.toLowerCase() === cp.name.toLowerCase())) {
+            combinedProfs.push(cp);
+          }
+        });
+
         dbProfList.forEach(m => {
            if (!combinedProfs.some(pm => pm.name.toLowerCase() === m.name.toLowerCase())) {
              combinedProfs.push(m);
@@ -115,7 +139,13 @@ export default function AppointmentsPanel({ member }: AppointmentsPanelProps) {
         where("status", "==", "LIVRE")
       );
       const snap = await getDocs(qAvail);
-      const slots = snap.docs.map(d => ({ id: d.id, ...d.data() } as Availability));
+      let slots = snap.docs.map(d => ({ id: d.id, ...d.data() } as Availability));
+      
+      // Filter slots by seminary if applicable
+      if (member.roles && !member.roles.includes("COLABORADOR(A)") && !member.roles.includes("REITOR") && !member.roles.includes("VICE-REITOR")) {
+        slots = slots.filter(s => !s.seminary || s.seminary === member.seminary);
+      }
+      
       // Filtra datas passadas no frontend basic
       const now = new Date().toISOString().split('T')[0];
       setAvailableSlots(slots.filter(s => s.date >= now).sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime)));
@@ -136,6 +166,7 @@ export default function AppointmentsPanel({ member }: AppointmentsPanelProps) {
         endTime: newEndTime,
         status: "LIVRE",
         location: newLocation,
+        seminary: newSeminary || null,
         createdAt: new Date().toISOString()
       };
       await addDoc(collection(db, `artifacts/${appId}/public/data/availabilities`), newAvail);
@@ -292,13 +323,23 @@ END:VCALENDAR`;
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider pl-1">Fim</label>
                 <input type="time" value={newEndTime} onChange={e => setNewEndTime(e.target.value)} required className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm outline-none focus:border-purple-500" />
               </div>
-              <div className="space-y-1">
+              <div className="space-y-1 sm:col-span-2">
                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider pl-1">Local (Opcional)</label>
                 <input type="text" value={newLocation} onChange={e => setNewLocation(e.target.value)} placeholder="Ex: Sala 2" className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm outline-none focus:border-purple-500" />
               </div>
+              <div className="space-y-1 sm:col-span-2 md:col-span-4">
+                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider pl-1">Seminário (Opcional)</label>
+                <select value={newSeminary} onChange={e => setNewSeminary(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-sm outline-none focus:border-purple-500">
+                  <option value="">Geral / Todos os Seminários</option>
+                  {AVAILABLE_SEMINARIES.map(s => (
+                    <option key={s} value={s}>{s}</option>
+                  ))}
+                </select>
+              </div>
               <div className="sm:col-span-2 md:col-span-4 pt-2">
-                <button type="submit" className="flex items-center justify-center gap-2 bg-purple-500 hover:bg-purple-600 text-white font-bold px-4 py-2 text-sm rounded-xl transition-colors w-full sm:w-auto">
-                  <Plus className="w-4 h-4" /> Adicionar Horário
+                <button type="submit" className="flex items-center justify-center gap-2 bg-gradient-to-r from-purple-500 to-indigo-500 hover:from-purple-600 hover:to-indigo-600 text-white font-bold px-6 py-2.5 text-sm rounded-xl transform hover:scale-[1.02] active:scale-95 transition-all duration-300 shadow-md shadow-purple-500/20 hover:shadow-lg hover:shadow-purple-500/40 w-full sm:w-auto relative overflow-hidden group">
+                  <span className="absolute inset-0 w-full h-full bg-white/20 -translate-x-full group-hover:animate-shimmer" />
+                  <Plus className="w-4 h-4 relative z-10" /> <span className="relative z-10">Adicionar Horário</span>
                 </button>
               </div>
             </form>
@@ -330,6 +371,11 @@ END:VCALENDAR`;
                         <p className="text-[11px] text-slate-500 flex items-center gap-1">
                           <Clock className="w-3 h-3" /> {avail.startTime} - {avail.endTime}
                           {avail.location && ` • ${avail.location}`}
+                          {avail.seminary && (
+                            <span className="ml-1 px-1 bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-500 rounded font-bold uppercase">
+                              {avail.seminary}
+                            </span>
+                          )}
                         </p>
                       </div>
                       <button onClick={() => handleDeleteAvailability(avail.id, avail.status)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors" title="Remover Horário">
@@ -363,7 +409,11 @@ END:VCALENDAR`;
                               {new Date(appt.date + 'T12:00:00').toLocaleDateString('pt-BR')} às {appt.startTime}
                             </p>
                             <h5 className="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
-                              <User className="w-3.5 h-3.5 text-sky-500" />
+                              {student?.photoUrl ? (
+                                <img src={student.photoUrl} alt={student.name} className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 object-cover" />
+                              ) : (
+                                <User className="w-3.5 h-3.5 text-sky-500" />
+                              )}
                               {student ? student.name : "Aluno não encontrado"}
                             </h5>
                             {student?.course && <p className="text-[10px] text-slate-500 mt-0.5">{student.course}</p>}
@@ -446,6 +496,11 @@ END:VCALENDAR`;
                           <span className="text-sm font-black text-slate-900 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-400">
                             {slot.startTime}
                           </span>
+                          {slot.seminary && (
+                            <span className="text-[8px] mt-1 font-bold bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400 px-1.5 py-0.5 rounded text-center w-full truncate">
+                               {slot.seminary.split(' ')[0]}
+                            </span>
+                          )}
                         </button>
                       ))}
                     </div>
@@ -464,7 +519,8 @@ END:VCALENDAR`;
                 <p className="text-xs text-slate-500 text-center py-4">Você ainda não tem agendamentos.</p>
               ) : (
                 myAppointments.map(appt => {
-                  const prof = professionals.find(p => p.id === appt.professionalId);
+                  const prof = professionals.find(p => p.id === appt.professionalId) || students[appt.professionalId] || DEFAULT_PROFESSIONALS.find(p => p.id === appt.professionalId);
+                  
                   return (
                     <div key={appt.id} className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden">
                       <div className={`absolute top-0 left-0 w-1 h-full ${appt.status === 'CONFIRMADO' ? 'bg-purple-500' : 'bg-red-500'}`} />
@@ -474,11 +530,17 @@ END:VCALENDAR`;
                             <CalendarIcon className="w-3 h-3" />
                             {new Date(appt.date + 'T12:00:00').toLocaleDateString('pt-BR')} às {appt.startTime}
                           </p>
-                          <h5 className="text-sm font-black text-slate-800 dark:text-white flex items-center gap-2">
-                            <ShieldCheck className="w-3.5 h-3.5 text-purple-500" />
-                            {prof ? prof.name : "Profissional"}
-                          </h5>
-                          {prof && <p className="text-[10px] text-slate-500 mt-0.5">{prof.roles?.filter(r => r !== "ALUNO(A)" && r !== "COLABORADOR(A)").join(', ')}</p>}
+                          <div className="flex items-center gap-2 mt-1">
+                            {prof?.photoUrl ? (
+                              <img src={prof.photoUrl} alt="Foto" className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 object-cover" />
+                            ) : (
+                              <ShieldCheck className="w-5 h-5 text-purple-500" />
+                            )}
+                            <h5 className="text-sm font-black text-slate-800 dark:text-white">
+                              {prof ? prof.name : "Profissional"}
+                            </h5>
+                          </div>
+                          {prof && <p className="text-[10px] text-slate-500 mt-0.5 ml-10">{prof.roles?.filter(r => r !== "ALUNO(A)" && r !== "COLABORADOR(A)").join(', ')}</p>}
                         </div>
                         <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${appt.status === 'CONFIRMADO' ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
                           {appt.status}

@@ -21,6 +21,7 @@ import {
   Moon,
   Lock,
   Type,
+  Plus,
 } from "lucide-react";
 import { GoogleGenAI } from "@google/genai";
 import FajopaIDCard from "./FajopaIDCard";
@@ -401,6 +402,48 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
         [field]: val
       }
     }));
+  };
+
+  const addSeminaryProfessional = (seminary: string) => {
+    setSeminariesConfig(prev => {
+      const current = prev[seminary] || { logo: null, signature: null, rectorName: '' };
+      const professionals = current.professionals || [];
+      return {
+        ...prev,
+        [seminary]: {
+          ...current,
+          professionals: [...professionals, { id: 'prof_' + Math.random().toString(36).substr(2, 9), name: '', role: 'PSICÓLOGO(A)', photoUrl: null }]
+        }
+      };
+    });
+  };
+
+  const updateSeminaryProfessional = (seminary: string, id: string, field: string, val: string | null) => {
+    setSeminariesConfig(prev => {
+      const current = prev[seminary];
+      if (!current || !current.professionals) return prev;
+      return {
+        ...prev,
+        [seminary]: {
+          ...current,
+          professionals: current.professionals.map(p => p.id === id ? { ...p, [field]: val } : p)
+        }
+      };
+    });
+  };
+
+  const removeSeminaryProfessional = (seminary: string, id: string) => {
+    setSeminariesConfig(prev => {
+      const current = prev[seminary];
+      if (!current || !current.professionals) return prev;
+      return {
+        ...prev,
+        [seminary]: {
+          ...current,
+          professionals: current.professionals.filter(p => p.id !== id)
+        }
+      };
+    });
   };
 
   const handleSavePassword = () => {
@@ -1218,6 +1261,54 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                                  onChange={(e) => updateSeminaryConfig(sem, 'rectorName', e.target.value.toUpperCase())}
                                  className="input-modern w-full rounded-lg py-2 px-3 text-xs" 
                                />
+                            </div>
+
+                            <div className="border-t border-slate-100 dark:border-slate-700 pt-3">
+                               <div className="flex justify-between items-center mb-2">
+                                 <label className="text-[10px] font-bold text-slate-500 uppercase">Profissionais de Atendimento</label>
+                                 <button onClick={() => addSeminaryProfessional(sem)} className="text-[10px] bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400 px-2 py-1 rounded font-bold hover:bg-sky-200 dark:hover:bg-sky-900/50 transition-colors uppercase flex items-center gap-1">
+                                   <Plus className="w-3 h-3" /> Adicionar
+                                 </button>
+                               </div>
+                               <div className="space-y-2">
+                                 {(config.professionals || []).length === 0 ? (
+                                   <p className="text-[10px] text-slate-400 italic">Nenhum profissional configurado.</p>
+                                 ) : (
+                                   (config.professionals || []).map(prof => (
+                                     <div key={prof.id} className="flex flex-col gap-2 p-2 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-200 dark:border-slate-700">
+                                       <div className="flex items-center gap-2">
+                                          {prof.photoUrl ? (
+                                            <div className="relative">
+                                              <img src={prof.photoUrl} alt="Foto" className="w-8 h-8 rounded-full border border-slate-300 dark:border-slate-600 object-cover" />
+                                              <button onClick={() => updateSeminaryProfessional(sem, prof.id, "photoUrl", null)} className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5"><Trash2 className="w-2.5 h-2.5" /></button>
+                                            </div>
+                                          ) : (
+                                            <label className="w-8 h-8 rounded-full bg-slate-200 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 flex items-center justify-center cursor-pointer hover:bg-slate-300 dark:hover:bg-slate-700 transition">
+                                              <Upload className="w-3 h-3 text-slate-500" />
+                                              <input type="file" className="hidden" accept="image/*" onChange={(e) => {
+                                                const file = e.target.files?.[0];
+                                                if (file) {
+                                                  const reader = new FileReader();
+                                                  reader.onloadend = () => {
+                                                    updateSeminaryProfessional(sem, prof.id, "photoUrl", reader.result as string);
+                                                  };
+                                                  reader.readAsDataURL(file);
+                                                }
+                                              }} />
+                                            </label>
+                                          )}
+                                          <div className="flex-1 grid grid-cols-2 gap-2">
+                                            <input type="text" placeholder="Nome Completo" value={prof.name} onChange={e => updateSeminaryProfessional(sem, prof.id, "name", e.target.value.toUpperCase())} className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-xs outline-none" />
+                                            <input type="text" placeholder="Cargo/Função" value={prof.role} onChange={e => updateSeminaryProfessional(sem, prof.id, "role", e.target.value.toUpperCase())} className="w-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded p-1.5 text-xs outline-none" />
+                                          </div>
+                                          <button onClick={() => removeSeminaryProfessional(sem, prof.id)} className="p-1.5 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors" title="Remover Profissional">
+                                            <Trash2 className="w-4 h-4" />
+                                          </button>
+                                       </div>
+                                     </div>
+                                   ))
+                                 )}
+                               </div>
                             </div>
                           </div>
                         );

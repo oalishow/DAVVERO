@@ -32,7 +32,12 @@ interface AppSettings {
   customDioceses: string[];
   databaseName: string;
   cardZoom?: number;
-  seminariesConfig: Record<string, { logo: string | null; signature: string | null; rectorName: string }>;
+  seminariesConfig: Record<string, { 
+    logo: string | null; 
+    signature: string | null; 
+    rectorName: string;
+    professionals?: { id: string, name: string, role: string, photoUrl: string | null }[];
+  }>;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {

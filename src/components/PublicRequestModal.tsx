@@ -18,7 +18,6 @@ export default function PublicRequestModal({ onClose, onSubmitSuccess }: PublicR
   const [name, setName] = useState('');
   const [ra, setRa] = useState('');
   const [email, setEmail] = useState('');
-  const [rg, setRg] = useState('');
   const [cpf, setCpf] = useState('');
   const [birthdate, setBirthdate] = useState('');
   const [roles, setRoles] = useState<string[]>([]);
@@ -29,7 +28,7 @@ export default function PublicRequestModal({ onClose, onSubmitSuccess }: PublicR
   
   const [diocese, setDiocese] = useState('');
   const [newDiocese, setNewDiocese] = useState('');
-  const [seminary, setSeminary] = useState('');
+  const [seminary, setSeminary] = useState(AVAILABLE_SEMINARIES[0]);
   const [photoBase64, setPhotoBase64] = useState<string | null>(null);
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -117,7 +116,6 @@ export default function PublicRequestModal({ onClose, onSubmitSuccess }: PublicR
         name: name.trim(),
         ra: formattedRa,
         email: email.trim(),
-        rg: rg.trim(),
         cpf: cpf.trim(),
         birthdate,
         roles,

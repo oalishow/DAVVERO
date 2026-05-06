@@ -8,6 +8,14 @@ interface ChangelogModalProps {
 export default function ChangelogModal({ onClose }: ChangelogModalProps) {
   const versions = [
     {
+      version: 'v5.5.0',
+      title: 'Atualização do Sistema',
+      changes: [
+        'Simplificação e Foco: Redução de campos obsoletos (RG) em formulários e otimização do modal de novidades.'
+      ],
+      current: true,
+    },
+    {
       version: 'v5.4.0',
       title: 'Notificações Push e Diálogos em Português',
       changes: [
@@ -15,7 +23,7 @@ export default function ChangelogModal({ onClose }: ChangelogModalProps) {
         'IA & Chat: Respostas da inteligência artificial agora padronizadas em Português Brasileiro (PT-BR).',
         'Sincronização: Melhorias no Service Worker para entrega em tempo real de mensagens prioritárias.'
       ],
-      current: true,
+      current: false,
     },
     {
       version: 'v5.3.0',
@@ -25,54 +33,6 @@ export default function ChangelogModal({ onClose }: ChangelogModalProps) {
         'Flexibilidade: Alunos agora podem trocar sua data/hora de atendimento, notificando automaticamente o profissional.'
       ],
       current: false,
-    },
-    {
-      version: 'v5.2.0',
-      title: 'Modo Offline e Melhorias Visuais',
-      changes: [
-        'Trabalho Offline: Suporte a operação offline via Service Worker (PWA).',
-        'UI: Animação suave de transição no login de administrador.'
-      ],
-      current: false,
-    },
-    {
-      version: 'v5.1.0',
-      title: 'Liturgia, Eventos e Usabilidade',
-      changes: [
-        'Liturgia: Inclusão da Bíblia de Jerusalém, Catecismo da Igreja Católica, Direito Canônico e Calendário Litúrgico.',
-        'Eventos: Organização em sub-abas (Acadêmico e Seminários) e nova funcionalidade de exportação de eventos para o calendário (.ics).',
-        'Segurança e UX: PIN persistente por sessão no Portal do Aluno.'
-      ],
-      current: false,
-    },
-    {
-      version: 'v5.0.0',
-      title: 'Refatoração Profunda e Otimização',
-      changes: [
-        'Recuperação de senha: \'Esqueci minha senha\' agora disponível para o painel administrativo através de reset por e-mail.',
-        'Otimização de Banco de Dados e Real-time aprimorado, suportando com alta estabilidade +200 alunos em simultâneo.',
-        'Segurança: Regras do painel atualizadas e testes reforçados.'
-      ],
-      current: false,
-    },
-    {
-      version: 'v4.8.0',
-      title: 'Performance e Experiência',
-      changes: [
-        'Animações de Carregamento responsiva ao vincular conta.',
-        'Privacidade Aprimorada: Exibição focada nas funcionalidades de baixar PDF e nova consulta ao acessar sua carteirinha.',
-        'Otimização: Maior fluidez de acesso ao painel do aluno.'
-      ],
-      current: false,
-    },
-    {
-      version: 'v4.7.1',
-      title: 'Segurança e LGPD',
-      changes: [
-        'Privacidade: Implementação de máscara de PII para proteção de CPFs e informações sensíveis no sistema.',
-        'Segurança: Regras do painel reescritas de ponta a ponta garantindo acesso unicamente para administradores.'
-      ],
-      current: false
     }
   ];
 

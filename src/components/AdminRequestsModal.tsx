@@ -93,7 +93,6 @@ export default function AdminRequestsModal({ onClose }: { onClose: () => void })
       if (pc.diocese) updatePayload.diocese = pc.diocese;
       if (pc.seminary !== undefined) updatePayload.seminary = pc.seminary;
       if (pc.cpf !== undefined) updatePayload.cpf = pc.cpf;
-      if (pc.rg !== undefined) updatePayload.rg = pc.rg;
       if (pc.birthdate !== undefined) updatePayload.birthdate = pc.birthdate;
       if (pc.email !== undefined) updatePayload.email = pc.email;
       if (pc.photoUrl) updatePayload.photoUrl = pc.photoUrl;

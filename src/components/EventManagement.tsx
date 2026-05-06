@@ -81,7 +81,7 @@ export default function EventManagement() {
   const [speaker, setSpeaker] = useState("");
   const [schedulePdfUrl, setSchedulePdfUrl] = useState("");
   const [isSeminary, setIsSeminary] = useState(false);
-  const [seminaryId, setSeminaryId] = useState("");
+  const [seminaryId, setSeminaryId] = useState(AVAILABLE_SEMINARIES[0]);
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
   const [eventSearchQuery, setEventSearchQuery] = useState("");
   const [statusMsg, setStatusMsg] = useState<{
@@ -167,7 +167,7 @@ export default function EventManagement() {
     setSpeaker("");
     setSchedulePdfUrl("");
     setIsSeminary(false);
-    setSeminaryId("");
+    setSeminaryId(AVAILABLE_SEMINARIES[0]);
   };
 
   const handleSaveEvent = async () => {
@@ -525,9 +525,10 @@ export default function EventManagement() {
         <div className="mt-4 flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
           <button
             onClick={handleSaveEvent}
-            className="bg-sky-600 hover:bg-sky-500 text-white font-bold py-2 sm:py-2.5 px-6 rounded-xl transition-colors"
+            className="bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 text-white font-bold py-2 sm:py-2.5 px-6 rounded-xl transform hover:scale-[1.02] active:scale-95 transition-all duration-300 shadow-md shadow-sky-500/20 hover:shadow-lg hover:shadow-sky-500/40 relative overflow-hidden group flex items-center justify-center gap-2"
           >
-            {editingEventId ? "Salvar Alterações" : "Criar Evento"}
+            <span className="absolute inset-0 w-full h-full bg-white/20 -translate-x-full group-hover:animate-shimmer" />
+            <span className="relative z-10">{editingEventId ? "Salvar Alterações" : "Criar Evento"}</span>
           </button>
           {editingEventId && (
             <button

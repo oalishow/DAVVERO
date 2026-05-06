@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { collection, query, getDocs, addDoc, updateDoc, doc, deleteDoc, where, orderBy, onSnapshot } from "firebase/firestore";
 import { db, appId } from "../lib/firebase";
-import { Member, Availability, Appointment } from "../types";
+import { Member, Availability, Appointment, AVAILABLE_SEMINARIES } from "../types";
 import { Calendar, Clock, Plus, Trash2, User, ChevronLeft, ChevronRight, CheckCircle, MapPin, MessageSquare, Edit2 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -10,9 +10,11 @@ import ImportWhatsappModal from "./ImportWhatsappModal";
 import DeleteAvailabilitiesModal from "./DeleteAvailabilitiesModal";
 import EditAppointmentModal from "./EditAppointmentModal";
 import { useDialog } from "../context/DialogContext";
+import { useSettings } from "../context/SettingsContext";
 
 export default function AdminAppointments() {
   const { showAlert, showConfirm } = useDialog();
+  const { settings: cloudSettings } = useSettings();
   const [professionals, setProfessionals] = useState<Member[]>([]);
   const [availabilities, setAvailabilities] = useState<Availability[]>([]);
   const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -24,6 +26,7 @@ export default function AdminAppointments() {
   const [startTime, setStartTime] = useState("");
   const [endTime, setEndTime] = useState("");
   const [location, setLocation] = useState("");
+  const [seminary, setSeminary] = useState(AVAILABLE_SEMINARIES[0]);
   
   const [allStudents, setAllStudents] = useState<Member[]>([]);
   const [showImportModal, setShowImportModal] = useState(false);
@@ -42,7 +45,32 @@ export default function AdminAppointments() {
       try {
         const q = query(collection(db, `artifacts/${appId}/public/data/students`), where("isActive", "==", true));
         const snap = await getDocs(q);
+        
+        // Merge custom professionals from settings
+        const customProfs: Member[] = [];
+        if (cloudSettings.seminariesConfig) {
+          Object.values(cloudSettings.seminariesConfig).forEach((semConfig: any) => {
+            if (semConfig.professionals) {
+              semConfig.professionals.forEach((p: any) => {
+                customProfs.push({
+                  id: p.id,
+                  name: p.name,
+                  roles: [p.role],
+                  photoUrl: p.photoUrl || undefined,
+                  isActive: true,
+                } as Member);
+              });
+            }
+          });
+        }
+
         const membersList: Member[] = [...DEFAULT_PROFESSIONALS];
+        customProfs.forEach(cp => {
+          if (!membersList.some(m => m.name.toLowerCase() === cp.name.toLowerCase())) {
+            membersList.push(cp);
+          }
+        });
+        
         const loadedAllStudents: Member[] = [];
         snap.forEach(d => {
           const m = { ...d.data(), id: d.id } as Member;
@@ -115,6 +143,7 @@ export default function AdminAppointments() {
         startTime,
         endTime: calcEndTime,
         location: location || "",
+        seminary: seminary || null,
         status: "LIVRE",
         createdAt: new Date().toISOString()
       });
@@ -344,13 +373,27 @@ export default function AdminAppointments() {
               className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-sm outline-none"
             />
           </div>
+          <div className="lg:col-span-2">
+            <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">Seminário (Opcional)</label>
+             <select 
+               value={seminary} 
+               onChange={e => setSeminary(e.target.value)}
+               className="w-full bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2.5 text-sm outline-none"
+             >
+                <option value="">Geral (Todos os Seminários)</option>
+                {AVAILABLE_SEMINARIES.map(s => (
+                  <option key={s} value={s}>{s}</option>
+                ))}
+             </select>
+          </div>
         </div>
         <div className="mt-5 flex justify-end">
           <button 
              onClick={handleCreateAvailability}
-             className="bg-indigo-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-sm hover:bg-indigo-700 transition"
+             className="bg-gradient-to-r from-indigo-500 to-purple-500 hover:from-indigo-600 hover:to-purple-600 text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-indigo-500/20 hover:shadow-lg hover:shadow-indigo-500/40 transform hover:scale-[1.02] active:scale-95 transition-all duration-300 flex items-center justify-center gap-2 relative overflow-hidden group"
           >
-            Adicionar Horário
+            <span className="absolute inset-0 w-full h-full bg-white/20 -translate-x-full group-hover:animate-shimmer" />
+            <Plus className="w-4 h-4 relative z-10" /> <span className="relative z-10">Adicionar Horário</span>
           </button>
         </div>
       </div>
@@ -399,7 +442,7 @@ export default function AdminAppointments() {
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
                     {dateAvails.map(avail => {
                       const appt = appointments.find(a => a.availabilityId === avail.id && a.status === 'CONFIRMADO');
-                      const student = appt ? professionals.find(p => p.id === appt.memberId) : null;
+                      const student = appt ? allStudents.find(p => p.id === appt.memberId) : null;
                       
                       return (
                         <div key={avail.id} className={`bg-white dark:bg-slate-800 p-4 rounded-xl border ${avail.status === 'OCUPADO' ? 'border-emerald-200 dark:border-emerald-900/50' : 'border-slate-200 dark:border-slate-700'} flex flex-col justify-between shadow-sm hover:shadow transition-shadow relative overflow-hidden`}>
@@ -434,19 +477,34 @@ export default function AdminAppointments() {
                              <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
                                <User className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" /> <span className="truncate">{avail.professionalName}</span>
                              </div>
-                             {avail.location && (
-                                <div className="text-[10px] text-slate-500 mt-1 flex items-center gap-1.5 truncate w-full pl-0.5">
-                                   <MapPin className="w-3 h-3 text-slate-400 flex-shrink-0" /> {avail.location}
-                                </div>
-                             )}
+                             <div className="mt-1 space-y-1">
+                               {avail.location && (
+                                  <div className="text-[10px] text-slate-500 flex items-center gap-1.5 truncate w-full pl-0.5">
+                                     <MapPin className="w-3 h-3 text-slate-400 flex-shrink-0" /> {avail.location}
+                                  </div>
+                               )}
+                               {avail.seminary && (
+                                  <div className="text-[9px] font-bold py-0.5 px-2 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-500 rounded flex w-max">
+                                     {avail.seminary}
+                                  </div>
+                               )}
+                             </div>
                           </div>
                           
                           <div className="pt-3 border-t border-slate-100 dark:border-slate-700/60 mt-auto">
                              {avail.status === 'OCUPADO' && appt ? (
                                 <div>
                                    <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-0.5">Agendado com</div>
-                                   <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 truncate">
-                                     {student?.name || appt.studentName || 'Aluno Desconhecido'}
+                                   <div className="flex items-center gap-1.5 mt-1">
+                                     {student?.photoUrl ? (
+                                        <img src={student.photoUrl} alt="Foto" className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 object-cover" />
+                                     ) : (
+                                        <User className="w-5 h-5 text-emerald-500" />
+                                     )}
+                                     <div className="text-xs font-bold text-emerald-600 dark:text-emerald-400 truncate">
+                                       {student?.name || appt.studentName || 'Aluno Desconhecido'}
+                                       <div className="text-[10px] text-emerald-600/70 border border-emerald-200/50 dark:border-emerald-700/50 rounded px-1 w-max mt-0.5 font-semibold">Agendado</div>
+                                     </div>
                                    </div>
                                 </div>
                              ) : (
