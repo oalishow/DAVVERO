@@ -1,7 +1,7 @@
 export const PASSWORD_STORAGE_KEY = "studentAdminPassword";
 export const DEFAULT_ADMIN_PASSWORD = "ADMIN";
 export const URL_STORAGE_KEY = "studentVerifierUrl";
-export const DEFAULT_PUBLIC_URL = "https://carteirinhafajopa.netlify.app";
+export const DEFAULT_PUBLIC_URL = "https://davvero.netlify.app";
 export const BACKUP_STORAGE_KEY = "davveroId_local_backup";
 export const RESTORE_POINT_KEY = "davveroId_restore_point";
 export const EMAIL_SETTINGS_KEY = "davveroId_email_settings";

@@ -22,6 +22,11 @@ export function usePushNotifications() {
 
   const subscribe = async () => {
     try {
+      if (!('Notification' in window)) {
+        alert("Seu navegador não suporta Notificações Push ou você está rodando no painel (iFrame). Abra o app em uma nova guia para ativar.");
+        return;
+      }
+
       const perm = await Notification.requestPermission();
       if (perm !== "granted") {
         console.warn("User denied push notifications");
@@ -48,8 +53,8 @@ export function usePushNotifications() {
       const subJson = JSON.parse(JSON.stringify(sub));
       const subId = btoa(sub.endpoint).replace(/\+/g, '-').replace(/\//g, '_').substring(0, 100);
       
-      // Use the global artifacts structure that has liberal permissions
-      await setDoc(doc(db, `artifacts/${appId}/public/data/push_subscriptions`, subId), {
+      // Use the root structure
+      await setDoc(doc(db, "push_subscriptions", subId), {
         ...subJson,
         userId: auth.currentUser?.uid || "anonymous",
         updatedAt: new Date().toISOString()

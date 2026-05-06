@@ -149,9 +149,9 @@ export default function MemberList({ initialFilterStatus = 'all' }: MemberListPr
                     <img src={avatarUrl} className={`w-full h-full object-cover ${isInactive ? 'grayscale' : ''}`} alt="Avatar" />
                   </div>
                   <div className="overflow-hidden flex-grow">
-                    <p className={`font-semibold text-sm sm:text-base truncate flex items-center ${isInactive ? "line-through text-slate-500" : "text-slate-800 dark:text-slate-200"}`}>
-                      {member.name} 
-                      {member.ra && <span className="bg-slate-100 dark:bg-slate-700/50 text-slate-500 dark:text-slate-300 border border-slate-300 dark:border-slate-600 px-1.5 py-0.5 rounded ml-2 text-[9px] font-normal">RA: {member.ra}</span>}
+                    <p className={`font-semibold text-sm sm:text-base flex items-center flex-wrap gap-2 ${isInactive ? "line-through text-slate-500" : "text-slate-800 dark:text-slate-200"}`}>
+                      <span className="break-words max-w-full">{member.name}</span> 
+                      {member.ra && <span className="bg-slate-100 dark:bg-slate-700/50 text-slate-500 dark:text-slate-300 border border-slate-300 dark:border-slate-600 px-1.5 py-0.5 rounded text-[9px] font-normal whitespace-nowrap">RA: {member.ra}</span>}
                     </p>
                     <p className="text-[9px] sm:text-[10px] text-sky-600 dark:text-sky-400/80 mb-0.5 truncate">{member.roles?.join(' • ')}</p>
                     <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 font-medium truncate">

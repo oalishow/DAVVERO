@@ -76,11 +76,12 @@ export default function NotificationsManager() {
 
       // 2. Fetch subscriptions from Firestore
       let targetSubscriptions: any[] = [];
+      const subPath = "push_subscriptions";
       try {
-        const subsSnapshot = await getDocs(collection(db, `artifacts/${appId}/public/data/push_subscriptions`));
+        const subsSnapshot = await getDocs(collection(db, subPath));
         targetSubscriptions = subsSnapshot.docs.map(doc => doc.data());
       } catch (subErr) {
-        console.error("Error fetching subscriptions:", subErr);
+        console.error(`Error fetching subscriptions for path: ${subPath}`, subErr);
       }
 
       // 3. Send Push Notification Broadcast (Native)
@@ -140,11 +141,11 @@ export default function NotificationsManager() {
 
       const ai = new GoogleGenAI({ apiKey: gKey });
       const prompt = `Você é um excelente comunicador responsável por avisos para alunos de um instituto de teologia.
-Escreva um título curto (até 50 caracteres, podendo ter um emoji no final) e uma mensagem clara, objetiva e engajadora (até 250 caracteres) para a seguinte ideia de notificação:
+Escreva um título curto (até 50 caracteres, podendo ter um emoji no final) e uma mensagem clara, objetiva, engajadora e diversificada (evite clichês e use vocabulário rico, variando o tom, até 250 caracteres) para a seguinte ideia de notificação:
 
 IDEIA DO AVISO: "${promptAi}"
 
-Retorne o resultado estritamente em um JSON com os campos 'title' (o título) e 'message' (a mensagem completa). Crie algo amigável e caloroso.`;
+Retorne o resultado estritamente em um JSON com os campos 'title' (o título) e 'message' (a mensagem completa). Crie algo amigável, caloroso e com linguagem diversificada.`;
 
       const response = await ai.models.generateContent({
         model: "gemini-1.5-flash",

@@ -36,7 +36,7 @@ interface AppSettings {
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
-  url: 'https://carteirinhafajopa.netlify.app',
+  url: 'https://davvero.netlify.app',
   directorName: '',
   rectorName: '',
   instName: 'FAJOPA e SPSCJ',
