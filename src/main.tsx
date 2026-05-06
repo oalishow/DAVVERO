@@ -6,6 +6,13 @@ import { DialogProvider } from './context/DialogContext';
 import './index.css';
 import { setupPWA } from './pwa';
 
+// Suppress benign Vite WebSocket connection errors in AI Studio preview
+window.addEventListener('unhandledrejection', (event) => {
+  if (event.reason && event.reason.message && event.reason.message.includes('WebSocket closed without opened')) {
+    event.preventDefault();
+  }
+});
+
 setupPWA();
 
 createRoot(document.getElementById('root')!).render(
