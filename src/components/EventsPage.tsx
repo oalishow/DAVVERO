@@ -80,7 +80,18 @@ export default function EventsPage({ onNavigateToStudent, renderSeminary = false
   useEffect(() => {
     const qEvents = query(collection(db, `artifacts/${appId}/public/data/events`));
     const unsubEvents = onSnapshot(qEvents, (snap) => {
-      let evts = snap.docs.map(d => d.data() as Event);
+      let evts = snap.docs.map((d) => {
+        const e = d.data() as Event;
+        const now = new Date().getTime();
+        if (e.status === "aberto") {
+          const checkDate = e.endDate ? new Date(e.endDate).getTime() : new Date(e.startDate).getTime();
+          const GRACE_PERIOD = 24 * 60 * 60 * 1000; // 1 day
+          if (checkDate + GRACE_PERIOD < now) {
+             return { ...e, status: "encerrado" as any };
+          }
+        }
+        return e;
+      });
       evts = evts.filter(e => e.status !== "deleted");
       const now = new Date().getTime();
       evts.sort((a, b) => {

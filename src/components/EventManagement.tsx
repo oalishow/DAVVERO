@@ -92,8 +92,17 @@ export default function EventManagement() {
   useEffect(() => {
     const qEvents = query(collection(db, `artifacts/${appId}/public/data/events`));
     const unsub = onSnapshot(qEvents, (snap) => {
-      const evts = snap.docs.map(d => d.data() as Event);
+      const evts = snap.docs.map((d) => d.data() as Event);
       const now = new Date().getTime();
+      evts.forEach((e) => {
+        if (e.status === "aberto") {
+          const checkDate = e.endDate ? new Date(e.endDate).getTime() : new Date(e.startDate).getTime();
+          const GRACE_PERIOD = 24 * 60 * 60 * 1000; // 1 day
+          if (checkDate + GRACE_PERIOD < now) {
+             closeEvent(e.id).catch(console.error);
+          }
+        }
+      });
       evts.sort((a, b) => {
         const timeA = new Date(a.startDate).getTime();
         const timeB = new Date(b.startDate).getTime();
