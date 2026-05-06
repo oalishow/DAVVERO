@@ -498,7 +498,9 @@ export default function StudentPortal({
       if (!snap.empty) {
         const docSnap = snap.docs[0];
         setMember(prev => {
-          return { ...prev, ...docSnap.data(), id: docSnap.id } as Member;
+          const m = { ...prev, ...docSnap.data(), id: docSnap.id } as Member;
+          localStorage.setItem("davveroId_cached_member", JSON.stringify(m));
+          return m;
         });
       }
     });

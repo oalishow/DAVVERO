@@ -104,11 +104,27 @@ export default function MuralPage() {
       } else {
         // If not a management user, check student profile for roles
         const bondedId = localStorage.getItem("davveroId_student_identity");
+        const cachedMemberStr = localStorage.getItem("davveroId_cached_member");
+        if (cachedMemberStr) {
+          try {
+             const m = JSON.parse(cachedMemberStr) as Member;
+             setCurrentUserData({ id: m.id, name: m.name, photoUrl: m.photoUrl, roles: m.roles });
+             if (m.roles && m.roles.some(r => ['admin', 'diretoria', 'gestão', 'comunicação', 'secretaria'].includes(r.toLowerCase()))) {
+               setIsAdmin(true);
+             }
+          } catch(e) {}
+        }
+        
         if (bondedId) {
-          getDoc(doc(db, `artifacts/${appId}/public/data/students`, bondedId)).then(snap => {
-            if (snap.exists()) {
-              const m = snap.data() as Member;
-              setCurrentUserData({ id: m.id, name: m.name, photoUrl: m.photoUrl, roles: m.roles });
+          const q = query(
+            collection(db, `artifacts/${appId}/public/data/students`),
+            where("alphaCode", "==", bondedId),
+            limit(1)
+          );
+          getDocs(q).then(snap => {
+            if (!snap.empty) {
+              const m = snap.docs[0].data() as Member;
+              setCurrentUserData({ id: snap.docs[0].id, name: m.name, photoUrl: m.photoUrl, roles: m.roles });
               if (m.roles && m.roles.some(r => ['admin', 'diretoria', 'gestão', 'comunicação', 'secretaria'].includes(r.toLowerCase()))) {
                 setIsAdmin(true);
               }

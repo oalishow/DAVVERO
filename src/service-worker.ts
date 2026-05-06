@@ -1,8 +1,23 @@
-import { precacheAndRoute } from 'workbox-precaching';
+import { precacheAndRoute, createHandlerBoundToURL } from 'workbox-precaching';
+import { NavigationRoute, registerRoute } from 'workbox-routing';
 
 declare const self: any;
 
 precacheAndRoute(self.__WB_MANIFEST);
+
+// Set up App Shell / Navigation Fallback
+// This allows the app to work offline for all navigation requests (SPA)
+try {
+  const handler = createHandlerBoundToURL('/index.html');
+  const navigationRoute = new NavigationRoute(handler, {
+    denylist: [
+      new RegExp('/__/'), // Exclude Firebase reserved URLs
+    ],
+  });
+  registerRoute(navigationRoute);
+} catch (e) {
+  console.log("Could not set up navigation fallback", e);
+}
 
 self.addEventListener("push", (event: any) => {
   const data = event.data ? event.data.json() : { title: "Nova Notificação", body: "Você recebeu uma mensagem." };
