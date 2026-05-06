@@ -1,11 +1,11 @@
 import { useState, useEffect, useRef, ChangeEvent } from "react";
 import { motion, AnimatePresence, Reorder, useDragControls } from "motion/react";
-import { GraduationCap, Landmark, Image as ImageIcon, FileText, CheckCircle, Trash2, Pin, MessageSquare, BarChart2, Check, ExternalLink, X, Pencil, GripVertical } from "lucide-react";
-import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, updateDoc, doc, deleteDoc, getDoc, getDocs, limit } from "firebase/firestore";
+import { GraduationCap, Landmark, Image as ImageIcon, FileText, CheckCircle, Trash2, Pin, MessageSquare, BarChart2, Check, ExternalLink, X, Pencil, GripVertical, Heart, Send, MessageCircle } from "lucide-react";
+import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, updateDoc, doc, deleteDoc, getDoc, getDocs, limit, arrayUnion, arrayRemove } from "firebase/firestore";
 import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { signInAnonymously } from "firebase/auth";
 import { db, storage, auth, appId, handleFirestoreError, OperationType } from "../lib/firebase";
-import { MuralPost, Member } from "../types";
+import { MuralPost, Member, MuralComment } from "../types";
 
 export default function MuralPage() {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
@@ -728,6 +728,7 @@ export default function MuralPage() {
                 post={post}
                 isAdmin={isAdmin}
                 myUserId={myUserId}
+                currentUserData={currentUserData}
                 approvePost={approvePost}
                 togglePin={togglePin}
                 setEditingPostId={setEditingPostId}
@@ -796,6 +797,7 @@ interface MuralPostItemProps {
   post: MuralPost;
   isAdmin: boolean;
   myUserId?: string;
+  currentUserData: { id: string; name: string; photoUrl?: string; roles?: string[] } | null;
   approvePost: (id: string) => Promise<void>;
   togglePin: (post: MuralPost) => Promise<void>;
   setEditingPostId: (id: string | null) => void;
@@ -813,6 +815,7 @@ function MuralPostItem({
   post,
   isAdmin,
   myUserId,
+  currentUserData,
   approvePost,
   togglePin,
   setEditingPostId,
@@ -826,7 +829,68 @@ function MuralPostItem({
   handleDragEnd
 }: MuralPostItemProps) {
   const controls = useDragControls();
-  
+  const [isCommentsOpen, setIsCommentsOpen] = useState(false);
+  const [comments, setComments] = useState<MuralComment[]>([]);
+  const [newComment, setNewComment] = useState("");
+  const [isLiking, setIsLiking] = useState(false);
+  const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+
+  const hasLiked = post.likes?.includes(myUserId || "");
+
+  const handleToggleLike = async () => {
+    if (!myUserId || isLiking) return;
+    setIsLiking(true);
+    try {
+      const postRef = doc(db, `artifacts/${appId}/public/data/mural_posts`, post.id);
+      if (hasLiked) {
+        await updateDoc(postRef, { likes: arrayRemove(myUserId) });
+      } else {
+        await updateDoc(postRef, { likes: arrayUnion(myUserId) });
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLiking(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!isCommentsOpen) return;
+    const q = query(
+      collection(db, `artifacts/${appId}/public/data/mural_posts/${post.id}/comments`),
+      orderBy("createdAt", "asc")
+    );
+    const unsub = onSnapshot(q, (snap) => {
+      const fetched: MuralComment[] = [];
+      snap.forEach(d => fetched.push({ id: d.id, ...d.data({ serverTimestamps: 'estimate' }) } as MuralComment));
+      setComments(fetched);
+    });
+    return () => unsub();
+  }, [isCommentsOpen, post.id]);
+
+  const handleAddComment = async () => {
+    if (!newComment.trim() || !currentUserData) return;
+    setIsSubmittingComment(true);
+    try {
+      await addDoc(collection(db, `artifacts/${appId}/public/data/mural_posts/${post.id}/comments`), {
+        postId: post.id,
+        authorId: currentUserData.id,
+        authorName: currentUserData.name,
+        authorPhotoUrl: currentUserData.photoUrl || null,
+        text: newComment.trim(),
+        createdAt: serverTimestamp()
+      });
+      setNewComment("");
+      
+      const postRef = doc(db, `artifacts/${appId}/public/data/mural_posts`, post.id);
+      await updateDoc(postRef, { commentsCount: (post.commentsCount || 0) + 1 });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsSubmittingComment(false);
+    }
+  };
+
   return (
     <Reorder.Item 
       value={post}
@@ -1024,6 +1088,94 @@ function MuralPostItem({
             </div>
          </div>
        )}
+
+       <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-700/50 flex items-center justify-between">
+         <div className="flex items-center gap-2">
+           <button 
+             onClick={handleToggleLike}
+             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${hasLiked ? 'text-rose-500 bg-rose-50 dark:bg-rose-900/20' : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700/50'}`}
+           >
+             <Heart className={`w-4 h-4 ${hasLiked ? 'fill-current' : ''}`} />
+             <span>{post.likes?.length || 0}</span>
+           </button>
+           <button 
+             onClick={() => setIsCommentsOpen(!isCommentsOpen)}
+             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors ${isCommentsOpen ? 'text-indigo-600 bg-indigo-50 dark:bg-indigo-900/30' : 'text-slate-500 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-700/50'}`}
+           >
+             <MessageCircle className="w-4 h-4" />
+             <span>{post.commentsCount || 0}</span>
+           </button>
+         </div>
+       </div>
+
+       <AnimatePresence>
+         {isCommentsOpen && (
+           <motion.div 
+             initial={{ height: 0, opacity: 0 }}
+             animate={{ height: 'auto', opacity: 1 }}
+             exit={{ height: 0, opacity: 0 }}
+             className="overflow-hidden mt-3"
+           >
+             <div className="bg-slate-50 dark:bg-slate-900/40 rounded-2xl p-4 border border-slate-200 dark:border-slate-700/60">
+               <div className="space-y-3 mb-4 max-h-60 overflow-y-auto custom-scrollbar">
+                 {comments.length === 0 ? (
+                   <p className="text-xs text-slate-500 text-center py-2">Sem comentários ainda. Seja o primeiro!</p>
+                 ) : (
+                   comments.map(c => (
+                     <div key={c.id} className="flex gap-2">
+                       <div className="w-6 h-6 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center shrink-0 overflow-hidden">
+                         {c.authorPhotoUrl ? (
+                           <img src={c.authorPhotoUrl} alt="User" loading="lazy" className="w-full h-full object-cover" />
+                         ) : (
+                           <GraduationCap className="w-3 h-3" />
+                         )}
+                       </div>
+                       <div className="flex-1 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl rounded-tl-none px-3 py-2 shadow-sm">
+                         <div className="flex justify-between items-start mb-1">
+                           <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{c.authorName}</span>
+                           <span className="text-[9px] text-slate-400">
+                             {c.createdAt?.toDate ? c.createdAt.toDate().toLocaleString('pt-BR') : 'Agora'}
+                           </span>
+                         </div>
+                         <p className="text-xs text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{c.text}</p>
+                       </div>
+                     </div>
+                   ))
+                 )}
+               </div>
+               {currentUserData ? (
+                 <div className="flex gap-2 relative">
+                   <input
+                     type="text"
+                     value={newComment}
+                     onChange={(e) => setNewComment(e.target.value)}
+                     onKeyDown={(e) => {
+                       if (e.key === 'Enter' && !e.shiftKey) {
+                         e.preventDefault();
+                         handleAddComment();
+                       }
+                     }}
+                     placeholder="Escreva um comentário..."
+                     className="flex-1 bg-white dark:bg-slate-800 text-sm border border-slate-300 dark:border-slate-600 rounded-full pl-4 pr-10 py-2 focus:ring-2 focus:ring-indigo-500 outline-none"
+                     disabled={isSubmittingComment}
+                   />
+                   <button 
+                     onClick={handleAddComment}
+                     disabled={!newComment.trim() || isSubmittingComment}
+                     className="absolute right-1 top-1 bottom-1 w-8 h-8 flex items-center justify-center bg-indigo-600 text-white rounded-full hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                   >
+                     <Send className="w-4 h-4 ml-0.5" />
+                   </button>
+                 </div>
+               ) : (
+                 <div className="text-center w-full px-4 py-2 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 rounded-xl text-xs font-medium border border-indigo-100 dark:border-indigo-800/50 shadow-inner">
+                   Você não está identificado. Volte no Início para vincular a sua identidade antes de comentar.
+                 </div>
+               )}
+             </div>
+           </motion.div>
+         )}
+       </AnimatePresence>
     </Reorder.Item>
   );
 }

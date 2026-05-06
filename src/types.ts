@@ -155,4 +155,16 @@ export interface MuralPost {
   expiresAt?: any; // Auto delete timestamp
   status: "pending" | "approved"; // Non-admin posts are pending by default
   isAdminPost?: boolean;
+  likes?: string[]; // Array of member IDs who liked
+  commentsCount?: number;
+}
+
+export interface MuralComment {
+  id: string;
+  postId: string;
+  authorId: string;
+  authorName: string;
+  authorPhotoUrl?: string;
+  text: string;
+  createdAt: any;
 }
