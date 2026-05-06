@@ -870,6 +870,11 @@ function MuralPostItem({
   const [newComment, setNewComment] = useState("");
   const [isLiking, setIsLiking] = useState(false);
   const [isSubmittingComment, setIsSubmittingComment] = useState(false);
+  const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+  const [editCommentText, setEditCommentText] = useState("");
+  const [isSavingEditComment, setIsSavingEditComment] = useState(false);
+  const [commentToDelete, setCommentToDelete] = useState<string | null>(null);
+  const [isDeletingComment, setIsDeletingComment] = useState(false);
 
   const hasLiked = post.likes?.includes(myUserId || "");
 
@@ -924,6 +929,39 @@ function MuralPostItem({
       console.error(err);
     } finally {
       setIsSubmittingComment(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    setIsDeletingComment(true);
+    try {
+      await deleteDoc(doc(db, `artifacts/${appId}/public/data/mural_posts/${post.id}/comments`, commentId));
+      const postRef = doc(db, `artifacts/${appId}/public/data/mural_posts`, post.id);
+      await updateDoc(postRef, { 
+        commentsCount: (post.commentsCount && post.commentsCount > 0) ? (post.commentsCount - 1) : 0 
+      });
+      setCommentToDelete(null);
+    } catch (err: any) {
+      console.error("Erro ao apagar comentário", err);
+      alert("Erro ao excluir: " + (err.message || "Permissão negada"));
+    } finally {
+      setIsDeletingComment(false);
+    }
+  };
+
+  const handleSaveEditComment = async (commentId: string) => {
+    if (!editCommentText.trim()) return;
+    setIsSavingEditComment(true);
+    try {
+      await updateDoc(doc(db, `artifacts/${appId}/public/data/mural_posts/${post.id}/comments`, commentId), {
+        text: editCommentText.trim()
+      });
+      setEditingCommentId(null);
+      setEditCommentText("");
+    } catch (err) {
+      console.error("Erro ao editar comentário", err);
+    } finally {
+      setIsSavingEditComment(false);
     }
   };
 
@@ -1166,14 +1204,94 @@ function MuralPostItem({
                            <GraduationCap className="w-3 h-3" />
                          )}
                        </div>
-                       <div className="flex-1 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl rounded-tl-none px-3 py-2 shadow-sm">
+                       <div className="flex-1 bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl rounded-tl-none px-3 py-2 shadow-sm relative group">
                          <div className="flex justify-between items-start mb-1">
                            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{c.authorName}</span>
-                           <span className="text-[9px] text-slate-400">
-                             {c.createdAt?.toDate ? c.createdAt.toDate().toLocaleString('pt-BR') : 'Agora'}
-                           </span>
+                           <div className="flex items-center gap-2">
+                             <span className="text-[9px] text-slate-400">
+                               {c.createdAt?.toDate ? c.createdAt.toDate().toLocaleString('pt-BR') : 'Agora'}
+                             </span>
+                             {(isAdmin || c.authorId === myUserId) && (
+                               <>
+                                 <button 
+                                   onClick={() => {
+                                     setEditingCommentId(c.id);
+                                     setEditCommentText(c.text);
+                                   }}
+                                   className="p-1 text-slate-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 rounded transition-all"
+                                   title="Editar comentário"
+                                   disabled={isDeletingComment || !!commentToDelete}
+                                 >
+                                   <Pencil className="w-3 h-3" />
+                                 </button>
+                                 <button 
+                                   onClick={() => setCommentToDelete(c.id)}
+                                   className="p-1 text-slate-400 hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-900/20 rounded transition-all"
+                                   title="Apagar comentário"
+                                   disabled={isDeletingComment || !!commentToDelete}
+                                 >
+                                   <Trash2 className="w-3 h-3" />
+                                 </button>
+                               </>
+                             )}
+                           </div>
                          </div>
-                         <p className="text-xs text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{c.text}</p>
+                         
+                         {/* Confirmation Overlay for individual comment */}
+                         <AnimatePresence>
+                           {commentToDelete === c.id && (
+                             <motion.div 
+                               initial={{ opacity: 0, scale: 0.95 }}
+                               animate={{ opacity: 1, scale: 1 }}
+                               exit={{ opacity: 0, scale: 0.95 }}
+                               className="absolute inset-x-0 bottom-0 top-0 z-10 flex flex-col items-center justify-center bg-white/95 dark:bg-slate-800/95 rounded-2xl p-2 gap-2 backdrop-blur-sm"
+                             >
+                               <span className="text-[10px] font-bold text-slate-700 dark:text-slate-200">Apagar este comentário?</span>
+                               <div className="flex gap-2">
+                                 <button 
+                                   onClick={() => setCommentToDelete(null)}
+                                   disabled={isDeletingComment}
+                                   className="px-2 py-1 text-[9px] font-bold uppercase tracking-wider text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded transition-colors"
+                                 >
+                                   Cancelar
+                                 </button>
+                                 <button 
+                                   onClick={() => handleDeleteComment(c.id)}
+                                   disabled={isDeletingComment}
+                                   className="px-2 py-1 text-[9px] font-bold uppercase tracking-wider bg-rose-600 text-white rounded shadow-sm hover:bg-rose-700 disabled:opacity-50 transition-colors"
+                                 >
+                                   {isDeletingComment ? "Aguarde..." : "Sim, apagar"}
+                                 </button>
+                               </div>
+                             </motion.div>
+                           )}
+                         </AnimatePresence>
+                         {editingCommentId === c.id ? (
+                           <div className="mt-2 space-y-2">
+                             <textarea 
+                               value={editCommentText}
+                               onChange={(e) => setEditCommentText(e.target.value)}
+                               className="w-full bg-slate-50 dark:bg-slate-900 text-sm border border-slate-300 dark:border-slate-600 rounded-xl p-2 focus:ring-2 focus:ring-indigo-500 outline-none resize-none min-h-[60px]"
+                             />
+                             <div className="flex justify-end gap-2">
+                               <button 
+                                 onClick={() => setEditingCommentId(null)}
+                                 className="text-xs px-3 py-1.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                               >
+                                 Cancelar
+                               </button>
+                               <button 
+                                 onClick={() => handleSaveEditComment(c.id)}
+                                 disabled={!editCommentText.trim() || isSavingEditComment}
+                                 className="text-xs px-3 py-1.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                               >
+                                 Salvar
+                               </button>
+                             </div>
+                           </div>
+                         ) : (
+                           <p className="text-xs text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{c.text}</p>
+                         )}
                        </div>
                      </div>
                    ))
