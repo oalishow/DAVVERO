@@ -342,12 +342,19 @@ export default function Header({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
         </motion.div>
       </div>
       <h1 
-        className="text-3xl sm:text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text animated-slide-in-up tracking-tight mb-1 print:text-2xl"
-        style={{ 
-          backgroundImage: `linear-gradient(to right, ${instColor}, #14b8a6, #10b981)`,
-        }}
+        className="text-3xl sm:text-4xl md:text-5xl font-extrabold animated-slide-in-up tracking-tight mb-1 print:text-2xl flex justify-center items-baseline gap-1.5 sm:gap-2"
       >
-        DAVVERO System
+        <span 
+          className="text-transparent bg-clip-text"
+          style={{ 
+            backgroundImage: `linear-gradient(to right, ${instColor}, #14b8a6, #10b981)`,
+          }}
+        >
+          DAVVERO
+        </span>
+        <span className="text-xl sm:text-2xl md:text-3xl font-medium tracking-normal text-slate-400 dark:text-slate-500">
+          System
+        </span>
       </h1>
       <p className="text-slate-500 dark:text-slate-400 font-bold text-[10px] sm:text-xs tracking-[0.2em] animated-fade-in uppercase">
         {instDescription}
