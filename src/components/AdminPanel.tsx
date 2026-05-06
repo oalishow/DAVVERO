@@ -303,6 +303,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
       !ra ||
       !course ||
       !diocese ||
+      !seminary ||
       !birthdate ||
       roles.length === 0
     ) {
@@ -832,7 +833,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
 
               <div className="md:col-span-2 border-t border-slate-200 dark:border-slate-700/50 pt-3 mt-1">
                 <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">
-                  Seminário (Opcional)
+                  Seminário *
                 </label>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <select
@@ -840,7 +841,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
                     onChange={(e) => setSeminary(e.target.value)}
                     className="input-modern flex-1 rounded-xl py-2.5 px-3 text-sm"
                   >
-                    <option value="">Selecione um Seminário (se aplicável)</option>
+                    <option value="">Selecione um Seminário</option>
                     {AVAILABLE_SEMINARIES.map((s) => (
                       <option key={s} value={s}>
                         {s}

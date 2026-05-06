@@ -109,10 +109,12 @@ export default function EventsPage({ onNavigateToStudent, renderSeminary = false
     return () => unsubEvents();
   }, []);
 
+  const hasPrivilegedRole = member?.roles?.some(r => ["ADMIN", "COORDENADOR", "GERENTE", "REITOR", "VICE-REITOR", "DIRETOR ESPIRITUAL", "PADRE"].includes(r.toUpperCase()));
+
   const filteredEvents = events.filter((e) => {
     if (eventTypeTab === "seminary") {
       if (!e.isSeminary) return false;
-      if (e.seminaryId && e.seminaryId !== member?.seminary) return false;
+      if (e.seminaryId && e.seminaryId !== member?.seminary && !hasPrivilegedRole) return false;
       return true;
     } else {
       return !e.isSeminary;

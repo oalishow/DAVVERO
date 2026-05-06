@@ -239,10 +239,12 @@ export default function StudentPortal({
           return aIsFuture ? -1 : 1;
         });
         setAllEvents(evts);
+        const hasPrivilegedRole = member.roles?.some(r => ["ADMIN", "COORDENADOR", "GERENTE", "REITOR", "VICE-REITOR", "DIRETOR ESPIRITUAL", "PADRE"].includes(r.toUpperCase()));
+
         setAvailableEvents(evts.filter((e) => e.status === "aberto" && !e.isSeminary));
         setPastEvents(evts.filter((e) => e.status === "encerrado" && !e.isSeminary));
-        setSeminaryAvailableEvents(evts.filter((e) => e.status === "aberto" && e.isSeminary && (!e.seminaryId || e.seminaryId === member.seminary)));
-        setSeminaryPastEvents(evts.filter((e) => e.status === "encerrado" && e.isSeminary && (!e.seminaryId || e.seminaryId === member.seminary)));
+        setSeminaryAvailableEvents(evts.filter((e) => e.status === "aberto" && e.isSeminary && (!e.seminaryId || e.seminaryId === member.seminary || hasPrivilegedRole)));
+        setSeminaryPastEvents(evts.filter((e) => e.status === "encerrado" && e.isSeminary && (!e.seminaryId || e.seminaryId === member.seminary || hasPrivilegedRole)));
       });
 
       const qAttendances = query(collection(db, `artifacts/${appId}/public/data/attendances`));
@@ -454,8 +456,8 @@ export default function StudentPortal({
       );
       const snapshot = await getDocs(q);
       if (!snapshot.empty) {
-        const doc = snapshot.docs[0];
-        setMember({ ...doc.data(), id: doc.id } as Member);
+        const docSnap = snapshot.docs[0];
+        setMember({ ...docSnap.data(), id: docSnap.id } as Member);
         if (isOverride) {
           setIsOverrideMode(true);
           setBondedId(id);
@@ -484,6 +486,24 @@ export default function StudentPortal({
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!bondedId) return;
+    const q = query(
+      collection(db, `artifacts/${appId}/public/data/students`),
+      where("alphaCode", "==", bondedId),
+      limit(1)
+    );
+    const unsub = onSnapshot(q, (snap) => {
+      if (!snap.empty) {
+        const docSnap = snap.docs[0];
+        setMember(prev => {
+          return { ...prev, ...docSnap.data(), id: docSnap.id } as Member;
+        });
+      }
+    });
+    return () => unsub();
+  }, [bondedId]);
 
   const linkIdentity = async () => {
     if (!alphaCode.trim()) return;

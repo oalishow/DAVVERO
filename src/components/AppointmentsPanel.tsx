@@ -3,9 +3,10 @@ import { collection, query, where, getDocs, addDoc, updateDoc, doc, orderBy, del
 import { db, appId } from "../lib/firebase";
 import { useDialog } from "../context/DialogContext";
 import { Member, Appointment, Availability, AVAILABLE_SEMINARIES } from "../types";
-import { Clock, Calendar as CalendarIcon, User, Plus, CheckCircle, Trash2, HeartHandshake, ShieldCheck, CalendarPlus } from "lucide-react";
+import { Clock, Calendar as CalendarIcon, User, Plus, CheckCircle, Trash2, HeartHandshake, ShieldCheck, CalendarPlus, Edit2 } from "lucide-react";
 import { DEFAULT_PROFESSIONALS } from "../lib/defaultProfessionals";
 import { useSettings } from "../context/SettingsContext";
+import EditAppointmentModal from "./EditAppointmentModal";
 
 interface AppointmentsPanelProps {
   member: Member;
@@ -33,6 +34,7 @@ export default function AppointmentsPanel({ member }: AppointmentsPanelProps) {
   const [availableSlots, setAvailableSlots] = useState<Availability[]>([]);
   const [myAppointments, setMyAppointments] = useState<Appointment[]>([]);
   const [students, setStudents] = useState<Record<string, Member>>({});
+  const [editingItem, setEditingItem] = useState<{ avail: Availability, appt: Appointment | null } | null>(null);
 
   useEffect(() => {
     loadData();
@@ -378,9 +380,14 @@ END:VCALENDAR`;
                           )}
                         </p>
                       </div>
-                      <button onClick={() => handleDeleteAvailability(avail.id, avail.status)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors" title="Remover Horário">
-                        <Trash2 className="w-4 h-4" />
-                      </button>
+                      <div className="flex gap-1">
+                        <button onClick={() => setEditingItem({ avail, appt: appointmentsAsProf.find(a => a.availabilityId === avail.id && a.status === 'CONFIRMADO') || null })} className="p-2 text-slate-400 hover:text-purple-500 hover:bg-purple-50 dark:hover:bg-purple-500/10 rounded-lg transition-colors" title="Editar/Vincular Aluno">
+                          <Edit2 className="w-4 h-4" />
+                        </button>
+                        <button onClick={() => handleDeleteAvailability(avail.id, avail.status)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-lg transition-colors" title="Remover Horário">
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </div>
                     </div>
                   ))
                 )}
@@ -568,6 +575,19 @@ END:VCALENDAR`;
             </div>
           </div>
         </div>
+      )}
+
+      {editingItem && (
+        <EditAppointmentModal
+          avail={editingItem.avail}
+          appt={editingItem.appt}
+          professionals={professionals}
+          allStudents={Object.values(students)}
+          onClose={() => setEditingItem(null)}
+          onSuccess={() => {
+            loadData();
+          }}
+        />
       )}
     </div>
   );

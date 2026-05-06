@@ -102,8 +102,8 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
   };
 
   const handleUpdate = async () => {
-    if (!name || !validity) {
-      setError('Nome e Validade são obrigatórios.');
+    if (!name || !validity || !course || !diocese || !seminary) {
+      setError('Nome, Validade, Curso, Diocese e Seminário são obrigatórios.');
       return;
     }
     
@@ -304,10 +304,10 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
                 </div>
               </div>
               <div className="pt-2 border-t border-slate-200 dark:border-slate-700/50 mt-1">
-                <label className="text-xs font-medium text-slate-500 mb-1 block">Seminário (Opcional)</label>
+                <label className="text-xs font-medium text-slate-500 mb-1 block">Seminário *</label>
                 <div className="flex gap-2">
                   <select value={seminary} onChange={e => setSeminary(e.target.value)} className="input-modern flex-1 rounded-lg py-1.5 px-3 text-sm">
-                    <option value="">Selecione um Seminário (se aplicável)</option>
+                    <option value="">Selecione um Seminário</option>
                     {AVAILABLE_SEMINARIES.map(s => (
                       <option key={s} value={s}>{s}</option>
                     ))}

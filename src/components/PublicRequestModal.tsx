@@ -84,8 +84,8 @@ export default function PublicRequestModal({ onClose, onSubmitSuccess }: PublicR
   };
 
   const handleSubmit = async () => {
-    if (!name || !email || !birthdate || !diocese || roles.length === 0) {
-      setError('Nome, E-mail, Data de Nascimento, Diocese e ao menos um Vínculo são obrigatórios.');
+    if (!name || !email || !birthdate || !diocese || !seminary || roles.length === 0) {
+      setError('Nome, E-mail, Data de Nascimento, Diocese, Seminário e ao menos um Vínculo são obrigatórios.');
       return;
     }
     
@@ -290,10 +290,10 @@ export default function PublicRequestModal({ onClose, onSubmitSuccess }: PublicR
               </div>
           </div>
           <div>
-              <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1 mt-2">Seminário (Opcional)</label>
+              <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1 mt-2">Seminário *</label>
               <div className="flex gap-2">
                 <select value={seminary} onChange={e => setSeminary(e.target.value)} className="input-modern flex-1 rounded-xl py-3 px-4 text-sm">
-                    <option value="">Selecione um Seminário (se aplicável)</option>
+                    <option value="">Selecione um Seminário</option>
                     {AVAILABLE_SEMINARIES.map(s => (
                       <option key={s} value={s}>{s}</option>
                     ))}

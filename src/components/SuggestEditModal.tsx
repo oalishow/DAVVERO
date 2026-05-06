@@ -207,7 +207,7 @@ export default function SuggestEditModal({ member, onClose, onSubmitSuccess }: S
               </select>
           </div>
           <div>
-              <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1 mt-2">Novo Seminário (Opcional)</label>
+              <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1 mt-2">Novo Seminário *</label>
               <select value={seminary} onChange={e => setSeminary(e.target.value)} className="input-modern w-full rounded-xl py-3 px-4 text-sm">
                   <option value="">Nenhum / Não aplicável</option>
                   {AVAILABLE_SEMINARIES.map(s => (
