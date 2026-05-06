@@ -39,7 +39,7 @@ export default function BackupModal({ onClose }: { onClose: () => void }) {
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `DAVVERO-ID_DB_Backup_${new Date().toISOString().split("T")[0]}.json`;
+      link.download = `DAVVERO System_DB_Backup_${new Date().toISOString().split("T")[0]}.json`;
       link.click();
       URL.revokeObjectURL(url);
 

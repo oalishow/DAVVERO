@@ -75,7 +75,7 @@ export default function AdminRequestsModal({ onClose }: { onClose: () => void })
       });
 
       // Email Notification
-      await sendEmailNotification(email, "Sua Carteirinha de Estudante Foi Aprovada!", `<h3>Parabéns!</h3><p>Sua solicitação para a identidade estudantil DAVVERO-ID foi <b>Aprovada</b>.</p><p>O seu código de uso no aplicativo é: <b>${alphaCode}</b></p><p>Acesse o portal e valide a sua identidade.</p>`);
+      await sendEmailNotification(email, "Sua Carteirinha de Estudante Foi Aprovada!", `<h3>Parabéns!</h3><p>Sua solicitação para a identidade estudantil DAVVERO System foi <b>Aprovada</b>.</p><p>O seu código de uso no aplicativo é: <b>${alphaCode}</b></p><p>Acesse o portal e valide a sua identidade.</p>`);
     } catch (err) {
       console.error(err);
       setErrorMessage('Erro ao aprovar membro.');

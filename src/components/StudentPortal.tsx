@@ -1162,7 +1162,7 @@ export default function StudentPortal({
                     Validade Nacional
                   </h3>
                   <p className="text-[10px] text-slate-500 mb-4 px-4 leading-relaxed font-medium">
-                    O DAVVERO-ID é seu documento institucional. Para eventos
+                    O DAVVERO System é seu documento institucional. Para eventos
                     nacionais que exijam o padrão ITI com certificação
                     ICP-Brasil, você pode solicitar o DNE oficial.
                   </p>
@@ -1709,7 +1709,7 @@ export default function StudentPortal({
         >
           <div className="space-y-3">
             <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
-              O <strong>DAVVERO-ID</strong> é seu documento institucional
+              O <strong>DAVVERO System</strong> é seu documento institucional
               gratuito.
             </p>
             <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed">

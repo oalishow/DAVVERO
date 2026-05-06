@@ -85,7 +85,7 @@ export default function Footer() {
 
       <div className="text-center pt-2">
         <p className="text-[9px] sm:text-[10px] text-slate-400 dark:text-slate-500">
-          ©2025 - Alison Fernando Rodrigues dos Santos - DAVVERO-ID
+          ©2025 - Alison Fernando Rodrigues dos Santos - DAVVERO System
         </p>
       </div>
 

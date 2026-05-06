@@ -159,7 +159,7 @@ export const CertificateRenderer = forwardRef<HTMLDivElement, CertificateRendere
         
         {/* Assinatura / Logo */}
         <div className="absolute bottom-6 right-10 opacity-30 pointer-events-none z-10">
-          <p className={`text-[12px] font-bold uppercase tracking-widest ${template.bgStyle === 'theme-solemn' ? 'text-slate-500' : 'text-slate-900'}`}>Powered by DAVVERO-ID & FAJOPA</p>
+          <p className={`text-[12px] font-bold uppercase tracking-widest ${template.bgStyle === 'theme-solemn' ? 'text-slate-500' : 'text-slate-900'}`}>Powered by DAVVERO System & FAJOPA</p>
         </div>
       </div>
     );

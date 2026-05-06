@@ -23,7 +23,7 @@ export default function ContactModal({ onClose }: ContactModalProps) {
                 Contato
               </h2>
               <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                DAVVERO-ID v{APP_VERSION}
+                DAVVERO System v{APP_VERSION}
               </p>
             </div>
           </div>

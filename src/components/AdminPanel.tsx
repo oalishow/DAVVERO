@@ -373,7 +373,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
       // Notificar o novo membro (embora ele precise logar para ver, a notificação estará lá)
       await createNotification({
         recipientId: memberId,
-        title: "Bem-vindo ao DAVVERO-ID",
+        title: "Bem-vindo ao DAVVERO System",
         message: `Sua identidade estudantil foi criada. Seu código é: ${alphaCode}`,
         type: "carteirinha"
       }).catch(console.error);

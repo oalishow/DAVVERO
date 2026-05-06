@@ -164,7 +164,7 @@ export default function EventAttendeesModal({
           </tbody>
         </table>
         <div class="mt-8 pt-4 border-t border-black text-center text-[10px] uppercase tracking-widest">
-          Documento Gerado pelo DAVVERO-ID • Faculdade João Paulo II (FAJOPA)
+          Documento Gerado pelo DAVVERO System • Faculdade João Paulo II (FAJOPA)
         </div>
       `;
 
@@ -598,7 +598,7 @@ export default function EventAttendeesModal({
         </table>
 
         <div className="mt-8 pt-4 border-t border-black text-center text-[10px] uppercase tracking-widest">
-          Documento Gerado pelo DAVVERO-ID • Faculdade João Paulo II (FAJOPA)
+          Documento Gerado pelo DAVVERO System • Faculdade João Paulo II (FAJOPA)
         </div>
       </div>
 

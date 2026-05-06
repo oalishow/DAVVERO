@@ -211,11 +211,11 @@ export default function MuralPage() {
           let dataUrl = canvas.toDataURL('image/jpeg', 0.5);
           
           // Verificar tamanho (Firestore tem limite de 1MB por documento, mas mantermos bem abaixo para performance)
-          if (dataUrl.length > 500000) { 
+          if (dataUrl.length > 2000000) { 
              dataUrl = canvas.toDataURL('image/jpeg', 0.3);
           }
           
-          if (dataUrl.length > 900000) {
+          if (dataUrl.length > 3000000) {
              alert("⚠️ A imagem é muito grande mesmo após a compressão.\n\nPara enviar arquivos pesados, você precisa configurar o CORS do Firebase Storage (leia REGRAS_CORS_FIREBASE.md).");
              setIsUploading(false);
              setUploadProgress(0);

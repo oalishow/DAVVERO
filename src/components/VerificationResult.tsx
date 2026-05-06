@@ -637,7 +637,7 @@ export default function VerificationResult({
               />
             </svg>
             <div className="absolute bottom-0.5 font-black text-[6px] tracking-widest text-black w-full text-center">
-              DAVVERO-ID
+              DAVVERO System
             </div>
           </div>
           <p
@@ -646,7 +646,7 @@ export default function VerificationResult({
           >
             ©2025 - Alison Fernando Rodrigues dos Santos
             <br />
-            DAVVERO-ID. Todos os direitos reservados.
+            DAVVERO System. Todos os direitos reservados.
           </p>
         </div>
       )}

@@ -250,7 +250,7 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
                    type="text" 
                    value={legacyQrCode} 
                    onChange={e => setLegacyQrCode(e.target.value)} 
-                   placeholder="Aperte o Scanner e leia o QR velho, depois cole o texto todo aqui." 
+                   placeholder="Ex: https://carteirinhafajopa.netlify.app/?verify=..." 
                    className="input-modern w-full rounded-lg py-2 px-3 text-sm" 
                  />
               </div>
@@ -409,7 +409,7 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
 
       <div className="hidden print:block absolute inset-0 bg-white z-[300] p-8 text-black">
          <div className="max-w-3xl mx-auto">
-            <h1 className="text-2xl font-bold uppercase tracking-widest border-b-2 border-black pb-4 mb-8">Ficha Cadastral Individual - DAVVERO-ID</h1>
+            <h1 className="text-2xl font-bold uppercase tracking-widest border-b-2 border-black pb-4 mb-8">Ficha Cadastral Individual - DAVVERO System</h1>
             
             <div className="flex gap-8 mb-8">
                <div className="w-32 h-40 border-2 border-black rounded-lg overflow-hidden shrink-0">
@@ -481,7 +481,7 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
             </div>
 
             <p className="text-center text-xs text-gray-400 mt-12">
-               Emitido em {new Date().toLocaleDateString('pt-BR')} às {new Date().toLocaleTimeString('pt-BR')} pelo sistema DAVVERO-ID.
+               Emitido em {new Date().toLocaleDateString('pt-BR')} às {new Date().toLocaleTimeString('pt-BR')} pelo sistema DAVVERO System.
             </p>
          </div>
       </div>

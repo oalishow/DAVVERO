@@ -50,7 +50,7 @@ export const CHANGELOG = [
   "Versão 4.9.0 - Reforços Teológicos e Históricos",
   "Sobre: Inclusão do nome oficial do TCC ('E O VERBO SE FEZ I.A.?'), explicação do conceito de Vibe Coding, e expansão da reflexão teológica sobre a Inteligência Artificial e a pastoral.",
   "Versão 4.8.0 - Atualização da Identidade e História",
-  "Sobre: Reformulação completa da seção da história do aplicativo, destacando a evolução desde o TCC até o DAVVERO-ID de forma colaborativa, além das referências e agradecimentos especiais detalhados.",
+  "Sobre: Reformulação completa da seção da história do aplicativo, destacando a evolução desde o TCC até o DAVVERO System de forma colaborativa, além das referências e agradecimentos especiais detalhados.",
   "Versão 4.7.1 - Segurança e LGPD",
   "Privacidade: Implementação de máscara de PII para proteção de CPFs e informações de contato na listagem pública e cache offline.",
   "Segurança: Otimização das Regras do banco de dados para acesso estritamente anonimizado.",

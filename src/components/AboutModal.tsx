@@ -19,7 +19,7 @@ export default function AboutModal({ onClose }: AboutModalProps) {
                 Sobre o Aplicativo
               </h2>
               <p className="text-xs text-slate-500 font-medium">
-                História e agradecimentos do DAVVERO-ID
+                História e agradecimentos do DAVVERO System
               </p>
             </div>
           </div>
@@ -171,7 +171,7 @@ export default function AboutModal({ onClose }: AboutModalProps) {
                 sugestões de quem usava o sistema no dia a dia.
               </p>
               <p>
-                Assim, surgiu o <strong>DAVVERO-ID</strong>. O nome "Davvero"
+                Assim, surgiu o <strong>DAVVERO System</strong>. O nome "Davvero"
                 vem do italiano e significa <em>"Verdadeiro"</em>, ou expressa
                 uma surpresa como: <em>"Sério?"</em>. Foi exatamente assim que
                 me senti quando pude perceber que a ferramenta podia ir muito

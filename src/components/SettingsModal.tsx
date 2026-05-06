@@ -360,7 +360,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
   const handleFileUpload = (
     e: React.ChangeEvent<HTMLInputElement>,
     setter: (val: string | null) => void,
-    maxSizeKB = 500,
+    maxSizeKB = 5120, // Increased default to 5MB
   ) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -390,7 +390,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
           [field]: val
         }
       }));
-    }, 500);
+    }, 5120); // allow up to 5MB
   };
 
   const updateSeminaryConfig = (seminary: string, field: "rectorName", val: string) => {
@@ -632,7 +632,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                           type="file"
                           ref={logoInputRef}
                           onChange={(e) =>
-                            handleFileUpload(e, setInstLogo, 2048)
+                            handleFileUpload(e, setInstLogo, 5120)
                           }
                           accept="image/*"
                           className="hidden"
@@ -647,7 +647,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                           <label className="flex items-center justify-between text-[10px] font-bold text-slate-500 uppercase mb-1">
                             Nome Institucional
                             <button
-                              onClick={() => setInstName("DAVVERO-ID")}
+                              onClick={() => setInstName("DAVVERO System")}
                               className="bg-slate-200 dark:bg-slate-800 hover:bg-sky-500 hover:text-white px-2 py-0.5 rounded text-[8px] transition-colors"
                             >
                               Usar Nome do Programa
@@ -766,7 +766,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                               type="file"
                               ref={cardLogoInputRef}
                               onChange={(e) =>
-                                handleFileUpload(e, setCardLogo, 2048)
+                                handleFileUpload(e, setCardLogo, 5120)
                               }
                               accept="image/*"
                               className="hidden"
@@ -845,7 +845,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                             type="file"
                             ref={cardBackInputRef}
                             onChange={(e) =>
-                              handleFileUpload(e, setCardBackImage, 800)
+                              handleFileUpload(e, setCardBackImage, 5120)
                             }
                             accept="image/*"
                             className="hidden"
@@ -894,7 +894,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                               handleFileUpload(
                                 e,
                                 setCardSecondaryBackLogo,
-                                2048,
+                                5120,
                               )
                             }
                             accept="image/*"
@@ -1085,7 +1085,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                             type="file"
                             ref={signatureInputRef}
                             onChange={(e) =>
-                              handleFileUpload(e, setInstSignature, 300)
+                              handleFileUpload(e, setInstSignature, 5120)
                             }
                             accept="image/png"
                             className="hidden"
@@ -1140,7 +1140,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                             type="file"
                             ref={rectorSignatureInputRef}
                             onChange={(e) =>
-                              handleFileUpload(e, setRectorSignature, 300)
+                              handleFileUpload(e, setRectorSignature, 5120)
                             }
                             accept="image/png"
                             className="hidden"

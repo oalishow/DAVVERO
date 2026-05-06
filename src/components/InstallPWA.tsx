@@ -83,7 +83,7 @@ export default function InstallPWA() {
              <Download className="w-10 h-10 text-white" />
           </div>
           <h2 className="text-2xl font-black text-slate-800 dark:text-white mb-2">Instalar Aplicativo</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 uppercase tracking-widest font-bold">DAVVERO-ID v{APP_VERSION}</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 uppercase tracking-widest font-bold">DAVVERO System v{APP_VERSION}</p>
           
           <div className="space-y-4 mb-8">
             {showInstallBtn ? (
@@ -192,7 +192,7 @@ export default function InstallPWA() {
           <div>
             <h3 className="text-sm font-bold text-sky-900 dark:text-sky-100 mb-1">Instalar no iPhone</h3>
             <p className="text-xs text-sky-700 dark:text-sky-300 leading-relaxed">
-              Para instalar o <strong>DAVVERO-ID</strong>, toque no ícone de <span className="inline-block"><Share className="w-4 h-4 mx-0.5 inline" /></span> <strong>Compartilhar</strong> do seu Safari e selecione <strong>"Adicionar à Tela de Início"</strong>.
+              Para instalar o <strong>DAVVERO System</strong>, toque no ícone de <span className="inline-block"><Share className="w-4 h-4 mx-0.5 inline" /></span> <strong>Compartilhar</strong> do seu Safari e selecione <strong>"Adicionar à Tela de Início"</strong>.
             </p>
           </div>
         </div>
@@ -210,7 +210,7 @@ export default function InstallPWA() {
           <div>
             <h3 className="text-sm font-bold text-sky-900 dark:text-sky-100 mb-1">Instalar no Samsung Internet</h3>
             <p className="text-xs text-sky-700 dark:text-sky-300 leading-relaxed font-medium">
-              No Samsung Internet, toque no ícone de <span className="bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded text-[10px] inline-block font-bold">+</span > na barra de endereços ou abra o menu (≡) → <strong>Adicionar página a</strong> → <strong>Tela inicial</strong> para instalar o DAVVERO-ID.
+              No Samsung Internet, toque no ícone de <span className="bg-slate-200 dark:bg-slate-700 px-1.5 py-0.5 rounded text-[10px] inline-block font-bold">+</span > na barra de endereços ou abra o menu (≡) → <strong>Adicionar página a</strong> → <strong>Tela inicial</strong> para instalar o DAVVERO System.
             </p>
           </div>
         </div>
@@ -251,7 +251,7 @@ export default function InstallPWA() {
           <div>
             <h3 className="text-sm font-bold text-emerald-900 dark:text-emerald-100">Instalar Aplicativo</h3>
             <p className="text-[10px] text-emerald-700 dark:text-emerald-400 uppercase tracking-wider font-semibold">
-              {platform === 'desktop' ? 'Versão para Windows/PC' : 'DAVVERO-ID native web app'}
+              {platform === 'desktop' ? 'Versão para Windows/PC' : 'DAVVERO System native web app'}
             </p>
           </div>
         </div>

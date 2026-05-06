@@ -156,7 +156,7 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
             {isSeminarista ? 'DOCUMENTO ESTUDANTIL E VOCACIONAL' : (cardFrontText || 'IDENTIFICAÇÃO ESTUDANTIL')}
          </h1>
          <span className="text-white opacity-80 text-[9px] font-bold tracking-widest bg-white/10 px-2 py-0.5 rounded-full uppercase ml-1">
-           {displayInstNameForCard === 'Vero ID' || displayInstNameForCard === 'A vero ID' || displayInstNameForCard === 'DA VERO-ID' || displayInstNameForCard === 'DAVVERO-ID' || displayInstNameForCard === 'FAJOPA e SPSCJ' ? (displayInstNameForCard === 'FAJOPA' ? 'FAJOPA' : 'FAJOPA e SPSCJ') : displayInstNameForCard}
+           {displayInstNameForCard}
          </span>
       </div>
 
@@ -189,7 +189,7 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
         }}
       >
          <span className="text-white font-bold tracking-widest uppercase pl-4 flex items-center gap-1.5" style={{ fontSize: '12px' }}>
-           {(!instName || instName === 'Vero ID' || instName === 'A vero ID' || instName === 'DA VERO-ID' || instName === 'DAVVERO-ID' || instName === 'FAJOPA e SPSCJ') && (
+           {(!instName || instName === 'Vero ID' || instName === 'A vero ID' || instName === 'DA VERO-ID' || instName === 'DAVVERO System' || instName === 'FAJOPA e SPSCJ') && (
               <svg viewBox="0 0 100 100" className="w-[14px] h-[14px] text-white shrink-0">
                 <path d="M50,5 L90,20 C90,60 75,85 50,95 C25,85 10,60 10,20 L50,5 Z" fill="none" stroke="currentColor" strokeWidth="6" strokeLinejoin="round" />
                 <path d="M50,32 L82,46 L50,60 L18,46 Z" fill="currentColor" />
@@ -450,7 +450,7 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
              </div>
              <div className="flex flex-col text-left">
                 <div className="flex items-center gap-1">
-                  <span className="text-blue-900 font-black tracking-tighter" style={{ fontSize: '22px', lineHeight: '1' }}>{cardBackText || (displayInstNameForCard === 'Vero ID' || displayInstNameForCard === 'A vero ID' || displayInstNameForCard === 'DA VERO-ID' || displayInstNameForCard === 'DAVVERO-ID' || displayInstNameForCard === 'FAJOPA e SPSCJ' ? (displayInstNameForCard === 'FAJOPA' ? 'FAJOPA' : 'FAJOPA e SPSCJ') : displayInstNameForCard)}</span>
+                  <span className="text-blue-900 font-black tracking-tighter" style={{ fontSize: '22px', lineHeight: '1' }}>{cardBackText || displayInstNameForCard}</span>
                 </div>
                 {instName === 'FAJOPA' && (
                   <div className="bg-blue-900 text-white rounded font-bold px-1 py-0.5 text-center mt-0.5 whitespace-nowrap shadow-sm" style={{ fontSize: '8px' }}>
@@ -488,7 +488,7 @@ export default function FajopaIDCard({ member, exportMode = false, settings: pro
       </div>
 
       <div className="absolute top-[2%] right-[4%] opacity-80 text-[7px] text-right font-bold text-blue-950 pointer-events-none leading-relaxed select-none z-20">
-         ©2025 - Alison Fernando Rodrigues dos Santos - {cardFrontText || 'DAVVERO-ID'}<br/>
+         ©2025 - Alison Fernando Rodrigues dos Santos - {cardFrontText || 'DAVVERO System'}<br/>
          Emitido em: {emittedAt} • Gerado digitalmente: {generatedAt}
       </div>
 

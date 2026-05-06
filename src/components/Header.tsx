@@ -170,7 +170,7 @@ export default function Header({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
        />
 
       <div className="absolute bottom-2 font-black text-[9px] tracking-[0.15em] text-blue-900 dark:text-sky-100 bg-white/80 dark:bg-slate-900/60 backdrop-blur-md px-2.5 py-0.5 rounded shadow-sm border border-white/40 dark:border-slate-600/50 z-30">
-        DAVVERO-ID
+        DAVVERO System
       </div>
     </div>
   );
@@ -347,7 +347,7 @@ export default function Header({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
           backgroundImage: `linear-gradient(to right, ${instColor}, #14b8a6, #10b981)`,
         }}
       >
-        DAVVERO-ID
+        DAVVERO System
       </h1>
       <p className="text-slate-500 dark:text-slate-400 font-bold text-[10px] sm:text-xs tracking-[0.2em] animated-fade-in uppercase">
         {instDescription}
@@ -360,7 +360,7 @@ export default function Header({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
             className="flex items-center gap-2 bg-sky-500 text-white px-4 py-2 rounded-full shadow-lg shadow-sky-500/20 hover:bg-sky-400 transition-all scale-110 mb-2 animate-bounce"
           >
             <Download className="w-3 h-3" />
-            INSTALAR DAVVERO-ID
+            INSTALAR DAVVERO System
           </button>
         )}
         <div className="flex items-center gap-1.5 text-emerald-500 dark:text-emerald-400 bg-emerald-500/5 px-3 py-1 rounded-full border border-emerald-500/20">

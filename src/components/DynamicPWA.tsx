@@ -8,8 +8,8 @@ export default function DynamicPWA() {
   useEffect(() => {
     if (!settings) return;
 
-    const appName = `DAVVERO-ID v${APP_VERSION}`;
-    const shortName = 'DAVVERO-ID';
+    const appName = `DAVVERO System v${APP_VERSION}`;
+    const shortName = 'DAVVERO System';
 
     // 1. Atualizar Título da Página
     document.title = appName;
