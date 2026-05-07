@@ -43,7 +43,21 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
     setSuccessMsg(null);
     try {
       if (isRegister) {
-        await createUserWithEmailAndPassword(auth, email, emailPassword);
+        const userCred = await createUserWithEmailAndPassword(auth, email, emailPassword);
+        
+        // Save to administrators collection
+        try {
+          const { setDoc, doc } = await import("firebase/firestore");
+          const { db, appId } = await import("../lib/firebase");
+          await setDoc(doc(db, `artifacts/${appId}/public/data/administrators`, userCred.user.uid), {
+            email: userCred.user.email,
+            role: "ADMIN", // SUPER_ADMIN can be set manually in DB for the owner, or master pass makes it super later
+            createdAt: new Date().toISOString()
+          });
+        } catch (dbErr) {
+          console.error("Failed to save admin record", dbErr);
+        }
+        
         await showAlert("Administrador registrado com sucesso!", { type: 'success' });
       } else {
         await signInWithEmailAndPassword(auth, email, emailPassword);

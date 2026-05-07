@@ -12,10 +12,23 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function isSuperAdmin(appId) {
+      return isSignedIn() && (
+        ('email' in request.auth.token && request.auth.token.email == 'admblackjamf@gmail.com') ||
+        (exists(/databases/$(database)/documents/artifacts/$(appId)/public/data/administrators/$(request.auth.uid)) &&
+         'role' in get(/databases/$(database)/documents/artifacts/$(appId)/public/data/administrators/$(request.auth.uid)).data &&
+         get(/databases/$(database)/documents/artifacts/$(appId)/public/data/administrators/$(request.auth.uid)).data.role == 'SUPER_ADMIN')
+      );
+    }
+
     function isAdmin(appId) {
       return isSignedIn() && (
-        request.auth.token.email == 'admblackjamf@gmail.com' || 
+        ('email' in request.auth.token && request.auth.token.email == 'admblackjamf@gmail.com') || 
+        (exists(/databases/$(database)/documents/artifacts/$(appId)/public/data/administrators/$(request.auth.uid)) && 
+         'role' in get(/databases/$(database)/documents/artifacts/$(appId)/public/data/administrators/$(request.auth.uid)).data &&
+         get(/databases/$(database)/documents/artifacts/$(appId)/public/data/administrators/$(request.auth.uid)).data.role in ['ADMIN', 'SUPER_ADMIN']) ||
         (exists(/databases/$(database)/documents/artifacts/$(appId)/public/data/students/$(request.auth.uid)) && 
+         'roles' in get(/databases/$(database)/documents/artifacts/$(appId)/public/data/students/$(request.auth.uid)).data &&
          get(/databases/$(database)/documents/artifacts/$(appId)/public/data/students/$(request.auth.uid)).data.roles is list &&
          get(/databases/$(database)/documents/artifacts/$(appId)/public/data/students/$(request.auth.uid)).data.roles.hasAny(['ADMIN', 'DIRETORIA', 'GESTÃO', 'admin', 'diretoria', 'gestão']))
       );
@@ -98,6 +111,18 @@ service cloud.firestore {
       // Appointments
       match /appointments/{apptId} {
         allow read: if true;
+        allow write: if isSignedIn();
+      }
+
+      // Administrators
+      match /administrators/{adminId} {
+        allow read: if isSignedIn();
+        allow write: if isSignedIn();
+      }
+
+      // Audit Logs
+      match /audit_logs/{logId} {
+        allow read: if isSignedIn();
         allow write: if isSignedIn();
       }
 

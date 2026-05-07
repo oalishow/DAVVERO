@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, Check } from 'lucide-react';
 import { collection, query, getDocs, doc, updateDoc, deleteDoc, addDoc } from 'firebase/firestore';
 import { db, appId, createNotification } from '../lib/firebase';
+import { logAdminAction } from '../lib/audit';
 import type { Member } from '../types';
 import Modal from './Modal';
 
@@ -74,6 +75,8 @@ export default function AdminRequestsModal({ onClose }: { onClose: () => void })
         type: "carteirinha"
       });
 
+      await logAdminAction("MEMBER_APPROVED", `Aprovou a solicitação de carteirinha`, id);
+
       // Email Notification
       await sendEmailNotification(email, "Sua Carteirinha de Estudante Foi Aprovada!", `<h3>Parabéns!</h3><p>Sua solicitação para a identidade estudantil DAVVERO System foi <b>Aprovada</b>.</p><p>O seu código de uso no aplicativo é: <b>${alphaCode}</b></p><p>Acesse o portal e valide a sua identidade.</p>`);
     } catch (err) {
@@ -108,6 +111,8 @@ export default function AdminRequestsModal({ onClose }: { onClose: () => void })
         type: "edicao"
       });
 
+      await logAdminAction("MEMBER_EDIT_APPROVED", `Aprovou as sugestões de edição de dados`, member.id);
+
       // Email Notification
       if (member.email || updatePayload.email) {
           await sendEmailNotification(updatePayload.email || member.email, "Edição Concluída", `<h3>Atualização Aprovada!</h3><p>As edições que você sugeriu na sua carteirinha de estudante foram validadas e atualizadas no sistema com sucesso.</p><p>Atualize a página na sua Minha ID para ver as mudanças.</p>`);
@@ -130,9 +135,11 @@ export default function AdminRequestsModal({ onClose }: { onClose: () => void })
       const mRef = doc(db, `artifacts/${appId}/public/data/students`, id);
       if (isEdit) {
         await updateDoc(mRef, { pendingChanges: null, hasPendingAction: false });
+        await logAdminAction("MEMBER_EDIT_REJECTED", `Recusou as sugestões de edição de dados`, id);
         if (emailToNotify) await sendEmailNotification(emailToNotify, "Atualização Recusada", `<p>A sua sugestão de edição de dados não foi aceita pela instituição após a devida comprovação cadastral.</p>`);
       } else {
         await deleteDoc(mRef);
+        await logAdminAction("MEMBER_REJECTED", `Recusou a solicitação de carteirinha`, id);
         if (emailToNotify) await sendEmailNotification(emailToNotify, "Cadastro Não Aprovado", `<p>A sua solicitação de identidade estudantil não pôde ser aprovada neste momento.</p><p>Fale diretamente com os responsáveis do seu seminário/dioceses se achar que existe algum erro.</p>`);
       }
       setModalRejectOpen(false);

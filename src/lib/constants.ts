@@ -26,12 +26,14 @@ export const INSTITUTION_DESCRIPTION_KEY = "davveroId_institution_description";
 export const CARD_DESCRIPTION_KEY = "davveroId_card_description";
 export const CUSTOM_ROLES_KEY = "davveroId_custom_roles";
 export const CUSTOM_COURSES_KEY = "davveroId_custom_courses";
-export const APP_VERSION = "5.7";
+export const APP_VERSION = "5.8";
 export const SETTINGS_DOC_PATH = (appId: string) =>
   `artifacts/${appId}/public/data/students/_settings_global`;
 export const ASSETS_DOC_PATH = (appId: string, assetType: string) =>
   `artifacts/${appId}/public/data/students/_asset_${assetType}`;
 export const CHANGELOG = [
+  "Versão 5.8.0 - Níveis de Acesso para Administradores",
+  "Painel de controle para o Super Admin gerenciar múltiplas contas (Portaria/Check-in, Admin), além de logs analíticos.",
   "Versão 5.7.0 - Termos de Uso e LGPD",
   "Adicionados Termos de Uso e privacidade (LGPD), obrigatórios para criação de conta ou acesso para usuários antigos. Implementado sistema global de controle de versão dos termos.",
   "Versão 5.6.0 - Melhorias na Gestão de Conta e Configurações",

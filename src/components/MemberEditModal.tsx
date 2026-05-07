@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, Save, Trash2, ShieldAlert, Download, QrCode, Image as ImageIcon, Printer } from 'lucide-react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db, appId, createNotification } from '../lib/firebase';
+import { logAdminAction } from '../lib/audit';
 import FajopaIDCard from './FajopaIDCard';
 import { useSettings } from '../context/SettingsContext';
 import { type Member, AVAILABLE_SEMINARIES } from '../types';
@@ -128,6 +129,8 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
         type: "edicao"
       }).catch(console.error);
 
+      await logAdminAction("MEMBER_UPDATED", `Atualizou os dados de ${name} (RA: ${ra})`, member.id);
+
       onUpdate();
     } catch (err) {
       console.error(err);
@@ -141,6 +144,7 @@ export default function MemberEditModal({ member, onClose, onUpdate }: MemberEdi
     try {
       const docRef = doc(db, `artifacts/${appId}/public/data/students`, member.id);
       await updateDoc(docRef, { deletedAt: new Date().toISOString() });
+      await logAdminAction("MEMBER_DELETED", `Moveu ${member.name} (RA: ${member.ra}) para a lixeira`, member.id);
       onUpdate();
     } catch (err) {
       console.error(err);

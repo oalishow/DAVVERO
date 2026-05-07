@@ -8,6 +8,16 @@ interface ChangelogModalProps {
 export default function ChangelogModal({ onClose }: ChangelogModalProps) {
   const versions = [
     {
+      version: 'v5.8.0',
+      title: 'Níveis de Acesso e Gestão de Admins',
+      changes: [
+        'Painel para controle de múltiplas contas de administração.',
+        'Níveis de acesso diferenciados: Super Admin, Administrador Padrão e Portaria/Check-in.',
+        'Logs avançados de acesso e auditoria.',
+      ],
+      current: true,
+    },
+    {
       version: 'v5.7.0',
       title: 'Termos de Uso e LGPD',
       changes: [
@@ -15,7 +25,7 @@ export default function ChangelogModal({ onClose }: ChangelogModalProps) {
         'Aceite obrigatório para novos cadastros e usuários existentes.',
         'Sistema global de controle de versão dos termos pelos administradores.'
       ],
-      current: true,
+      current: false,
     },
     {
       version: 'v5.6.0',

@@ -32,6 +32,7 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import { db, appId, auth, registerVisitor, createNotification } from "../lib/firebase";
+import { logAdminAction } from "../lib/audit";
 import { signOut } from "firebase/auth";
 import type { Member } from "../types";
 import { AVAILABLE_SEMINARIES } from "../types";
@@ -47,12 +48,13 @@ import { motion, AnimatePresence } from "motion/react";
 import { X } from "lucide-react";
 import ImageCropperModal from "./ImageCropperModal";
 import PrintReportModal from "./PrintReportModal";
+import ImportExportMembers from "./ImportExportMembers";
 import EventManagement from "./EventManagement";
 import EventsRecycleBin from "./EventsRecycleBin";
 import NotificationsManager from "./NotificationsManager";
 import AdminAppointments from "./AdminAppointments";
 import DashboardPanel from "./DashboardPanel";
-import { Calendar, BriefcaseMedical, LayoutDashboard } from "lucide-react";
+import { Calendar, BriefcaseMedical, LayoutDashboard, Database, Users, CalendarDays, Bell, ShieldPlus } from "lucide-react";
 
 export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const { settings, updateSettings } = useSettings();
@@ -93,6 +95,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const [showPrintReport, setShowPrintReport] = useState(false);
   const [isRegistrationOpen, setIsRegistrationOpen] = useState(false);
   const [isVisitorOpen, setIsVisitorOpen] = useState(false);
+  const [allMembers, setAllMembers] = useState<Member[]>([]);
 
   const [stats, setStats] = useState({
     totalActive: 0,
@@ -289,6 +292,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
       const members = snapshot.docs.map(
         (d) => ({ id: d.id, ...d.data() }) as Member,
       );
+      setAllMembers(members);
       loadDashboardStats(members);
     });
 
@@ -373,6 +377,8 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
       });
 
       const memberId = docRef.id;
+
+      await logAdminAction("MEMBER_CREATED", `Criou nova carteirinha para ${name.trim()} (RA: ${formattedRa})`, memberId);
 
       // Notificar o novo membro (embora ele precise logar para ver, a notificação estará lá)
       await createNotification({
@@ -559,7 +565,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
 
         <button
           onClick={() => setActiveTab("notifications")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl font-bold text-sm transition-colors ${
+          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl font-bold text-sm transition-colors whitespace-nowrap ${
             activeTab === "notifications"
               ? "bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border-b-2 border-sky-600 dark:border-sky-400"
               : "text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50"
@@ -672,7 +678,11 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
             </button>
           </div>
 
-          <div className="bg-white dark:bg-slate-800/40 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-700/50 no-print">
+          <div className="mb-8">
+            <ImportExportMembers members={allMembers} onImportComplete={() => {}} />
+          </div>
+
+          <div className="bg-white dark:bg-slate-800/40 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-700/50 no-print mb-8">
             <button 
               onClick={() => setIsRegistrationOpen(!isRegistrationOpen)}
               className="w-full flex items-center justify-between text-base sm:text-lg font-medium text-slate-800 dark:text-slate-200"

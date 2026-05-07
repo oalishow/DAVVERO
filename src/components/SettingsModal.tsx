@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
 import { db, appId } from "../lib/firebase";
+import { logAdminAction } from "../lib/audit";
 import {
   X,
   Settings,
@@ -1671,6 +1672,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                               try {
                                  const newVersion = (cloudSettings.termsVersion || 1) + 1;
                                  await updateSettings({ termsVersion: newVersion });
+                                 await logAdminAction("TERMS_UPDATED", `Atualizou os Termos de Uso (LGPD) para a versão v${newVersion}`);
                                  
                                  // Add global notification
                                  const newNotif = {
