@@ -29,6 +29,9 @@ export interface Member {
   legacyQrCode?: string;
   pendingChanges?: any;
   hasPendingAction?: boolean;
+  deletionRequested?: boolean;
+  deletionRequestedAt?: string;
+  acceptedTermsVersion?: number;
   externalCertificates?: {
     id: string;
     title: string;

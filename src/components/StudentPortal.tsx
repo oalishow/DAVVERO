@@ -45,6 +45,8 @@ import SuggestEditModal from "./SuggestEditModal";
 import { ASSETS_DOC_PATH } from "../lib/constants";
 import { CertificateRenderer } from "./CertificateRenderer";
 import { useDialog } from "../context/DialogContext";
+import { useSettings } from "../context/SettingsContext";
+import TermsOfUseModal from "./TermsOfUseModal";
 
 const AsyncCertificateRenderer = memo(
   ({
@@ -147,6 +149,7 @@ export default function StudentPortal({
   overrideCode,
   onOverrideConsumed,
 }: StudentPortalProps) {
+  const { settings } = useSettings();
   const { showAlert, showConfirm } = useDialog();
   const [bondedId, setBondedId] = useState<string | null>(
     localStorage.getItem(STUDENT_BOND_KEY),
@@ -185,6 +188,7 @@ export default function StudentPortal({
   const [modalPinReset, setModalPinReset] = useState(false);
   const [modalDNEOpen, setModalDNEOpen] = useState(false);
   const [showAccountEditModal, setShowAccountEditModal] = useState(false);
+  const [showDeletionConfirmModal, setShowDeletionConfirmModal] = useState(false);
 
   // Fallback PIN state
   const [pinMode, setPinMode] = useState<"create" | "verify" | "none">("none");
@@ -1003,8 +1007,27 @@ export default function StudentPortal({
       );
     }
 
+    const currentTermsVersion = settings.termsVersion || 1;
+    const userTermsVersion = member?.acceptedTermsVersion || 0;
+    const needsToAcceptTerms = member && !isOverrideMode && isUnlocked && userTermsVersion < currentTermsVersion;
+
     return (
       <>
+        {needsToAcceptTerms && (
+          <TermsOfUseModal 
+            mustAccept={true} 
+            onAccept={async () => {
+               try {
+                  await updateDoc(doc(db, `artifacts/${appId}/public/data/students`, member.id), {
+                     acceptedTermsVersion: currentTermsVersion
+                  });
+               } catch (e) {
+                  console.error(e);
+                  showAlert("Erro", "Não foi possível aceitar os termos. Tente novamente.");
+               }
+            }} 
+          />
+        )}
         <Modal
           isOpen={modalUnlinkOpen}
           onClose={() => setModalUnlinkOpen(false)}
@@ -1267,6 +1290,16 @@ export default function StudentPortal({
                           const isEnrolled = myAttendances.some(
                             (a) => a.eventId === event.id,
                           );
+                          const isPastDeadline = event.registrationDeadline
+                            ? new Date() > new Date(event.registrationDeadline)
+                            : false;
+                          const isPaused = event.isRegistrationPaused === true;
+
+                          const canEnroll = !isPastDeadline && !isPaused;
+
+                          let cannotEnrollReason = "";
+                          if (isPaused) cannotEnrollReason = "Inscrições Pausadas";
+                          else if (isPastDeadline) cannotEnrollReason = "Inscrições Encerradas";
                           return (
                             <div
                               key={event.id}
@@ -1316,17 +1349,23 @@ export default function StudentPortal({
                                 )}
                               </div>
                               {!isEnrolled ? (
-                                <button
-                                  onClick={() => handleEnroll(event.id)}
-                                  disabled={isEnrollingInProgress === event.id}
-                                  className="w-full py-3 bg-sky-600 hover:bg-sky-500 disabled:bg-slate-400 text-white rounded-2xl font-bold transition-all active:scale-95 shadow-md flex items-center justify-center gap-2"
-                                >
-                                  {isEnrollingInProgress === event.id ? (
-                                    <Loader2 className="w-4 h-4 animate-spin" />
-                                  ) : (
-                                    "Inscrever-se Agora"
-                                  )}
-                                </button>
+                                canEnroll ? (
+                                  <button
+                                    onClick={() => handleEnroll(event.id)}
+                                    disabled={isEnrollingInProgress === event.id}
+                                    className="w-full py-3 bg-sky-600 hover:bg-sky-500 disabled:bg-slate-400 text-white rounded-2xl font-bold transition-all active:scale-95 shadow-md flex items-center justify-center gap-2"
+                                  >
+                                    {isEnrollingInProgress === event.id ? (
+                                      <Loader2 className="w-4 h-4 animate-spin" />
+                                    ) : (
+                                      "Inscrever-se Agora"
+                                    )}
+                                  </button>
+                                ) : (
+                                  <div className="w-full py-3 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-2xl font-bold border border-slate-200 dark:border-slate-700/50 text-center text-xs flex items-center justify-center gap-2">
+                                    {cannotEnrollReason}
+                                  </div>
+                                )
                               ) : (
                                 <div className="w-full py-3 bg-emerald-50 dark:bg-emerald-900/10 text-emerald-600 dark:text-emerald-500 rounded-2xl font-bold border border-emerald-100 dark:border-emerald-900/30 text-center text-xs">
                                   Inscrição confirmada
@@ -1801,8 +1840,75 @@ export default function StudentPortal({
                        <p className="font-semibold text-slate-700 dark:text-slate-300 text-sm">{member?.seminary || '-'}</p>
                      </div>
                   </div>
+
+                  <div className="mt-8 pt-8 border-t border-slate-100 dark:border-slate-700/50">
+                    <h4 className="text-sm font-bold text-red-600 dark:text-red-400 uppercase tracking-widest mb-3 flex items-center gap-2">
+                       <Trash2 className="w-4 h-4" /> Zona de Perigo (LGPD)
+                    </h4>
+                    {member?.deletionRequested ? (
+                      <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-900/30 p-4 rounded-xl">
+                        <p className="text-xs font-semibold text-red-700 dark:text-red-400">
+                          Sua solicitação de exclusão de dados foi recebida e está aguardando a aprovação do administrador.
+                        </p>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setShowDeletionConfirmModal(true)}
+                        className="px-5 py-2.5 bg-red-100 hover:bg-red-200 text-red-700 dark:bg-red-900/30 dark:hover:bg-red-900/50 dark:text-red-300 rounded-xl font-bold flex items-center justify-center gap-2 transition text-sm"
+                      >
+                         <Trash2 className="w-4 h-4" /> Solicitar Exclusão de Conta (LGPD)
+                      </button>
+                    )}
+                  </div>
                 </div>
               </motion.div>
+            )}
+
+            {showDeletionConfirmModal && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm overflow-hidden flex flex-col shadow-2xl relative"
+                >
+                   <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-red-500 to-rose-600"></div>
+                   <div className="p-6">
+                      <div className="w-12 h-12 bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 rounded-full flex justify-center items-center mb-4 border border-red-200 dark:border-red-800">
+                         <Trash2 className="w-6 h-6" />
+                      </div>
+                      <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2 tracking-tight">Exclusão de Conta</h3>
+                      <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
+                        Você tem certeza que deseja solicitar a exclusão da sua conta? Isto enviará um pedido ao administrador e seus dados serão movidos para a lixeira após aprovação, em conformidade com a LGPD.
+                      </p>
+                      
+                      <div className="flex gap-2">
+                         <button
+                           onClick={() => setShowDeletionConfirmModal(false)}
+                           className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+                         >
+                           Cancelar
+                         </button>
+                         <button
+                           onClick={async () => {
+                              try {
+                                if (!member) return;
+                                // Request deletion
+                                await updateDoc(doc(db, `artifacts/${appId}/public/data/students`, member.id), { deletionRequested: true, deletionRequestedAt: new Date().toISOString() });
+                                setShowDeletionConfirmModal(false);
+                                await showAlert("Solicitação Enviada", "Sua solicitação de exclusão foi enviada com sucesso ao administrador.");
+                              } catch(e) {
+                                console.error(e);
+                                await showAlert("Erro", "Erro ao solicitar a exclusão de dados.");
+                              }
+                           }}
+                           className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition"
+                         >
+                           Confirmar
+                         </button>
+                      </div>
+                   </div>
+                </motion.div>
+              </div>
             )}
 
             {activeTab === "seminary_events" && (

@@ -7,6 +7,7 @@ import { useSettings } from '../context/SettingsContext';
 import type { Member } from '../types';
 import ImageCropperModal from './ImageCropperModal';
 import { AVAILABLE_SEMINARIES } from '../types';
+import TermsOfUseModal from './TermsOfUseModal';
 
 interface PublicRequestModalProps {
   onClose: () => void;
@@ -34,6 +35,7 @@ export default function PublicRequestModal({ onClose, onSubmitSuccess }: PublicR
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [consent, setConsent] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
 
   const baseCourses = ["FILOSOFIA", "FILOSOFIA EAD", "TEOLOGIA", "TEOLOGIA EAD"];
   const availableCourses = [...baseCourses, ...settings.customCourses];
@@ -125,6 +127,7 @@ export default function PublicRequestModal({ onClose, onSubmitSuccess }: PublicR
         photoUrl: photoBase64,
         isApproved: false, // Pedido pendente  
         hasPendingAction: true,
+        acceptedTermsVersion: settings.termsVersion || 1,
         createdAt: new Date().toISOString()
       };
 
@@ -327,10 +330,13 @@ export default function PublicRequestModal({ onClose, onSubmitSuccess }: PublicR
            />
            <div className="flex-1">
              <label htmlFor="lgpd-consent" className="text-xs font-semibold text-slate-700 dark:text-slate-200 flex items-center gap-1.5 cursor-pointer hover:text-sky-600 transition-colors">
-               <ShieldCheck className="w-4 h-4 text-emerald-500" /> Termo de Consentimento (LGPD)
+               <ShieldCheck className="w-4 h-4 text-emerald-500" /> Termo de Consentimento (LGPD e Uso)
              </label>
              <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-               Em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018), concordo e autorizo que os meus dados pessoais e de imagem sejam armazenados e processados exclusivamente para a emissão e verificação da Identidade Digital da instituição.
+               Em conformidade com a Lei Geral de Proteção de Dados (Lei nº 13.709/2018), concordo e autorizo que os meus dados pessoais e de imagem sejam armazenados e processados exclusivamente para a validação institucional. Declaro ter lido e estar de acordo com os{' '}
+               <button type="button" onClick={() => setShowTerms(true)} className="text-sky-600 dark:text-sky-400 font-bold hover:underline">
+                 Termos de Uso e Privacidade
+               </button>.
              </p>
            </div>
         </div>
@@ -339,6 +345,8 @@ export default function PublicRequestModal({ onClose, onSubmitSuccess }: PublicR
             {loading ? 'A Enviar...' : <><Save className="w-4 h-4"/> Enviar Solicitação</>}
         </button>
       </div>
+
+      {showTerms && <TermsOfUseModal onClose={() => setShowTerms(false)} />}
     </div>,
     document.body
   );

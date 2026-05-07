@@ -22,8 +22,8 @@ export default function AdminRequestsModal({ onClose }: { onClose: () => void })
       const snapshot = await getDocs(q);
       const members = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }) as Member);
       
-      // Filtrar Não-Aprovados E também aqueles que têm Sugestões de Correção Pendentes.
-      const pendingReqs = members.filter(m => !m.deletedAt && (m.isApproved === false || m.pendingChanges));
+      // Filtrar Não-Aprovados E também aqueles que têm Sugestões de Correção Pendentes ou Pedidos de Exclusão.
+      const pendingReqs = members.filter(m => !m.deletedAt && (m.isApproved === false || m.pendingChanges || m.deletionRequested === true));
       setRequests(pendingReqs);
     } catch (e) {
       console.error(e);
@@ -190,9 +190,55 @@ export default function AdminRequestsModal({ onClose }: { onClose: () => void })
           ) : (
             requests.map(req => {
               const isNew = req.isApproved === false;
+              const isDeletion = req.deletionRequested === true;
               const avatarSrc = req.photoUrl || 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%2364748b"><path d="M12 12a5 5 0 100-10 5 5 0 000 10zm0 2c-3.33 0-10 1.67-10 5v2h20v-2c0-3.33-6.67-5-10-5z"/></svg>';
               
-              if (isNew) {
+              if (isDeletion) {
+                return (
+                  <div key={req.id} className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-red-200 dark:border-red-500/30">
+                      <div className="flex items-center gap-2 mb-2">
+                          <span className="bg-red-500 text-white text-[9px] uppercase font-bold px-2 py-0.5 rounded">Exclusão LGPD</span>
+                          <span className="text-xs text-slate-500 dark:text-slate-400 font-bold ml-auto">{req.name}</span>
+                      </div>
+                      <div className="bg-white dark:bg-slate-800/80 p-3 rounded-lg text-xs space-y-2 border border-slate-200 dark:border-slate-700">
+                          <p className="text-slate-600 dark:text-slate-400">O membro solicitou a exclusão de seus dados. Ao aceitar, o perfil será movido para a lixeira.</p>
+                          {req.deletionRequestedAt && <p className="text-[10px] text-slate-500 font-medium">Solicitado em: {new Date(req.deletionRequestedAt).toLocaleString()}</p>}
+                      </div>
+                      <div className="flex gap-2 mt-3">
+                          <button onClick={async () => {
+                             try {
+                               await updateDoc(doc(db, `artifacts/${appId}/public/data/students`, req.id), {
+                                 deletedAt: new Date().toISOString(),
+                                 deletionRequested: false
+                               });
+                               setRequests(p => p.filter(x => x.id !== req.id));
+                               // Try to send notification
+                               if (req.email) {
+                                  sendEmailNotification(req.email, "Exclusão de Conta - FAJOPA", `
+                                    <p>Sua solicitação de exclusão de dados sob a LGPD foi aprovada.</p>
+                                    <p>Todos os seus dados foram removidos dos sistemas de produção e constam apenas em backup frio por retenção legal (se aplicável).</p>
+                                  `);
+                               }
+                             } catch(e) {
+                               console.error(e);
+                               setErrorMessage("Erro ao processar a exclusão.");
+                             }
+                          }} className="flex-1 py-1.5 bg-red-100 text-red-700 hover:bg-red-500 hover:text-white rounded-lg text-xs font-semibold border border-red-300 transition-colors">Aprovar Exclusão</button>
+                          
+                          <button onClick={async () => {
+                             try {
+                               await updateDoc(doc(db, `artifacts/${appId}/public/data/students`, req.id), {
+                                 deletionRequested: false
+                               });
+                               setRequests(p => p.filter(x => x.id !== req.id));
+                             } catch(e) {
+                               console.error(e);
+                             }
+                          }} className="flex-1 py-1.5 bg-slate-200 text-slate-700 hover:bg-slate-300 rounded-lg text-xs font-semibold border border-slate-300 transition-colors">Cancelar Pedido</button>
+                      </div>
+                  </div>
+                );
+              } else if (isNew) {
                 return (
                   <div key={req.id} className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-xl border border-sky-200 dark:border-sky-500/30">
                     <div className="flex items-center gap-2 mb-2">

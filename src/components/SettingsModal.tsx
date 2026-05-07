@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { db, appId } from "../lib/firebase";
 import {
   X,
   Settings,
   Save,
   ShieldAlert,
+  ShieldCheck,
   Mail,
   Link,
   UserCircle,
@@ -1649,6 +1651,50 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                           manualmente.
                         </p>
                       </div>
+                    </div>
+                  </div>
+
+                  <div className="bg-amber-50 dark:bg-amber-900/10 p-5 rounded-2xl border border-amber-200 dark:border-amber-500/20">
+                    <h3 className="text-sm font-bold flex items-center gap-2 mb-4 text-amber-700 dark:text-amber-300 uppercase tracking-widest text-[10px]">
+                      <ShieldCheck className="w-4 h-4" /> Termos de Uso (LGPD)
+                    </h3>
+                    <div className="space-y-4">
+                      <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                        A versão atual dos Termos de Uso é a <b>v{cloudSettings.termsVersion || 1}</b>. 
+                        Ao atualizar a versão, todos os usuários da plataforma serão obrigados a ler e aceitar 
+                        os novos termos antes de acessarem seus dados novamente, e enviarão uma notificação para todos.
+                      </p>
+
+                      <button
+                        onClick={async () => {
+                           if (confirm("Você tem certeza que deseja exigir o aceite dos novos termos? Isso bloqueará o acesso de alunos até que eles concordem.")) {
+                              try {
+                                 const newVersion = (cloudSettings.termsVersion || 1) + 1;
+                                 await updateSettings({ termsVersion: newVersion });
+                                 
+                                 // Add global notification
+                                 const newNotif = {
+                                    id: "terms-update-" + Date.now(),
+                                    title: "Atualização dos Termos de Uso (LGPD)",
+                                    message: "Os Termos de Uso e Privacidade da plataforma foram atualizados. É necessário o aceite para continuar.",
+                                    type: "alert",
+                                    read: false,
+                                    createdAt: new Date().toISOString()
+                                 };
+                                 const { addDoc, collection } = await import('firebase/firestore');
+                                 await addDoc(collection(db, `artifacts/${appId}/public/data/notifications`), newNotif);
+                                 
+                                 showStatus(`Termos atualizados para versão ${newVersion} e notificados com sucesso!`, "success");
+                              } catch(e) {
+                                 console.error(e);
+                                 showStatus("Erro ao atualizar os termos", "error");
+                              }
+                           }
+                        }}
+                        className="btn-modern w-full py-2.5 bg-amber-600 hover:bg-amber-500 text-white rounded-xl text-sm font-medium flex items-center justify-center gap-2"
+                      >
+                        <ShieldAlert className="w-4 h-4" /> Notificar e Exigir Novo Aceite
+                      </button>
                     </div>
                   </div>
                 </div>

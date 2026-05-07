@@ -80,6 +80,7 @@ export default function EventManagement() {
   const [maxParticipants, setMaxParticipants] = useState("");
   const [speaker, setSpeaker] = useState("");
   const [schedulePdfUrl, setSchedulePdfUrl] = useState("");
+  const [registrationDeadline, setRegistrationDeadline] = useState("");
   const [isSeminary, setIsSeminary] = useState(false);
   const [seminaryId, setSeminaryId] = useState(AVAILABLE_SEMINARIES[0]);
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
@@ -146,6 +147,7 @@ export default function EventManagement() {
     setMaxParticipants(event.maxParticipants.toString());
     setSpeaker(event.speaker || "");
     setSchedulePdfUrl(event.schedulePdfUrl || "");
+    setRegistrationDeadline(event.registrationDeadline || "");
     setIsSeminary(event.isSeminary || false);
     setSeminaryId(event.seminaryId || "");
     window.scrollTo({ top: 0, behavior: "smooth" });
@@ -166,6 +168,7 @@ export default function EventManagement() {
     setMaxParticipants("");
     setSpeaker("");
     setSchedulePdfUrl("");
+    setRegistrationDeadline("");
     setIsSeminary(false);
     setSeminaryId(AVAILABLE_SEMINARIES[0]);
   };
@@ -192,6 +195,7 @@ export default function EventManagement() {
         link,
         description,
         imageUrl,
+        registrationDeadline: registrationDeadline || null,
         maxParticipants: maxParticipants ? Number(maxParticipants) : 0,
         speaker,
         schedulePdfUrl,
@@ -448,6 +452,17 @@ export default function EventManagement() {
               onChange={(e) => setSchedulePdfUrl(e.target.value)}
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm outline-none focus:border-sky-500 dark:focus:border-sky-500"
               placeholder="https://drive.google.com/..."
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
+              Data Limite Inscrição (Opcional)
+            </label>
+            <input
+              type="datetime-local"
+              value={registrationDeadline}
+              onChange={(e) => setRegistrationDeadline(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm outline-none focus:border-red-500 dark:focus:border-red-500 text-slate-700 dark:text-slate-200"
             />
           </div>
           <div className="space-y-1">

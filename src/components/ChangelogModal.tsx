@@ -8,13 +8,23 @@ interface ChangelogModalProps {
 export default function ChangelogModal({ onClose }: ChangelogModalProps) {
   const versions = [
     {
+      version: 'v5.7.0',
+      title: 'Termos de Uso e LGPD',
+      changes: [
+        'Adicionados Termos de Uso e privacidade (LGPD).',
+        'Aceite obrigatório para novos cadastros e usuários existentes.',
+        'Sistema global de controle de versão dos termos pelos administradores.'
+      ],
+      current: true,
+    },
+    {
       version: 'v5.6.0',
       title: 'Melhorias na Gestão de Conta e Configurações',
       changes: [
         'Adicionado painel \'Minha Conta\' para edição de dados pessoais do aluno.',
         'Ajustes na interface e sistema de backup do painel administrativo.',
       ],
-      current: true,
+      current: false,
     },
     {
       version: 'v5.5.0',

@@ -135,11 +135,30 @@ export function useNotifications(recipientId: string | null) {
             } catch (e) {}
 
             if (!data.read && !isLocalRead && !isLocalCleared) {
-               new Notification(data.title || "Nova Notificação", {
+               const title = data.title || "Nova Notificação";
+               const options = {
                  body: data.message,
                  icon: "/icon.svg",
                  tag: change.doc.id // Prevents duplicate notifications
-               });
+               };
+
+               if ('serviceWorker' in navigator) {
+                 navigator.serviceWorker.ready.then(registration => {
+                   registration.showNotification(title, options);
+                 }).catch(() => {
+                   try {
+                     new Notification(title, options);
+                   } catch (e) {
+                     console.warn("Could not show notification via Service Worker or Constructor", e);
+                   }
+                 });
+               } else {
+                 try {
+                   new Notification(title, options);
+                 } catch (e) {
+                   console.warn("Could not show notification via Constructor", e);
+                 }
+               }
             }
           }
         });
