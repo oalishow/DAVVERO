@@ -28,9 +28,12 @@ const Admin = lazy(() => import("./components/Admin"));
 const StudentPortal = lazy(() => import("./components/StudentPortal"));
 const EventsPage = lazy(() => import("./components/EventsPage"));
 const MuralPage = lazy(() => import("./components/MuralPage"));
+import { Wrench } from "lucide-react";
+import { useDialog } from "./context/DialogContext";
 
 export default function App() {
   const { settings } = useSettings();
+  const { showAlert } = useDialog();
   const [activeTab, setActiveTab] = useState<
     "verifier" | "admin" | "student" | "events" | "liturgy" | "mural"
   >("verifier");
@@ -247,7 +250,7 @@ export default function App() {
         <div className="relative z-10 space-y-6 sm:space-y-8 print:space-y-4">
           <Header onOpenAdmin={() => setActiveTab("admin")} />
 
-          <div className="grid grid-cols-5 bg-slate-200/50 dark:bg-slate-900/60 rounded-xl p-1 shadow-inner border border-slate-200/50 dark:border-slate-700/50 no-print print:hidden gap-1">
+          <div className="grid grid-cols-6 bg-slate-200/50 dark:bg-slate-900/60 rounded-xl p-1 shadow-inner border border-slate-200/50 dark:border-slate-700/50 no-print print:hidden gap-1">
             <button
               onClick={() => setActiveTab("student")}
               className={`flex flex-col items-center justify-center py-2 text-[10px] font-black uppercase tracking-tighter rounded-lg transition-all duration-300 ${activeTab === "student" ? "bg-white dark:bg-sky-600 text-sky-600 dark:text-white shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"}`}
@@ -274,7 +277,7 @@ export default function App() {
               className={`flex flex-col items-center justify-center py-2 text-[10px] font-black uppercase tracking-tighter rounded-lg transition-all duration-300 ${activeTab === "liturgy" ? "bg-white dark:bg-rose-600 text-rose-600 dark:text-white shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"}`}
             >
               <BookHeart className="w-4 h-4 mb-0.5" />
-              Liturgia
+              Portal Católico
             </button>
             <button
               onClick={() => setActiveTab("mural")}
@@ -282,6 +285,14 @@ export default function App() {
             >
               <Sparkles className="w-4 h-4 mb-0.5" />
               Mural
+            </button>
+            <button
+              onClick={() => showAlert("Em breve! Novas ferramentas estarão disponíveis nas próximas atualizações.", { type: "info" })}
+              className={`relative flex flex-col items-center justify-center py-2 text-[10px] font-black uppercase tracking-tighter rounded-lg transition-all duration-300 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200`}
+            >
+              <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[8px] font-bold px-1 rounded-full shadow-sm animate-pulse">NOVO</span>
+              <Wrench className="w-4 h-4 mb-0.5" />
+              Ferramentas
             </button>
           </div>
 

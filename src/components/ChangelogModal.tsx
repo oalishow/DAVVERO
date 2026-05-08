@@ -8,6 +8,17 @@ interface ChangelogModalProps {
 export default function ChangelogModal({ onClose }: ChangelogModalProps) {
   const versions = [
     {
+      version: 'v6.1.0',
+      title: 'Portal Católico e Correções',
+      changes: [
+        'Adicionado selo "NOVO" em Ferramentas, que chegará em breve',
+        'Mudança de "Liturgia" para "Portal Católico"',
+        'Correção de aberturas de janelas do Portal Católico (Pocket Terço, Santo do Dia)',
+        'Animação de sucesso (confirmação visual) após escaneamento bem-sucedido de QR Code'
+      ],
+      current: true,
+    },
+    {
       version: 'v6.0.0',
       title: 'Links Adicionais de Liturgia',
       changes: [

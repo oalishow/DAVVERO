@@ -7,10 +7,10 @@ export default function LiturgyPanel() {
 
   const hours = [
     { id: "liturgia-horas-completa", name: "Liturgia das Horas", icon: BookHeart, time: "Ofício Divino", url: "https://liturgiadashoras.online/" },
-    { id: "liturgia-diaria", name: "Liturgia Diária (CNBB)", icon: BookOpen, time: "Missa do Dia", url: "https://www.cnbb.org.br/liturgia-diaria/" },
-    { id: "cnbb-sul1", name: "CNBB Sul 1", icon: BookOpen, time: "Igreja no Estado de SP", url: "https://cnbbsul1.org.br/" },
-    { id: "vaticano", name: "Vaticano", icon: BookOpen, time: "Igreja Católica", url: "https://www.vatican.va/content/vatican/pt.html" },
-    { id: "noticias-igreja", name: "Notícias da Igreja", icon: BookOpen, time: "Vatican News", url: "https://www.vaticannews.va/pt.html" },
+    { id: "liturgia-diaria", name: "Liturgia Diária (CNBB)", icon: BookOpen, time: "Missa do Dia", url: "https://www.cnbb.org.br/liturgia-diaria/", external: true },
+    { id: "cnbb-sul1", name: "CNBB Sul 1", icon: BookOpen, time: "Igreja no Estado de SP", url: "https://cnbbsul1.org.br/", external: true },
+    { id: "vaticano", name: "Vaticano", icon: BookOpen, time: "Igreja Católica", url: "https://www.vatican.va/content/vatican/pt.html", external: true },
+    { id: "noticias-igreja", name: "Notícias da Igreja", icon: BookOpen, time: "Vatican News", url: "https://www.vaticannews.va/pt.html", external: true },
     { id: "oracoes", name: "Orações", icon: BookHeart, time: "Pocket Terço", url: "https://pocketterco.com.br/oracoes" },
     { id: "santo-do-dia", name: "Santo do Dia", icon: CalendarHeart, time: "Hagiografia", url: "https://santo.cancaonova.com/" },
     { id: "biblia-jerusalem", name: "Bíblia de Jerusalém", icon: BookOpen, time: "Escrituras Sagradas", url: "https://liturgiadashoras.online/biblia/biblia-jerusalem/" },
@@ -114,10 +114,10 @@ export default function LiturgyPanel() {
             </div>
           </div>
           <h2 className="text-2xl sm:text-3xl font-black mb-2">
-            Liturgia
+            Portal Católico
           </h2>
           <p className="text-rose-100 font-medium text-sm sm:text-base max-w-md">
-            Acesse rapidamente a Liturgia Diária, o Santo do Dia e as orações do ofício divino para rezar em comunhão com toda a Igreja.
+            Acesse rapidamente notícias, a Liturgia Diária, orações e documentos da Igreja Católica.
           </p>
         </div>
       </div>
@@ -153,7 +153,11 @@ export default function LiturgyPanel() {
           <button
             key={hour.id}
             onClick={() => {
-              setSelectedHour(hour);
+              if (hour.external) {
+                window.open(hour.url, '_blank');
+              } else {
+                setSelectedHour(hour as any);
+              }
             }}
             className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-5 hover:border-rose-400 dark:hover:border-rose-500 hover:shadow-md transition-all group flex flex-col items-center text-center gap-3"
           >

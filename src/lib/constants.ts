@@ -32,6 +32,7 @@ export const SETTINGS_DOC_PATH = (appId: string) =>
 export const ASSETS_DOC_PATH = (appId: string, assetType: string) =>
   `artifacts/${appId}/public/data/students/_asset_${assetType}`;
 export const CHANGELOG = [
+  "Versão 6.1.0 - Portal Católico e Animação de QR Code",
   "Versão 6.0.0 - Vínculos e Novos Links na Liturgia",
   "Expansão dos vínculos institucionais e novos atalhos litúrgicos (Orações, Notícias, etc)!",
   "Versão 5.9.0 - Melhorias Visuais e de Usabilidade",
