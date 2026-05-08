@@ -149,6 +149,14 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
     "PADRE",
     "DIÁCONO",
     "BISPO",
+    "DIRETOR",
+    "VICE-DIRETOR",
+    "RELIGIOSO(A)",
+    "COORDENADOR(A)",
+    "REITOR",
+    "VICE-REITOR",
+    "PSICÓLOGO(A)",
+    "DIRETOR ESPIRITUAL",
   ];
   const availableRoles = [...baseRoles, ...customRoles];
 
@@ -516,13 +524,13 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
         </div>
       </div>
 
-      <div className="flex gap-2 mb-6 border-b border-slate-200 dark:border-slate-700/60 no-print overflow-x-auto scrollbar-hide">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-6 pb-2 border-b border-slate-200 dark:border-slate-700/60 no-print">
         <button
           onClick={() => setActiveTab("dashboard")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl font-bold text-sm transition-colors ${
+          className={`flex items-center gap-2 px-4 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all whitespace-nowrap border ${
             activeTab === "dashboard"
-              ? "bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border-b-2 border-sky-600 dark:border-sky-400"
-              : "text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+              ? "bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-600/30 dark:border-sky-400/30"
+              : "bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/80"
           }`}
         >
           <LayoutDashboard className="w-4 h-4" />
@@ -530,10 +538,10 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
         </button>
         <button
           onClick={() => setActiveTab("members")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl font-bold text-sm transition-colors ${
+          className={`flex items-center gap-2 px-4 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all whitespace-nowrap border ${
             activeTab === "members"
-              ? "bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border-b-2 border-sky-600 dark:border-sky-400"
-              : "text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+              ? "bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-600/30 dark:border-sky-400/30"
+              : "bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/80"
           }`}
         >
           <Users className="w-4 h-4" />
@@ -541,22 +549,22 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
         </button>
         <button
           onClick={() => setActiveTab("events")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl font-bold text-sm transition-colors ${
+          className={`flex items-center gap-2 px-4 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all whitespace-nowrap border ${
             activeTab === "events"
-              ? "bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border-b-2 border-sky-600 dark:border-sky-400"
-              : "text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+              ? "bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-600/30 dark:border-sky-400/30"
+              : "bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/80"
           }`}
         >
           <Calendar className="w-4 h-4" />
-          Eventos e Presenças (BETA)
+          Eventos e Presenças
         </button>
 
         <button
           onClick={() => setActiveTab("appointments")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl font-bold text-sm transition-colors ${
+          className={`flex items-center gap-2 px-4 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all whitespace-nowrap border ${
             activeTab === "appointments"
-              ? "bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border-b-2 border-sky-600 dark:border-sky-400"
-              : "text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+              ? "bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-600/30 dark:border-sky-400/30"
+              : "bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/80"
           }`}
         >
           <Clock className="w-4 h-4" />
@@ -565,14 +573,14 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
 
         <button
           onClick={() => setActiveTab("notifications")}
-          className={`flex items-center gap-2 px-4 py-2.5 rounded-t-xl font-bold text-sm transition-colors whitespace-nowrap ${
+          className={`flex items-center gap-2 px-4 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all whitespace-nowrap border ${
             activeTab === "notifications"
-              ? "bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border-b-2 border-sky-600 dark:border-sky-400"
-              : "text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-800/50"
+              ? "bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-600/30 dark:border-sky-400/30"
+              : "bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/80"
           }`}
         >
           <Bell className="w-4 h-4" />
-          Enviar Notificações
+          Notificações
         </button>
       </div>
 
@@ -1044,7 +1052,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
                   <Bell className="w-4 h-4" />
                   Solicitações
                   {stats.totalPending > 0 && (
-                    <span className="absolute -top-2 -right-1 bg-rose-600 text-white text-[10px] font-black w-5 h-5 flex items-center justify-center rounded-full shadow-lg border-2 border-white dark:border-slate-800 animate-bounce">
+                    <span className="absolute -top-2 -right-1.5 bg-rose-600 text-white text-[10px] sm:text-xs font-black min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full shadow-lg border-2 border-white dark:border-slate-800 animate-bounce">
                       {stats.totalPending}
                     </span>
                   )}

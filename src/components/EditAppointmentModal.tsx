@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { doc, updateDoc, deleteDoc, addDoc, collection } from "firebase/firestore";
 import { db, appId } from "../lib/firebase";
 import { Member, Availability, Appointment } from "../types";
@@ -25,6 +26,11 @@ export default function EditAppointmentModal({ avail, appt, professionals, allSt
   const [studentName, setStudentName] = useState(appt?.studentName || "");
 
   const [loading, setLoading] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   const handleSave = async () => {
     setLoading(true);
@@ -90,16 +96,16 @@ export default function EditAppointmentModal({ avail, appt, professionals, allSt
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-      <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh]">
-        <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+  const content = (
+    <div className="fixed inset-0 z-[150] flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm overflow-y-auto">
+      <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-xl w-full max-w-lg overflow-hidden flex flex-col max-h-[90vh] my-auto">
+        <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center shrink-0">
           <h2 className="text-lg font-bold text-slate-800 dark:text-slate-100">Editar Horário</h2>
           <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition">
             <X className="w-5 h-5"/>
           </button>
         </div>
-        <div className="p-6 overflow-y-auto space-y-4">
+        <div className="p-6 overflow-y-auto space-y-4 min-h-0">
           <div>
              <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1">Profissional</label>
              <select 
@@ -161,7 +167,7 @@ export default function EditAppointmentModal({ avail, appt, professionals, allSt
           )}
 
         </div>
-        <div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 rounded-b-3xl">
+        <div className="p-5 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex justify-end gap-3 rounded-b-3xl shrink-0">
            <button onClick={onClose} className="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-800 transition">Cancelar</button>
            <button onClick={handleSave} disabled={loading} className="px-5 py-2.5 rounded-xl text-sm font-bold bg-indigo-600 text-white hover:bg-indigo-700 transition flex items-center gap-2">
              <Save className="w-4 h-4" /> {loading ? "Salvando..." : "Salvar Alterações"}
@@ -170,4 +176,8 @@ export default function EditAppointmentModal({ avail, appt, professionals, allSt
       </div>
     </div>
   );
+
+  if (!mounted) return null;
+
+  return createPortal(content, document.body);
 }

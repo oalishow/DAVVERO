@@ -644,28 +644,24 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
             </div>
 
             {/* Tab Navigation */}
-            <div className="flex border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 px-4 shrink-0 overflow-x-auto scrollbar-hide">
+            <div className="flex flex-wrap gap-1.5 sm:gap-2 p-3 sm:p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 justify-center sm:justify-start">
               {[
-                { id: "visual", label: "Identidade Visual", icon: Palette },
-                { id: "content", label: "Campos e Textos", icon: FileText },
+                { id: "visual", label: "Identidade", icon: Palette },
+                { id: "content", label: "Campos/Textos", icon: FileText },
                 { id: "database", label: "Banco de Dados", icon: Link },
-                {
-                  id: "system",
-                  label: "Sistema & Notificações",
-                  icon: Settings,
-                },
+                { id: "system", label: "Sistema", icon: Settings },
               ].map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id as any)}
-                  className={`flex items-center gap-2 px-4 py-3 text-[10px] sm:text-xs font-bold uppercase tracking-widest border-b-2 transition-all whitespace-nowrap ${
+                  className={`flex items-center justify-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all border ${
                     activeTab === tab.id
-                      ? "border-sky-500 text-sky-600"
-                      : "border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300"
+                      ? "bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-200 dark:border-sky-500/30 shadow-sm"
+                      : "bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
                   }`}
                 >
-                  <tab.icon className="w-3.5 h-3.5" />
-                  {tab.label}
+                  <tab.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                  <span>{tab.label}</span>
                 </button>
               ))}
             </div>

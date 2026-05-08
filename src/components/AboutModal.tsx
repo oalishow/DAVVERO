@@ -267,7 +267,7 @@ export default function AboutModal({ onClose }: AboutModalProps) {
                     iOS
                   </p>
                   <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">
-                    João Valêncio
+                    João Roberto Valencio, Pe. Dr. Anderson Santana Cunha
                   </p>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
@@ -275,15 +275,15 @@ export default function AboutModal({ onClose }: AboutModalProps) {
                     Android
                   </p>
                   <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">
-                    Guilherme Tadeu
+                    Jonatas Mário Cunha, Carlos Eduardo Dias da Silva, Maicon Luiis, Luan Balbino Lopes, Maicon Luis Silva Marques
                   </p>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800">
                   <p className="text-[10px] font-bold text-slate-500 uppercase mb-1 tracking-wider">
                     Windows
                   </p>
-                  <p className="text-sm text-slate-400 dark:text-slate-500 italic">
-                    Em breve
+                  <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">
+                    Juliana Mendonça, Alison Fernando Rodrigues dos Santos
                   </p>
                 </div>
               </div>

@@ -8,6 +8,16 @@ interface ChangelogModalProps {
 export default function ChangelogModal({ onClose }: ChangelogModalProps) {
   const versions = [
     {
+      version: 'v5.9.0',
+      title: 'Melhorias Visuais e de Usabilidade',
+      changes: [
+        'Aprimoramento na interface de instalação.',
+        'Otimizada a usabilidade das abas de navegação no painel web, para acesso mobile mais fluido e intuitivo.',
+        'Ajustes visuais no contador de notificações.'
+      ],
+      current: true,
+    },
+    {
       version: 'v5.8.0',
       title: 'Níveis de Acesso e Gestão de Admins',
       changes: [
@@ -15,7 +25,7 @@ export default function ChangelogModal({ onClose }: ChangelogModalProps) {
         'Níveis de acesso diferenciados: Super Admin, Administrador Padrão e Portaria/Check-in.',
         'Logs avançados de acesso e auditoria.',
       ],
-      current: true,
+      current: false,
     },
     {
       version: 'v5.7.0',
