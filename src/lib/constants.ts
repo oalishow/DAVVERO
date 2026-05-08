@@ -32,6 +32,8 @@ export const SETTINGS_DOC_PATH = (appId: string) =>
 export const ASSETS_DOC_PATH = (appId: string, assetType: string) =>
   `artifacts/${appId}/public/data/students/_asset_${assetType}`;
 export const CHANGELOG = [
+  "Versão 5.9.0 - Melhorias Visuais e de Usabilidade",
+  "Aprimoramento na interface de instalação e modalidades de exclusão/segurança. Otimizadas as posições dos Modais em todas as telas.",
   "Versão 5.8.0 - Níveis de Acesso para Administradores",
   "Painel de controle para o Super Admin gerenciar múltiplas contas (Portaria/Check-in, Admin), além de logs analíticos.",
   "Versão 5.7.0 - Termos de Uso e LGPD",
