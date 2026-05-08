@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { ShieldCheck, Download, Sun, Moon, Bell, Trash2, Lock } from 'lucide-react';
+import { ShieldCheck, Download, Sun, Moon, Bell, Trash2, Lock, Share2, Copy } from 'lucide-react';
 import { APP_VERSION } from '../lib/constants';
 import { useSettings } from '../context/SettingsContext';
 import { useDialog } from '../context/DialogContext';
@@ -12,7 +12,7 @@ const STUDENT_TRACK_KEY = 'davveroId_student_track_ra';
 
 export default function Header({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
   const { settings } = useSettings();
-  const { showConfirm } = useDialog();
+  const { showConfirm, showAlert } = useDialog();
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isDark, setIsDark] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
@@ -177,8 +177,8 @@ export default function Header({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
 
   return (
     <div className="text-center relative print:hidden no-print">
-      {onOpenAdmin && (
-        <div className="absolute top-0 left-0 flex items-center gap-2 z-50 no-print print:hidden">
+      <div className="absolute top-0 left-0 flex items-center gap-2 z-50 no-print print:hidden">
+        {onOpenAdmin && (
           <button
             onClick={onOpenAdmin}
             className="relative p-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 transition-colors hover:scale-110 active:scale-95"
@@ -186,8 +186,15 @@ export default function Header({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
           >
             <Lock className="w-4 h-4" />
           </button>
-        </div>
-      )}
+        )}
+        <button 
+          onClick={toggleTheme}
+          className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 transition-colors no-print hover:scale-110 active:scale-95"
+          title={isDark ? "Mudar para Claro" : "Mudar para Escuro"}
+        >
+          {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+        </button>
+      </div>
       <div className="absolute top-0 right-0 flex items-center gap-2 z-50 no-print print:hidden">
         {recipientId && (
           <div className="relative" ref={dropdownRef}>
@@ -306,11 +313,27 @@ export default function Header({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
           </div>
         )}
         <button 
-          onClick={toggleTheme}
+          onClick={async () => {
+            const shareUrl = window.location.origin + '/?install=true';
+            if (navigator.share) {
+              try {
+                await navigator.share({
+                  title: instName || 'Aplicativo',
+                  text: 'Acesse o link para instalar o nosso aplicativo.',
+                  url: shareUrl
+                });
+              } catch (e) {
+                console.error('Erro ao compartilhar', e);
+              }
+            } else {
+              navigator.clipboard.writeText(shareUrl);
+              showAlert("Link de instalação copiado para a área de transferência!", { type: "success" });
+            }
+          }}
           className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 transition-colors no-print hover:scale-110 active:scale-95"
-          title={isDark ? "Mudar para Claro" : "Mudar para Escuro"}
+          title="Compartilhar Aplicativo"
         >
-          {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+          <Share2 className="w-4 h-4" />
         </button>
       </div>
       <div className="flex justify-center mb-6 no-print min-h-[140px] items-center relative">

@@ -47,24 +47,34 @@ export default function EventAttendeesModal({
           a.eventId === event.id && a.status !== ("cancelado" as any),
       );
 
-      const membersSnap = await getDocs(
-        query(collection(db, `artifacts/${appId}/public/data/students`)),
-      );
-      const membersDict: Record<string, Member> = {};
-      const allM: Member[] = [];
-      membersSnap.docs.forEach((d) => {
-        if (!d.id.startsWith("_")) {
-          const mbr = { id: d.id, ...d.data() } as Member;
-          membersDict[d.id] = mbr;
-          allM.push(mbr);
-        }
-      });
+      let currentAllM = allMembers;
+      let currentMembersDict: Record<string, Member> = {};
 
-      setAllMembers(allM);
+      if (currentAllM.length === 0) {
+        const membersSnap = await getDocs(
+          query(collection(db, `artifacts/${appId}/public/data/students`)),
+        );
+        const membersDict: Record<string, Member> = {};
+        const allM: Member[] = [];
+        membersSnap.docs.forEach((d) => {
+          if (!d.id.startsWith("_")) {
+            const mbr = { id: d.id, ...d.data() } as Member;
+            membersDict[d.id] = mbr;
+            allM.push(mbr);
+          }
+        });
+        currentAllM = allM;
+        currentMembersDict = membersDict;
+        setAllMembers(allM);
+      } else {
+        currentAllM.forEach((mbr) => {
+          currentMembersDict[mbr.id!] = mbr;
+        });
+      }
 
       const enriched = eventAttendances.map((a: Attendance) => ({
         ...a,
-        member: membersDict[a.studentId],
+        member: currentMembersDict[a.studentId],
       }));
 
       setAttendees(enriched);

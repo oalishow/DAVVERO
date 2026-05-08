@@ -533,13 +533,14 @@ export default function StudentPortal({
         );
 
         // Try searching in CPF and RA fields concurrently for faster lookup
+        const searchValues = Array.from(new Set([cleanInput, onlyNumbers, formattedCPF])).filter(Boolean);
         const qCpf = query(
           collection(db, `artifacts/${appId}/public/data/students`),
-          where("cpf", "in", [onlyNumbers, formattedCPF]),
+          where("cpf", "in", searchValues),
         );
         const qRa = query(
           collection(db, `artifacts/${appId}/public/data/students`),
-          where("ra", "in", [onlyNumbers, formattedCPF]),
+          where("ra", "in", searchValues),
         );
 
         const [snapCpf, snapRa] = await Promise.all([
@@ -605,20 +606,42 @@ export default function StudentPortal({
     setError(null);
     setTrackStatusResult(null);
     try {
-      const q = query(
-        collection(db, `artifacts/${appId}/public/data/students`),
-        where("ra", "==", trackRa.trim()),
-      );
-      const snapshot = await getDocs(q);
+      const searchValue = trackRa.trim();
+      const onlyNumbers = searchValue.replace(/\D/g, "");
+      const formattedCPF = onlyNumbers.length === 11 
+        ? onlyNumbers.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")
+        : searchValue;
 
-      if (snapshot.empty) {
+      const qRa = query(
+        collection(db, `artifacts/${appId}/public/data/students`),
+        where("ra", "==", searchValue),
+      );
+      
+      const qCpf = query(
+        collection(db, `artifacts/${appId}/public/data/students`),
+        where("cpf", "in", Array.from(new Set([searchValue, onlyNumbers, formattedCPF])).filter(Boolean))
+      );
+
+      const [snapRa, snapCpf] = await Promise.all([getDocs(qRa), getDocs(qCpf)]);
+      
+      const docs = snapRa.docs.map((d) => d.data());
+      if (!snapCpf.empty) {
+        const existingRas = new Set(docs.map(d => d.ra));
+        snapCpf.docs.forEach(d => {
+           const data = d.data();
+           if (!existingRas.has(data.ra)) {
+              docs.push(data);
+           }
+        });
+      }
+
+      if (docs.length === 0) {
         setTrackStatusResult({
           status: "NOT_FOUND",
           msg: "Nenhum pedido encontrado para este RA/CPF.",
         });
       } else {
         // Find if any is not deleted, or take the last deleted if all are
-        const docs = snapshot.docs.map((d) => d.data());
         const activeDoc = docs.find((d) => !d.deletedAt) || docs[0];
 
         let statusText = "";
@@ -1988,9 +2011,11 @@ export default function StudentPortal({
                 setTrackMode(true);
                 setLinkMode(true);
               }}
-              className="w-full btn-modern py-4 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold tracking-wide shadow-sm flex items-center justify-center gap-3 active:scale-95 transition-all"
+              className="w-full group relative overflow-hidden py-4 rounded-xl bg-gradient-to-br from-slate-100 to-slate-50 dark:from-slate-800 dark:to-slate-900/80 border border-slate-200/60 dark:border-slate-700/50 text-slate-700 dark:text-slate-300 font-bold tracking-wide shadow-sm flex items-center justify-center gap-3 active:scale-95 transition-all duration-300 hover:shadow-md hover:border-indigo-300/50 dark:hover:border-indigo-500/30"
             >
-              <Clock className="w-5 h-5 text-slate-400" /> Acompanhar Pedido
+              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/50 dark:via-white/10 to-transparent -translate-x-[200%] group-hover:translate-x-[200%] transition-transform duration-1000 ease-in-out" />
+              <Clock className="w-5 h-5 text-indigo-500/70 group-hover:text-indigo-500 group-hover:scale-110 group-hover:-rotate-12 transition-all duration-300" />
+              <span className="relative z-10 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">Acompanhar Pedido</span>
             </button>
             <button
               onClick={() => setModalHelpOpen(true)}

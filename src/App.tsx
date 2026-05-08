@@ -1,4 +1,6 @@
 import { useState, useEffect, lazy, Suspense } from "react";
+import { Wrench } from "lucide-react";
+import { useDialog } from "./context/DialogContext";
 import Header from "./components/Header";
 import Footer from "./components/Footer";
 import {
@@ -28,8 +30,6 @@ const Admin = lazy(() => import("./components/Admin"));
 const StudentPortal = lazy(() => import("./components/StudentPortal"));
 const EventsPage = lazy(() => import("./components/EventsPage"));
 const MuralPage = lazy(() => import("./components/MuralPage"));
-import { Wrench } from "lucide-react";
-import { useDialog } from "./context/DialogContext";
 
 export default function App() {
   const { settings } = useSettings();

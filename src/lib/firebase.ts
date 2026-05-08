@@ -505,16 +505,17 @@ export const getMemberByCPF = async (cpf: string): Promise<Member | null> => {
     const { getDocs, query, collection, where } =
       await import("firebase/firestore");
 
+    const searchValues = Array.from(new Set([cpf, cleanCPF, formattedCPF])).filter(Boolean);
     // First try standard CPF and RA concurrently
     const qCpf = query(
       collection(db, `artifacts/${appId}/public/data/students`),
-      where("cpf", "in", [cleanCPF, formattedCPF]),
+      where("cpf", "in", searchValues),
     );
 
     // Fallback: Check if they stored CPF in the RA field
     const qRa = query(
       collection(db, `artifacts/${appId}/public/data/students`),
-      where("ra", "in", [cleanCPF, formattedCPF]),
+      where("ra", "in", searchValues),
     );
 
     const [snapCpf, snapRa] = await Promise.all([getDocs(qCpf), getDocs(qRa)]);
