@@ -914,6 +914,7 @@ export default function StudentPortal({
               inputMode="numeric"
               maxLength={4}
               value={pinInput}
+              autoComplete="new-password"
               onChange={(e) => setPinInput(e.target.value.replace(/\D/g, ""))}
               className="text-center text-4xl tracking-[1em] font-black w-full py-4 rounded-xl bg-slate-100 dark:bg-slate-800 border-none outline-none text-slate-900 dark:text-white placeholder-slate-300 ml-[0.5em]"
               placeholder="••••"
@@ -1864,52 +1865,30 @@ export default function StudentPortal({
               </motion.div>
             )}
 
-            {showDeletionConfirmModal && (
-              <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="bg-white dark:bg-slate-900 rounded-2xl w-full max-w-sm overflow-hidden flex flex-col shadow-2xl relative"
-                >
-                   <div className="absolute top-0 w-full h-1 bg-gradient-to-r from-red-500 to-rose-600"></div>
-                   <div className="p-6">
-                      <div className="w-12 h-12 bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-400 rounded-full flex justify-center items-center mb-4 border border-red-200 dark:border-red-800">
-                         <Trash2 className="w-6 h-6" />
-                      </div>
-                      <h3 className="text-xl font-black text-slate-800 dark:text-white mb-2 tracking-tight">Exclusão de Conta</h3>
-                      <p className="text-sm text-slate-600 dark:text-slate-400 mb-6">
-                        Você tem certeza que deseja solicitar a exclusão da sua conta? Isto enviará um pedido ao administrador e seus dados serão movidos para a lixeira após aprovação, em conformidade com a LGPD.
-                      </p>
-                      
-                      <div className="flex gap-2">
-                         <button
-                           onClick={() => setShowDeletionConfirmModal(false)}
-                           className="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition"
-                         >
-                           Cancelar
-                         </button>
-                         <button
-                           onClick={async () => {
-                              try {
-                                if (!member) return;
-                                // Request deletion
-                                await updateDoc(doc(db, `artifacts/${appId}/public/data/students`, member.id), { deletionRequested: true, deletionRequestedAt: new Date().toISOString() });
-                                setShowDeletionConfirmModal(false);
-                                await showAlert("Solicitação Enviada", "Sua solicitação de exclusão foi enviada com sucesso ao administrador.");
-                              } catch(e) {
-                                console.error(e);
-                                await showAlert("Erro", "Erro ao solicitar a exclusão de dados.");
-                              }
-                           }}
-                           className="flex-1 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl transition"
-                         >
-                           Confirmar
-                         </button>
-                      </div>
-                   </div>
-                </motion.div>
+            <Modal
+              isOpen={showDeletionConfirmModal}
+              onClose={() => setShowDeletionConfirmModal(false)}
+              title="Exclusão de Conta"
+              confirmLabel="Confirmar"
+              confirmVariant="danger"
+              onConfirm={async () => {
+                 try {
+                   if (!member) return;
+                   // Request deletion
+                   await updateDoc(doc(db, `artifacts/${appId}/public/data/students`, member.id), { deletionRequested: true, deletionRequestedAt: new Date().toISOString() });
+                   setShowDeletionConfirmModal(false);
+                   await showAlert("Solicitação Enviada", "Sua solicitação de exclusão foi enviada com sucesso ao administrador.");
+                 } catch(e) {
+                   console.error(e);
+                   await showAlert("Erro", "Erro ao solicitar a exclusão de dados.");
+                 }
+              }}
+            >
+              <div className="flex flex-col items-center justify-center mb-6 text-red-500">
+                 <Trash2 className="w-12 h-12 p-3 bg-red-100 dark:bg-red-900/50 rounded-full border border-red-200 dark:border-red-800" />
               </div>
-            )}
+              Você tem certeza que deseja solicitar a exclusão da sua conta? Isto enviará um pedido ao administrador e seus dados serão movidos para a lixeira após aprovação, em conformidade com a LGPD.
+            </Modal>
 
             {activeTab === "seminary_events" && (
               <motion.div
