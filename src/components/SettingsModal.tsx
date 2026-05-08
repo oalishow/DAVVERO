@@ -1510,35 +1510,6 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                       <Database className="w-4 h-4" /> Abrir Painel de Backups
                     </button>
                   </div>
-
-                  {/* Segurança */}
-                  <div className="bg-rose-50 dark:bg-rose-900/10 p-5 rounded-2xl border border-rose-200 dark:border-rose-500/20">
-                    <h3 className="text-sm font-bold flex items-center gap-2 mb-4 text-rose-700 dark:text-rose-300 uppercase tracking-widest text-[10px]">
-                      <ShieldAlert className="w-4 h-4" /> Senha de Administrador
-                    </h3>
-                    <div className="space-y-3">
-                      <input
-                        type="password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        placeholder="Senha Atual"
-                        className="input-modern w-full rounded-xl py-2 px-3 text-sm"
-                      />
-                      <input
-                        type="password"
-                        value={newPassword}
-                        onChange={(e) => setNewPassword(e.target.value)}
-                        placeholder="Nova Senha"
-                        className="input-modern w-full rounded-xl py-2 px-3 text-sm"
-                      />
-                      <button
-                        onClick={handleSavePassword}
-                        className="btn-modern w-full py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-sm font-medium"
-                      >
-                        Trocar Senha Local
-                      </button>
-                    </div>
-                  </div>
                 </div>
               )}
 

@@ -77,51 +77,63 @@ export default function InstallPWA() {
 
   if (isLandingMode && !window.matchMedia('(display-mode: standalone)').matches && !isInstalled) {
     return createPortal(
-      <div className="fixed inset-0 z-[200] bg-slate-900 flex items-center justify-center p-4 sm:p-6 animated-fade-in overflow-y-auto">
-        <div className="w-full max-w-md bg-white dark:bg-slate-800 rounded-[2.5rem] shadow-2xl p-8 text-center border border-sky-100 dark:border-sky-500/20 my-auto">
-          <div className="w-20 h-20 bg-sky-500 rounded-3xl mx-auto mb-6 shadow-xl shadow-sky-500/30 flex items-center justify-center rotate-3">
-             <Download className="w-10 h-10 text-white" />
-          </div>
-          <h2 className="text-2xl font-black text-slate-800 dark:text-white mb-2">Instalar Aplicativo</h2>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 uppercase tracking-widest font-bold">DAVVERO System v{APP_VERSION}</p>
+      <div className="fixed inset-0 z-[200] bg-slate-900/60 backdrop-blur-md flex items-center justify-center p-4 sm:p-6 animated-fade-in overflow-y-auto">
+        <div className="w-full max-w-md bg-white/90 dark:bg-slate-800/90 backdrop-blur-xl rounded-[2.5rem] shadow-[0_40px_80px_rgba(0,0,0,0.2)] p-8 text-center border border-white/50 dark:border-slate-500/30 my-auto relative overflow-hidden">
+          <div className="absolute -top-24 -right-24 w-48 h-48 bg-sky-400/20 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-24 -left-24 w-48 h-48 bg-blue-400/20 rounded-full blur-3xl pointer-events-none" />
+
+          {settings.instLogo ? (
+            <div className="relative w-32 h-32 mx-auto mb-8 flex items-center justify-center animate-in zoom-in duration-500 hover:scale-105 transition-transform">
+               <img src={settings.instLogo} alt="Logo" className="w-full h-full object-contain drop-shadow-2xl" />
+            </div>
+          ) : (
+            <div className="relative w-24 h-24 bg-gradient-to-br from-sky-400 to-blue-600 rounded-[2rem] mx-auto mb-8 shadow-2xl shadow-sky-500/40 flex items-center justify-center rotate-3 transform hover:rotate-6 transition-transform">
+               <Download className="w-12 h-12 text-white drop-shadow-md" />
+            </div>
+          )}
+          <h2 className="relative text-3xl font-black text-slate-800 dark:text-white mb-3 tracking-tight">Instalar {instNameShort}</h2>
+          <p className="relative text-[10px] text-sky-700 dark:text-sky-300 mb-8 uppercase tracking-[0.2em] font-black bg-sky-100/50 dark:bg-sky-500/10 py-1.5 px-3 rounded-full inline-block border border-sky-200/50 dark:border-sky-500/20 shadow-sm">
+            DAVVERO System v{APP_VERSION}
+          </p>
           
-          <div className="space-y-4 mb-8">
+          <div className="relative space-y-4 mb-8">
             {showInstallBtn ? (
               <button 
                 onClick={handleInstallClick}
-                className="w-full py-4 bg-sky-600 text-white rounded-2xl text-base font-bold shadow-xl shadow-sky-600/30 hover:bg-sky-500 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3"
+                className="w-full py-4 px-6 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white rounded-2xl text-base font-bold shadow-xl shadow-sky-600/30 transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-3 relative overflow-hidden group"
               >
-                <Download className="w-5 h-5" />
-                INSTALAR AGORA
+                <div className="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform duration-300 ease-out" />
+                <Download className="w-5 h-5 relative z-10" />
+                <span className="relative z-10">INSTALAR AGORA</span>
               </button>
             ) : platform === 'ios' ? (
-              <div className="bg-sky-50 dark:bg-sky-900/40 p-5 rounded-2xl border border-sky-200 dark:border-sky-500/30 text-left">
-                <p className="text-sm font-bold text-sky-800 dark:text-sky-300 mb-2 flex items-center gap-2">
-                  <span className="bg-white dark:bg-sky-600 w-6 h-6 rounded-full flex items-center justify-center text-[10px]">1</span> 
-                  Instalar no iPhone (Safari)
+              <div className="bg-sky-50/80 dark:bg-sky-900/40 p-6 rounded-3xl border border-sky-100 dark:border-sky-500/30 text-left shadow-sm backdrop-blur-sm">
+                <p className="text-sm font-bold text-sky-900 dark:text-sky-300 mb-3 flex items-center gap-3">
+                  <span className="bg-sky-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-[10px] shadow-md shadow-sky-600/30">1</span> 
+                  Safari (iPhone)
                 </p>
-                <p className="text-xs text-sky-700 dark:text-sky-400 leading-relaxed font-medium">
-                  Toque no ícone de <strong>Compartilhar</strong> (quadrado com seta pra cima) e escolha <strong>"Adicionar à Tela de Início"</strong>.
+                <p className="text-sm text-sky-800/80 dark:text-sky-200/80 leading-relaxed font-medium">
+                  Toque no ícone de <strong>Compartilhar</strong> na barra inferior e escolha <strong>"Adicionar à Tela de Início"</strong>.
                 </p>
               </div>
             ) : platform === 'samsung' ? (
-              <div className="bg-sky-50 dark:bg-sky-900/40 p-5 rounded-2xl border border-sky-200 dark:border-sky-500/30 text-left">
-                <p className="text-sm font-bold text-sky-800 dark:text-sky-300 mb-2 flex items-center gap-2">
-                  <span className="bg-white dark:bg-sky-600 w-6 h-6 rounded-full flex items-center justify-center text-[10px]">1</span> 
+              <div className="bg-sky-50/80 dark:bg-sky-900/40 p-6 rounded-3xl border border-sky-100 dark:border-sky-500/30 text-left shadow-sm backdrop-blur-sm">
+                <p className="text-sm font-bold text-sky-900 dark:text-sky-300 mb-3 flex items-center gap-3">
+                  <span className="bg-sky-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-[10px] shadow-md shadow-sky-600/30">1</span> 
                   Samsung Internet
                 </p>
-                <p className="text-xs text-sky-700 dark:text-sky-400 leading-relaxed font-medium">
-                  Toque no ícone <strong>+</strong> na barra de endereços ou no menu <strong>≡</strong> e escolha <strong>Adicionar página a... → Tela inicial</strong>.
+                <p className="text-sm text-sky-800/80 dark:text-sky-200/80 leading-relaxed font-medium">
+                  Toque no ícone <strong>+</strong> na barra de endereços ou abra o menu e escolha <strong>"Adicionar página a: Tela inicial"</strong>.
                 </p>
               </div>
             ) : (
-              <div className="bg-slate-50 dark:bg-slate-900/60 p-5 rounded-2xl border border-slate-200 dark:border-slate-700 text-left">
-                <p className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-2 flex items-center gap-2">
-                  <span className="bg-white dark:bg-slate-700 w-6 h-6 rounded-full flex items-center justify-center text-[10px]">!</span> 
+              <div className="bg-slate-50/80 dark:bg-slate-800/60 p-6 rounded-3xl border border-slate-200 dark:border-slate-700/50 text-left shadow-sm backdrop-blur-sm">
+                <p className="text-sm font-bold text-slate-800 dark:text-slate-200 mb-3 flex items-center gap-3">
+                  <span className="bg-slate-800 dark:bg-slate-600 text-white w-6 h-6 rounded-full flex items-center justify-center text-[10px] shadow-md shadow-slate-800/30">!</span> 
                   Instalação Manual
                 </p>
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
-                  Abra o menu do seu navegador (⋮ ou ≡) e selecione <strong>"Instalar aplicativo"</strong> ou <strong>"Adicionar à tela de início"</strong>.
+                <p className="text-sm text-slate-600 dark:text-slate-400 leading-relaxed font-medium">
+                  Abra o menu do seu navegador (⋮) e selecione <strong>"Instalar aplicativo"</strong> ou <strong>"Adicionar à tela de início"</strong>.
                 </p>
               </div>
             )}
@@ -133,14 +145,16 @@ export default function InstallPWA() {
                 window.history.replaceState({}, '', url);
                 window.location.reload();
               }}
-              className="w-full py-3 text-slate-400 dark:text-slate-500 text-xs font-bold uppercase tracking-widest hover:text-sky-500 transition-colors"
+              className="w-full py-4 text-slate-400 dark:text-slate-500 text-xs font-bold uppercase tracking-[0.1em] hover:text-slate-600 dark:hover:text-slate-300 transition-colors mt-2 hover:bg-slate-50 dark:hover:bg-slate-800/50 rounded-2xl"
             >
-              Continuar para o site sem instalar
+              Continuar sem instalar
             </button>
           </div>
           
-          <div className="pt-6 border-t border-slate-100 dark:border-slate-700">
-             <p className="text-[10px] text-slate-400 font-medium">A instalação melhora a performance e permite o uso offline da sua ID Digital.</p>
+          <div className="relative pt-6 border-t border-slate-200/50 dark:border-slate-700/50">
+             <p className="text-[11px] leading-relaxed text-slate-400 dark:text-slate-500 font-medium max-w-[280px] mx-auto">
+                Ao instalar, o aplicativo ganha <span className="font-bold text-slate-500 dark:text-slate-400">melhor performance</span> e permite o <span className="font-bold text-slate-500 dark:text-slate-400">uso offline</span> da sua ID.
+             </p>
           </div>
         </div>
       </div>,
