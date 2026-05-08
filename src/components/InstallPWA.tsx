@@ -91,7 +91,7 @@ export default function InstallPWA() {
                <Download className="w-12 h-12 text-white drop-shadow-md" />
             </div>
           )}
-          <h2 className="relative text-3xl font-black text-slate-800 dark:text-white mb-3 tracking-tight">Instalar {instNameShort}</h2>
+          <h2 className="relative text-3xl font-black text-slate-800 dark:text-white mb-3 tracking-tight">Instalar DAVVERO System</h2>
           <p className="relative text-[10px] text-sky-700 dark:text-sky-300 mb-8 uppercase tracking-[0.2em] font-black bg-sky-100/50 dark:bg-sky-500/10 py-1.5 px-3 rounded-full inline-block border border-sky-200/50 dark:border-sky-500/20 shadow-sm">
             DAVVERO System v{APP_VERSION}
           </p>
