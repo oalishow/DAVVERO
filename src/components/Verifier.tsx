@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Camera, XCircle, Search, ScanLine } from "lucide-react";
 import { collection, query, getDocs } from "firebase/firestore";
 import {
@@ -68,6 +68,8 @@ export default function Verifier({
   const [initialVerifyChecked, setInitialVerifyChecked] = useState(false);
   const [lastScannedDebug, setLastScannedDebug] = useState("");
   const [isAdminLogged, setIsAdminLogged] = useState(false);
+  const [scanSuccessAnim, setScanSuccessAnim] = useState(false);
+  const scanHandledRef = useRef(false);
 
   useEffect(() => {
     const checkAdmin = () => {
@@ -235,6 +237,8 @@ export default function Verifier({
   }, [cacheLoaded, initialVerifyChecked, membersCache]);
 
   const startScanner = async () => {
+    scanHandledRef.current = false;
+    setScanSuccessAnim(false);
     setIsScanning(true);
     setValidationResult(null);
   };
@@ -322,16 +326,24 @@ export default function Verifier({
                     memberId = decodedText;
                   }
 
-                  // Immediately stop UI feedback and trigger verification
-                  setIsScanning(false);
-                  runVerification(memberId, false, decodedText);
+                  if (scanHandledRef.current) return;
+                  scanHandledRef.current = true;
+                  
+                  // Trigger animation
+                  setScanSuccessAnim(true);
+                  // Wait for animation before verifying
+                  setTimeout(() => {
+                    setIsScanning(false);
+                    setScanSuccessAnim(false);
+                    runVerification(memberId, false, decodedText);
 
-                  // Stop camera as cleanup
-                  ht5Qrcode
-                    ?.stop()
-                    .catch((e: any) =>
-                      console.error("Scanner: Error stopping camera:", e),
-                    );
+                    // Stop camera as cleanup
+                    ht5Qrcode
+                      ?.stop()
+                      .catch((e: any) =>
+                        console.error("Scanner: Error stopping camera:", e),
+                      );
+                  }, 1200);
                 },
                 (errorMessage: string) => {
                   // Usually we do silent failure for scanning, but for debugging we can log
@@ -361,9 +373,17 @@ export default function Verifier({
                 (decodedText: string) => {
                   let memberId = decodedText;
                   if (decodedText.includes("verify=")) memberId = decodedText.split("verify=")[1].split("&")[0].split("#")[0];
-                  setIsScanning(false);
-                  runVerification(memberId, false, decodedText);
-                  ht5Qrcode?.stop().catch();
+                  
+                  if (scanHandledRef.current) return;
+                  scanHandledRef.current = true;
+                  
+                  setScanSuccessAnim(true);
+                  setTimeout(() => {
+                    setIsScanning(false);
+                    setScanSuccessAnim(false);
+                    runVerification(memberId, false, decodedText);
+                    ht5Qrcode?.stop().catch();
+                  }, 1200);
                 },
                 () => {}
               )
@@ -845,7 +865,10 @@ export default function Verifier({
               </button>
             ) : (
                <button
-                onClick={() => setIsScanning(false)}
+                onClick={() => {
+                  scanHandledRef.current = true;
+                  setIsScanning(false);
+                }}
                 className="btn-modern w-full md:w-3/4 mx-auto flex items-center justify-center gap-2 py-3 px-4 rounded-xl text-rose-500 border border-rose-300 hover:bg-rose-500 hover:text-white transition-colors dark:bg-rose-500/10 dark:border-rose-500/30"
               >
                 <XCircle className="w-5 h-5" />
@@ -858,11 +881,34 @@ export default function Verifier({
 
       {verifyMode !== "VISITOR" && (
         <>
-          <div
-            id="reader"
-            className={`w-full max-w-sm rounded-xl overflow-hidden shadow-2xl border-2 border-sky-400 dark:border-sky-500/30 aspect-square bg-black ${!isScanning && "hidden"}`}
-          ></div>
-          {isScanning && lastScannedDebug && (
+          <div className={`relative w-full max-w-sm rounded-xl overflow-hidden shadow-2xl border-2 border-sky-400 dark:border-sky-500/30 aspect-square bg-black ${!isScanning && !scanSuccessAnim && "hidden"}`}>
+            <div id="reader" className="w-full h-full"></div>
+            
+            {/* Custom Scanning Overlay */}
+            {isScanning && !scanSuccessAnim && (
+                <div className="absolute inset-0 z-10 pointer-events-none">
+                  <div className="w-full h-full relative">
+                    <div className="absolute left-0 right-0 h-0.5 bg-green-500 shadow-[0_0_8px_2px_rgba(34,197,94,0.6)] animate-scan-laser" />
+                    <div className="absolute top-4 left-4 w-12 h-12 border-t-4 border-l-4 border-sky-400/80 rounded-tl-lg" />
+                    <div className="absolute top-4 right-4 w-12 h-12 border-t-4 border-r-4 border-sky-400/80 rounded-tr-lg" />
+                    <div className="absolute bottom-4 left-4 w-12 h-12 border-b-4 border-l-4 border-sky-400/80 rounded-bl-lg" />
+                    <div className="absolute bottom-4 right-4 w-12 h-12 border-b-4 border-r-4 border-sky-400/80 rounded-br-lg" />
+                  </div>
+                </div>
+            )}
+
+            {/* Success Checkmark Overlay */}
+            {scanSuccessAnim && (
+               <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/60 backdrop-blur-sm transition-all duration-300">
+                  <div className="bg-green-500 rounded-full p-4 transform animate-qr-success-pop shadow-[0_0_20px_5px_rgba(34,197,94,0.4)]">
+                    <svg className="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7" className="animate-stroke [stroke-dasharray:100] [stroke-dashoffset:100]" />
+                    </svg>
+                  </div>
+               </div>
+            )}
+          </div>
+          {isScanning && lastScannedDebug && !scanSuccessAnim && (
             <div className="mt-2 text-[10px] text-yellow-600 bg-yellow-50 p-2 rounded max-w-xs break-all">
               Debug (Last Read): {lastScannedDebug}
             </div>
