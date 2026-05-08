@@ -3,6 +3,8 @@ import { NavigationRoute, registerRoute } from 'workbox-routing';
 
 declare const self: any;
 
+self.skipWaiting();
+
 precacheAndRoute(self.__WB_MANIFEST);
 
 // Set up App Shell / Navigation Fallback
