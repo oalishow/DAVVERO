@@ -26,12 +26,14 @@ export const INSTITUTION_DESCRIPTION_KEY = "davveroId_institution_description";
 export const CARD_DESCRIPTION_KEY = "davveroId_card_description";
 export const CUSTOM_ROLES_KEY = "davveroId_custom_roles";
 export const CUSTOM_COURSES_KEY = "davveroId_custom_courses";
-export const APP_VERSION = "5.9";
+export const APP_VERSION = "6.0";
 export const SETTINGS_DOC_PATH = (appId: string) =>
   `artifacts/${appId}/public/data/students/_settings_global`;
 export const ASSETS_DOC_PATH = (appId: string, assetType: string) =>
   `artifacts/${appId}/public/data/students/_asset_${assetType}`;
 export const CHANGELOG = [
+  "Versão 6.0.0 - Vínculos e Novos Links na Liturgia",
+  "Expansão dos vínculos institucionais e novos atalhos litúrgicos (Orações, Notícias, etc)!",
   "Versão 5.9.0 - Melhorias Visuais e de Usabilidade",
   "Aprimoramento na interface de instalação e modalidades de exclusão/segurança. Otimizadas as posições dos Modais em todas as telas.",
   "Versão 5.8.0 - Níveis de Acesso para Administradores",

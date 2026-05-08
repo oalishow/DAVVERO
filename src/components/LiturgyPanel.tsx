@@ -6,9 +6,13 @@ export default function LiturgyPanel() {
   const [youtubeLink, setYoutubeLink] = useState("");
 
   const hours = [
+    { id: "liturgia-horas-completa", name: "Liturgia das Horas", icon: BookHeart, time: "Ofício Divino", url: "https://liturgiadashoras.online/" },
     { id: "liturgia-diaria", name: "Liturgia Diária (CNBB)", icon: BookOpen, time: "Missa do Dia", url: "https://www.cnbb.org.br/liturgia-diaria/" },
+    { id: "cnbb-sul1", name: "CNBB Sul 1", icon: BookOpen, time: "Igreja no Estado de SP", url: "https://cnbbsul1.org.br/" },
+    { id: "vaticano", name: "Vaticano", icon: BookOpen, time: "Igreja Católica", url: "https://www.vatican.va/content/vatican/pt.html" },
+    { id: "noticias-igreja", name: "Notícias da Igreja", icon: BookOpen, time: "Vatican News", url: "https://www.vaticannews.va/pt.html" },
+    { id: "oracoes", name: "Orações", icon: BookHeart, time: "Pocket Terço", url: "https://pocketterco.com.br/oracoes" },
     { id: "santo-do-dia", name: "Santo do Dia", icon: CalendarHeart, time: "Hagiografia", url: "https://santo.cancaonova.com/" },
-    { id: "liturgia-horas-completa", name: "Liturgia das Horas", icon: BookHeart, time: "Ofício Divino (Dinâmico)", url: "https://liturgiadashoras.online/" },
     { id: "biblia-jerusalem", name: "Bíblia de Jerusalém", icon: BookOpen, time: "Escrituras Sagradas", url: "https://liturgiadashoras.online/biblia/biblia-jerusalem/" },
     { id: "catecismo-igreja", name: "Catecismo da Igreja", icon: BookHeart, time: "Doutrina Católica", url: "https://liturgiadashoras.online/catechismus/" },
     { id: "direito-canonico", name: "Direito Canônico", icon: BookOpen, time: "Iuris Canonici", url: "https://liturgiadashoras.online/iuris-canonici/" },

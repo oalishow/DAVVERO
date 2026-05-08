@@ -8,6 +8,17 @@ interface ChangelogModalProps {
 export default function ChangelogModal({ onClose }: ChangelogModalProps) {
   const versions = [
     {
+      version: 'v6.0.0',
+      title: 'Links Adicionais de Liturgia',
+      changes: [
+        'Adicionada a seção "Orações" (Pocket Terço).',
+        'Incluso atalho para o site oficial do Vaticano.',
+        'Incluso atalho para Vatican News (Notícias da Igreja).',
+        'Vínculos de sistema expandidos (Diretor, Reitor, etc).',
+      ],
+      current: true,
+    },
+    {
       version: 'v5.9.0',
       title: 'Melhorias Visuais e de Usabilidade',
       changes: [
@@ -15,7 +26,7 @@ export default function ChangelogModal({ onClose }: ChangelogModalProps) {
         'Otimizada a usabilidade das abas de navegação no painel web, para acesso mobile mais fluido e intuitivo.',
         'Ajustes visuais no contador de notificações.'
       ],
-      current: true,
+      current: false,
     },
     {
       version: 'v5.8.0',
