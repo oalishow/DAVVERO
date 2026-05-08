@@ -54,7 +54,7 @@ import EventsRecycleBin from "./EventsRecycleBin";
 import NotificationsManager from "./NotificationsManager";
 import AdminAppointments from "./AdminAppointments";
 import DashboardPanel from "./DashboardPanel";
-import { Calendar, BriefcaseMedical, LayoutDashboard, Database, Users, CalendarDays, Bell, ShieldPlus } from "lucide-react";
+import { Calendar, BriefcaseMedical, LayoutDashboard, CalendarDays, ShieldPlus } from "lucide-react";
 
 export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const { settings, updateSettings } = useSettings();

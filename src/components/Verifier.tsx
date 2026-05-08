@@ -246,7 +246,8 @@ export default function Verifier({
     if (isScanning) {
       // Give more time for React to render and the DOM to settle on mobile
       const timer = setTimeout(() => {
-        import("html5-qrcode").then(({ Html5Qrcode }) => {
+        import("html5-qrcode").then((qrcodeModule: any) => {
+          const { Html5Qrcode } = qrcodeModule;
           if (!isActive) return;
 
           // Avoid experimental BarCodeDetector which can be unstable on Safari/PWA
@@ -268,68 +269,106 @@ export default function Verifier({
             },
           };
 
-          ht5Qrcode
-            .start(
-              { facingMode: "environment" },
-              config,
-              (decodedText: string) => {
-                console.log("Scanner: Detected code:", decodedText);
-                // Process the result immediately for responsiveness
-                let memberId = decodedText;
-                try {
-                  console.log("Scanner: Attempting parsing...");
-                  // More robust URL parameter extraction
-                  if (decodedText.includes("verify=")) {
-                    const parts = decodedText.split("verify=");
-                    if (parts.length > 1) {
-                      memberId = parts[1].split("&")[0].split("#")[0];
-                    }
-                  } else if (decodedText.startsWith("http")) {
-                    const url = new URL(decodedText);
-                    memberId = url.searchParams.get("verify") || decodedText;
-                  }
-                  console.log("Scanner: Extracted ID:", memberId);
-                } catch (e) {
-                  console.error("Scanner: Parsing error:", e);
-                  // Fallback to raw text if parsing fails
-                  memberId = decodedText;
-                }
-
-                // Immediately stop UI feedback and trigger verification
-                setIsScanning(false);
-                runVerification(memberId, false, decodedText);
-
-                // Stop camera as cleanup
-                ht5Qrcode
-                  ?.stop()
-                  .catch((e: any) =>
-                    console.error("Scanner: Error stopping camera:", e),
-                  );
-              },
-              (errorMessage: string) => {
-                // Usually we do silent failure for scanning, but for debugging we can log
-                // console.log("Scanner: Scan error (common):", errorMessage);
-              },
-            )
-            .catch((err: any) => {
-              console.error("Scanner: Camera start error:", err);
-              // Inform user on serious failure
-              if (
-                err?.toString().includes("NotAllowedError") ||
-                err?.toString().includes("Permission")
-              ) {
-                showAlert(
-                  "Por favor, permita o acesso à câmera nas configurações do seu navegador para escanear.",
-                  { type: 'warning' }
-                );
-              } else {
-                showAlert(
-                  "Não foi possível acessar a câmera. Certifique-se de que não está sendo usada por outro app.",
-                  { type: 'error' }
-                );
+          Html5Qrcode.getCameras().then((devices: any[]) => {
+            if (!isActive) return;
+            
+            let cameraIdOrConfig: any = { facingMode: "environment" };
+            
+            if (devices && devices.length > 0) {
+              const backCameras = devices.filter((d: any) => {
+                const label = (d.label || "").toLowerCase();
+                return label.includes("back") || label.includes("rear") || label.includes("traseira") || label.includes("environment") || label.includes("0");
+              });
+              
+              if (backCameras.length > 0) {
+                 // Try to avoid ultra-wide, macro, or telephoto which are not the "main" camera
+                 const mainCamera = backCameras.find((d: any) => {
+                    const label = (d.label || "").toLowerCase();
+                    return !label.includes("ultra") && !label.includes("wide") && !label.includes("macro") && !label.includes("tele");
+                 });
+                 
+                 const selectedCamera = mainCamera || backCameras[0];
+                 cameraIdOrConfig = selectedCamera.id;
+              } else if (devices.length > 1) {
+                 // No label matched, commonly the last camera is the back camera on many devices
+                 cameraIdOrConfig = devices[devices.length - 1].id;
               }
-              setIsScanning(false);
-            });
+            }
+
+            ht5Qrcode
+              .start(
+                cameraIdOrConfig,
+                config,
+                (decodedText: string) => {
+                  console.log("Scanner: Detected code:", decodedText);
+                  // Process the result immediately for responsiveness
+                  let memberId = decodedText;
+                  try {
+                    console.log("Scanner: Attempting parsing...");
+                    // More robust URL parameter extraction
+                    if (decodedText.includes("verify=")) {
+                      const parts = decodedText.split("verify=");
+                      if (parts.length > 1) {
+                        memberId = parts[1].split("&")[0].split("#")[0];
+                      }
+                    } else if (decodedText.startsWith("http")) {
+                      const url = new URL(decodedText);
+                      memberId = url.searchParams.get("verify") || decodedText;
+                    }
+                    console.log("Scanner: Extracted ID:", memberId);
+                  } catch (e) {
+                    console.error("Scanner: Parsing error:", e);
+                    // Fallback to raw text if parsing fails
+                    memberId = decodedText;
+                  }
+
+                  // Immediately stop UI feedback and trigger verification
+                  setIsScanning(false);
+                  runVerification(memberId, false, decodedText);
+
+                  // Stop camera as cleanup
+                  ht5Qrcode
+                    ?.stop()
+                    .catch((e: any) =>
+                      console.error("Scanner: Error stopping camera:", e),
+                    );
+                },
+                (errorMessage: string) => {
+                  // Usually we do silent failure for scanning, but for debugging we can log
+                  // console.log("Scanner: Scan error (common):", errorMessage);
+                },
+              )
+              .catch((err: any) => {
+                console.error("Scanner: Camera start error:", err);
+                // Inform user on serious failure
+                if (
+                  err?.toString().includes("NotAllowedError") ||
+                  err?.toString().includes("Permission")
+                ) {
+                  showAlert("Permissão de câmera negada. É necessário autorizar a câmera para escanear QR Codes.", { type: "error" });
+                } else if (err?.toString().includes("NotFoundError")) {
+                  showAlert("Nenhuma câmera encontrada neste dispositivo.", { type: "error" });
+                }
+                setIsScanning(false);
+              });
+          }).catch((err: any) => {
+            console.error("Error getting cameras", err);
+            // Fallback if getCameras fails
+            ht5Qrcode
+              .start(
+                { facingMode: "environment" },
+                config,
+                (decodedText: string) => {
+                  let memberId = decodedText;
+                  if (decodedText.includes("verify=")) memberId = decodedText.split("verify=")[1].split("&")[0].split("#")[0];
+                  setIsScanning(false);
+                  runVerification(memberId, false, decodedText);
+                  ht5Qrcode?.stop().catch();
+                },
+                () => {}
+              )
+              .catch(() => setIsScanning(false));
+          });
         });
       }, 500);
 
