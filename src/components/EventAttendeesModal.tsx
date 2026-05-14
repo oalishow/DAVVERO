@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X, Search, CheckCircle, Clock, Trash2, Shield, ShieldAlert, Star } from "lucide-react";
 import type { Event, Attendance, Member } from "../types";
 import { db, appId, unsubscribeFromEvent, updateAttendanceDetails } from "../lib/firebase";
-import { doc, getDoc, collection, getDocs, query } from "firebase/firestore";
+import { doc, getDoc, collection, getDocs, query, where } from "firebase/firestore";
 import Modal from "./Modal";
 import { useDialog } from "../context/DialogContext";
 
@@ -16,6 +17,7 @@ export default function EventAttendeesModal({
   onClose,
 }: EventAttendeesModalProps) {
   const { showAlert } = useDialog();
+  const [mounted, setMounted] = useState(false);
   const [attendees, setAttendees] = useState<
     (Attendance & { member?: Member })[]
   >([]);
@@ -32,20 +34,15 @@ export default function EventAttendeesModal({
   const loadData = async () => {
     try {
       setLoading(true);
-      const attendancesDoc = await getDoc(
-        doc(
-          db,
-          `artifacts/${appId}/public/data/students`,
-          "_attendances_global",
-        ),
+      const attendancesSnap = await getDocs(
+        query(
+          collection(db, `artifacts/${appId}/public/data/attendances`),
+          where("eventId", "==", event.id)
+        )
       );
-      const allAttendances = attendancesDoc.exists()
-        ? attendancesDoc.data().list || ([] as Attendance[])
-        : [];
-      const eventAttendances = allAttendances.filter(
-        (a: Attendance) =>
-          a.eventId === event.id && a.status !== ("cancelado" as any),
-      );
+      const eventAttendances = attendancesSnap.docs
+        .map(d => ({ id: d.id, ...d.data() } as Attendance))
+        .filter((a) => a.status !== ("cancelado" as any));
 
       let currentAllM = allMembers;
       let currentMembersDict: Record<string, Member> = {};
@@ -86,6 +83,7 @@ export default function EventAttendeesModal({
   };
 
   useEffect(() => {
+    setMounted(true);
     loadData();
   }, [event.id]);
 
@@ -260,8 +258,10 @@ export default function EventAttendeesModal({
     );
   });
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm px-4 print:static print:bg-transparent print:p-0 overflow-y-auto">
+  if (!mounted) return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm px-4 print:static print:bg-transparent print:p-0 overflow-y-auto">
       <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-3xl overflow-hidden border border-slate-200 dark:border-slate-700/50 flex flex-col max-h-[95vh] print:hidden my-auto">
         <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex justify-between items-center bg-slate-50/50 dark:bg-slate-800/20">
           <div>
@@ -624,6 +624,7 @@ export default function EventAttendeesModal({
           {confirmModal?.message}
         </p>
       </Modal>
-    </div>
+    </div>,
+    document.body
   );
 }

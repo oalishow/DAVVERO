@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import { Send, Sparkles, AlertCircle, RefreshCw, Wand2, X, Bell, BellOff } from "lucide-react";
 import { createNotification, db, appId } from "../lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
@@ -325,8 +326,8 @@ Retorne o resultado estritamente em um JSON com os campos 'title' (o título) e 
         </div>
       </div>
 
-      {showAiModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
+      {showAiModal && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm">
           <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-2xl w-full max-w-md overflow-hidden relative">
             <div className="p-4 sm:p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center bg-indigo-50 dark:bg-indigo-950/30">
               <h3 className="font-bold text-indigo-700 dark:text-indigo-400 flex items-center gap-2">
@@ -358,7 +359,7 @@ Retorne o resultado estritamente em um JSON com os campos 'title' (o título) e 
               </button>
             </div>
           </div>
-        </div>
+        </div>, document.body
       )}
     </div>
   );

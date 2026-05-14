@@ -8,6 +8,26 @@ interface ChangelogModalProps {
 export default function ChangelogModal({ onClose }: ChangelogModalProps) {
   const versions = [
     {
+      version: 'v6.3.0',
+      title: 'Relatórios e Otimização',
+      changes: [
+        'Adicionada exportação de agendamentos em PDF no Painel Admin.',
+        'Filtro por profissional na geração de relatórios de agendamentos.',
+        'Otimização do sistema de build e bundle do servidor.',
+        'Melhorias na ordenação automática de datas e horários.',
+      ],
+      current: true,
+    },
+    {
+      version: 'v6.2.0',
+      title: 'Melhorias de Visualização',
+      changes: [
+        'Aumentado o versionamento para 6.2',
+        'Melhorias gerais e correções de bugs.',
+      ],
+      current: false,
+    },
+    {
       version: 'v6.1.0',
       title: 'Portal Católico e Correções',
       changes: [
@@ -16,7 +36,7 @@ export default function ChangelogModal({ onClose }: ChangelogModalProps) {
         'Correção de aberturas de janelas do Portal Católico (Pocket Terço, Santo do Dia)',
         'Animação de sucesso (confirmação visual) após escaneamento bem-sucedido de QR Code'
       ],
-      current: true,
+      current: false,
     },
     {
       version: 'v6.0.0',
@@ -27,7 +47,7 @@ export default function ChangelogModal({ onClose }: ChangelogModalProps) {
         'Incluso atalho para Vatican News (Notícias da Igreja).',
         'Vínculos de sistema expandidos (Diretor, Reitor, etc).',
       ],
-      current: true,
+      current: false,
     },
     {
       version: 'v5.9.0',

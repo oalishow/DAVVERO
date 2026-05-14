@@ -565,7 +565,7 @@ export default function Verifier({
           JSON.stringify(updatedAttendances),
         );
 
-        setValidationResult({ member: finalMember, status: "VALID" });
+        setValidationResult({ member: finalMember, status: "JUST_CHECKED_IN" });
         setIsProcessing(false);
         return;
       }
@@ -734,6 +734,11 @@ export default function Verifier({
             setCodeInput("");
             setSuccessMsg("");
           }}
+          onScanNext={() => {
+            setValidationResult(null);
+            setCodeInput("");
+            setSuccessMsg("");
+          }}
           onEnrollAndCheckIn={async () => {
             if (!validationResult.member || !selectedEventId) return;
             try {
@@ -888,20 +893,24 @@ export default function Verifier({
             {isScanning && !scanSuccessAnim && (
                 <div className="absolute inset-0 z-10 pointer-events-none">
                   <div className="w-full h-full relative">
-                    <div className="absolute left-0 right-0 h-0.5 bg-green-500 shadow-[0_0_8px_2px_rgba(34,197,94,0.6)] animate-scan-laser" />
-                    <div className="absolute top-4 left-4 w-12 h-12 border-t-4 border-l-4 border-sky-400/80 rounded-tl-lg" />
-                    <div className="absolute top-4 right-4 w-12 h-12 border-t-4 border-r-4 border-sky-400/80 rounded-tr-lg" />
-                    <div className="absolute bottom-4 left-4 w-12 h-12 border-b-4 border-l-4 border-sky-400/80 rounded-bl-lg" />
-                    <div className="absolute bottom-4 right-4 w-12 h-12 border-b-4 border-r-4 border-sky-400/80 rounded-br-lg" />
+                    <div className="absolute left-0 right-0 h-1 bg-gradient-to-r from-transparent via-green-400 to-transparent shadow-[0_0_15px_3px_rgba(34,197,94,0.8)] animate-scan-laser" />
+                    <div className="absolute top-6 left-6 w-16 h-16 border-t-4 border-l-4 border-sky-400 rounded-tl-xl transition-all duration-300" />
+                    <div className="absolute top-6 right-6 w-16 h-16 border-t-4 border-r-4 border-sky-400 rounded-tr-xl transition-all duration-300" />
+                    <div className="absolute bottom-6 left-6 w-16 h-16 border-b-4 border-l-4 border-sky-400 rounded-bl-xl transition-all duration-300" />
+                    <div className="absolute bottom-6 right-6 w-16 h-16 border-b-4 border-r-4 border-sky-400 rounded-br-xl transition-all duration-300" />
+                    <div className="absolute inset-0 bg-sky-500/10 mix-blend-overlay pointer-events-none" />
                   </div>
                 </div>
             )}
 
             {/* Success Checkmark Overlay */}
             {scanSuccessAnim && (
-               <div className="absolute inset-0 z-20 flex items-center justify-center bg-black/60 backdrop-blur-sm transition-all duration-300">
-                  <div className="bg-green-500 rounded-full p-4 transform animate-qr-success-pop shadow-[0_0_20px_5px_rgba(34,197,94,0.4)]">
-                    <svg className="w-16 h-16 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+               <div className="absolute inset-0 z-20 flex items-center justify-center transition-all duration-500 overflow-hidden">
+                  <div className="absolute inset-0 bg-emerald-500/20 backdrop-blur-md animate-pulse"></div>
+                  <div className="absolute inset-0 bg-gradient-to-t from-emerald-500/40 via-transparent to-emerald-500/40 animate-scan-laser"></div>
+                  
+                  <div className="relative z-30 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full p-6 transform animate-qr-success-pop shadow-[0_0_50px_10px_rgba(16,185,129,0.6)] border-4 border-white/20">
+                    <svg className="w-20 h-20 text-white drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={4} d="M5 13l4 4L19 7" className="animate-stroke [stroke-dasharray:100] [stroke-dashoffset:100]" />
                     </svg>
                   </div>

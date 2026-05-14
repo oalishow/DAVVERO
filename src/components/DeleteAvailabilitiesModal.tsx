@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { collection, query, getDocs, doc, deleteDoc, where } from "firebase/firestore";
 import { db, appId } from "../lib/firebase";
 import { Member } from "../types";
@@ -78,8 +79,8 @@ export default function DeleteAvailabilitiesModal({ professionals, onClose, onSu
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+  const modalContent = (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -133,4 +134,6 @@ export default function DeleteAvailabilitiesModal({ professionals, onClose, onSu
       </motion.div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }

@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { collection, query, getDocs, addDoc, updateDoc, doc, deleteDoc, where, orderBy, onSnapshot } from "firebase/firestore";
 import { db, appId } from "../lib/firebase";
 import { Member, Availability, Appointment, AVAILABLE_SEMINARIES } from "../types";
@@ -42,6 +43,7 @@ export default function AdminAppointments() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
+  const [filterProfessional, setFilterProfessional] = useState("");
 
   useEffect(() => {
     // Load professionals (members with specific roles, or let admin select from all members)
@@ -99,12 +101,13 @@ export default function AdminAppointments() {
 
   useEffect(() => {
     const qAvail = query(
-      collection(db, `artifacts/${appId}/public/data/availabilities`),
-      orderBy("date", "desc")
+      collection(db, `artifacts/${appId}/public/data/availabilities`)
     );
     const unsubAvail = onSnapshot(qAvail, (snap) => {
       const avails: Availability[] = [];
       snap.forEach(d => avails.push({ ...d.data(), id: d.id } as Availability));
+      
+      avails.sort((a, b) => b.date.localeCompare(a.date));
       setAvailabilities(avails);
     });
 
@@ -216,86 +219,90 @@ export default function AdminAppointments() {
     let createdCount = 0;
     let updatedCount = 0;
 
-    for (const slot of slots) {
-       let calcEndTime = "";
-       let h = parseInt(slot.timeStr.split(':')[0]) + 1;
-       let m = slot.timeStr.split(':')[1];
-       calcEndTime = h.toString().padStart(2, '0') + ':' + m;
+    const chunkSize = 10;
+    for (let i = 0; i < slots.length; i += chunkSize) {
+       const chunk = slots.slice(i, i + chunkSize);
        
-       const availabilityData = {
-          professionalId: prof.id,
-          professionalName: prof.name,
-          date: slot.dateStr,
-          startTime: slot.timeStr,
-          endTime: calcEndTime,
-          location: importedLocation || "",
-          status: slot.status,
-          createdAt: new Date().toISOString()
-       };
-       
-       // Verify if this availability already exists for this professional
-       const qAvail = query(
-         collection(db, `artifacts/${appId}/public/data/availabilities`),
-         where("professionalId", "==", prof.id),
-         where("date", "==", slot.dateStr),
-         where("startTime", "==", slot.timeStr)
-       );
-       const snapAvail = await getDocs(qAvail);
-       
-       let availId = "";
-
-       if (snapAvail.empty) {
-         // Create new availability
-         const docRef = await addDoc(collection(db, `artifacts/${appId}/public/data/availabilities`), availabilityData);
-         availId = docRef.id;
-         createdCount++;
-       } else {
-         // Update existing availability
-         availId = snapAvail.docs[0].id;
-         await updateDoc(doc(db, `artifacts/${appId}/public/data/availabilities`, availId), {
-           status: slot.status,
-           location: importedLocation || snapAvail.docs[0].data().location || ""
-         });
-         updatedCount++;
-       }
-
-       // Handle appointments
-       const qAppt = query(
-         collection(db, `artifacts/${appId}/public/data/appointments`),
-         where("availabilityId", "==", availId)
-       );
-       const snapAppt = await getDocs(qAppt);
-
-       if (slot.status === "LIVRE") {
-         // If marked as 'Livre', delete old appointments related to this availability
-         for (const apptDoc of snapAppt.docs) {
-           await deleteDoc(doc(db, `artifacts/${appId}/public/data/appointments`, apptDoc.id));
-         }
-       } else if (slot.status === "OCUPADO") {
-         const apptData = {
-            availabilityId: availId,
-            memberId: slot.matchedMemberId || "unmatched",
-            studentName: slot.rawName || "Desconhecido",
+       await Promise.all(chunk.map(async (slot) => {
+         let calcEndTime = "";
+         let h = parseInt(slot.timeStr.split(':')[0]) + 1;
+         let m = slot.timeStr.split(':')[1];
+         calcEndTime = h.toString().padStart(2, '0') + ':' + m;
+         
+         const availabilityData = {
             professionalId: prof.id,
+            professionalName: prof.name,
             date: slot.dateStr,
             startTime: slot.timeStr,
             endTime: calcEndTime,
-            location: importedLocation || snapAvail.docs[0]?.data()?.location || "",
-            status: "CONFIRMADO",
+            location: importedLocation || "",
+            status: slot.status,
+            createdAt: new Date().toISOString()
          };
          
-         if (snapAppt.empty) {
-            await addDoc(collection(db, `artifacts/${appId}/public/data/appointments`), {
-              ...apptData,
-              createdAt: new Date().toISOString()
-            });
-         } else {
-            // Update existing appointment
-            await updateDoc(doc(db, `artifacts/${appId}/public/data/appointments`, snapAppt.docs[0].id), apptData);
-         }
-       }
+         // Verify if this availability already exists for this professional
+         const qAvail = query(
+           collection(db, `artifacts/${appId}/public/data/availabilities`),
+           where("professionalId", "==", prof.id),
+           where("date", "==", slot.dateStr),
+           where("startTime", "==", slot.timeStr)
+         );
+         const snapAvail = await getDocs(qAvail);
+         
+         let availId = "";
 
-       if (onProgress) onProgress(++current, total);
+         if (snapAvail.empty) {
+           // Create new availability
+           const docRef = await addDoc(collection(db, `artifacts/${appId}/public/data/availabilities`), availabilityData);
+           availId = docRef.id;
+           createdCount++;
+         } else {
+           // Update existing availability
+           availId = snapAvail.docs[0].id;
+           await updateDoc(doc(db, `artifacts/${appId}/public/data/availabilities`, availId), {
+             status: slot.status,
+             location: importedLocation || snapAvail.docs[0].data().location || ""
+           });
+           updatedCount++;
+         }
+
+         // Handle appointments
+         const qAppt = query(
+           collection(db, `artifacts/${appId}/public/data/appointments`),
+           where("availabilityId", "==", availId)
+         );
+         const snapAppt = await getDocs(qAppt);
+
+         if (slot.status === "LIVRE") {
+           // If marked as 'Livre', delete old appointments related to this availability
+           await Promise.all(snapAppt.docs.map(apptDoc => deleteDoc(doc(db, `artifacts/${appId}/public/data/appointments`, apptDoc.id))));
+         } else if (slot.status === "OCUPADO") {
+           const apptData = {
+              availabilityId: availId,
+              memberId: slot.matchedMemberId || "unmatched",
+              studentName: slot.rawName || "Desconhecido",
+              professionalId: prof.id,
+              date: slot.dateStr,
+              startTime: slot.timeStr,
+              endTime: calcEndTime,
+              location: importedLocation || snapAvail.docs[0]?.data()?.location || "",
+              status: "CONFIRMADO",
+           };
+           
+           if (snapAppt.empty) {
+              await addDoc(collection(db, `artifacts/${appId}/public/data/appointments`), {
+                ...apptData,
+                createdAt: new Date().toISOString()
+              });
+           } else {
+              // Update existing appointment
+              await updateDoc(doc(db, `artifacts/${appId}/public/data/appointments`, snapAppt.docs[0].id), apptData);
+           }
+         }
+
+         current++;
+       }));
+       if (onProgress) onProgress(current, total);
     }
     
     showAlert(`${total} horários processados. Criados: ${createdCount} | Atualizados: ${updatedCount}`, { type: "success", title: "Sincronização Concluída" });
@@ -322,7 +329,11 @@ export default function AdminAppointments() {
     return days[dateObj.getDay()];
   };
 
-  const filteredAvailabilities = availabilities.filter(a => a.date.startsWith(filterMonth));
+  const filteredAvailabilities = availabilities.filter(a => {
+    if (!a.date.startsWith(filterMonth)) return false;
+    if (filterProfessional && a.professionalId !== filterProfessional) return false;
+    return true;
+  });
   
   // Group by date
   const groupedByDate: Record<string, Availability[]> = {};
@@ -502,16 +513,28 @@ export default function AdminAppointments() {
             <Calendar className="w-5 h-5 text-indigo-500 flex-shrink-0" />
             Vagas e Agendamentos
           </h3>
-          <div className="flex items-center gap-3">
-             <button onClick={() => changeMonth(-1)} className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 transition text-slate-600 dark:text-slate-300">
-               <ChevronLeft className="w-5 h-5"/>
-             </button>
-             <span className="text-sm font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 min-w-[140px] text-center">
-               {getMonthName()}
-             </span>
-             <button onClick={() => changeMonth(1)} className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 transition text-slate-600 dark:text-slate-300">
-               <ChevronRight className="w-5 h-5"/>
-             </button>
+          <div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+             <select
+               value={filterProfessional}
+               onChange={(e) => setFilterProfessional(e.target.value)}
+               className="w-full sm:w-auto bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl p-2 text-sm outline-none"
+             >
+               <option value="">Todos os Profissionais...</option>
+               {professionals.map(p => (
+                 <option key={p.id} value={p.id}>{p.name}</option>
+               ))}
+             </select>
+             <div className="flex items-center gap-3">
+               <button onClick={() => changeMonth(-1)} className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 transition text-slate-600 dark:text-slate-300">
+                 <ChevronLeft className="w-5 h-5"/>
+               </button>
+               <span className="text-sm font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300 min-w-[140px] text-center">
+                 {getMonthName()}
+               </span>
+               <button onClick={() => changeMonth(1)} className="p-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-700 dark:hover:bg-slate-600 transition text-slate-600 dark:text-slate-300">
+                 <ChevronRight className="w-5 h-5"/>
+               </button>
+             </div>
           </div>
         </div>
 
@@ -631,8 +654,8 @@ export default function AdminAppointments() {
         />
       )}
 
-      {deleteProgress && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
+      {deleteProgress && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm">
           <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-sm overflow-hidden border border-slate-200 dark:border-slate-700/50">
             <div className="p-6">
               <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-2 flex items-center gap-2">
@@ -656,7 +679,7 @@ export default function AdminAppointments() {
               </div>
             </div>
           </div>
-        </div>
+        </div>, document.body
       )}
 
       {editingItem && (

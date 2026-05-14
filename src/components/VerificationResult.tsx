@@ -228,33 +228,61 @@ export default function VerificationResult({
 
   return (
     <div className="w-full mt-2 print:mt-1 animated-fade-in flex flex-col items-center">
+      {onScanNext && (
+        <motion.button
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.2 }}
+          onClick={onScanNext}
+          className="w-full max-w-sm mb-4 py-4 px-4 rounded-2xl text-base sm:text-lg font-black text-white bg-sky-600 hover:bg-sky-500 transition-all shadow-xl shadow-sky-600/30 flex items-center justify-center gap-3"
+        >
+          <QrCode className="w-6 h-6 animate-bounce" />
+          Ler Próximo QR Code
+        </motion.button>
+      )}
+
       {status === 'JUST_CHECKED_IN' && (
         <motion.div 
-           initial={{ scale: 0.8, opacity: 0 }}
-           animate={{ scale: 1, opacity: 1 }}
-           transition={{ type: "spring", stiffness: 200, damping: 10 }}
-           className="w-full max-w-sm flex flex-col items-center justify-center p-6 bg-white dark:bg-slate-900 rounded-2xl shadow-xl shadow-emerald-500/20 border-2 border-emerald-400 mb-4 pointer-events-none overflow-hidden relative"
+           initial={{ scale: 0.8, opacity: 0, rotateX: 15 }}
+           animate={{ scale: 1, opacity: 1, rotateX: 0 }}
+           transition={{ type: "spring", stiffness: 200, damping: 15 }}
+           className="w-full max-w-sm flex flex-col items-center justify-center p-8 bg-gradient-to-b from-white to-emerald-50 dark:from-slate-900 dark:to-emerald-950/20 rounded-3xl shadow-2xl border border-emerald-400/50 mb-6 relative overflow-hidden"
         >
-           {/* QR Code flying in from bottom animation */}
-           <motion.div
-             initial={{ y: 50, scale: 0, opacity: 0, rotateX: 45 }}
-             animate={{ y: -60, scale: 2, opacity: [0, 1, 0], rotateX: 0 }}
-             transition={{ duration: 1.5, ease: "easeInOut" }}
-             className="absolute inset-0 flex items-center justify-center pointer-events-none z-0"
-           >
-             <QrCode className="w-16 h-16 text-emerald-300 dark:text-emerald-700/30" />
-           </motion.div>
-
+           {/* Beautiful background glow */}
+           <div className="absolute inset-0 bg-emerald-400/10 blur-3xl rounded-full scale-150 animate-pulse"></div>
+           
            <motion.div 
-             initial={{ rotate: -90, scale: 0 }}
+             initial={{ rotate: -180, scale: 0 }}
              animate={{ rotate: 0, scale: 1 }}
-             transition={{ type: "spring", delay: 0.1, duration: 0.5 }}
-             className="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(16,185,129,0.5)] mb-4 z-10"
+             transition={{ type: "spring", delay: 0.2, duration: 0.7, bounce: 0.5 }}
+             className="w-24 h-24 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-full flex items-center justify-center shadow-[0_0_40px_rgba(16,185,129,0.5)] mb-6 z-10 border-4 border-white dark:border-slate-800"
            >
-              <CheckCircle className="w-10 h-10 text-white" />
+              <CheckCircle className="w-12 h-12 text-white" />
            </motion.div>
-           <h2 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-white text-center z-10">Tudo Certo!</h2>
-           <p className="text-sm font-medium text-slate-500 dark:text-slate-400 text-center mt-2 z-10">O check-in e a inscrição de <b>{member?.name?.split(' ')[0]}</b> foram realizados com sucesso.</p>
+           <motion.h2 
+             initial={{ y: 10, opacity: 0 }}
+             animate={{ y: 0, opacity: 1 }}
+             transition={{ delay: 0.4 }}
+             className="text-2xl sm:text-3xl font-black text-slate-800 dark:text-white text-center z-10 tracking-tight"
+           >
+             Tudo Certo!
+           </motion.h2>
+           <motion.p 
+             initial={{ y: 10, opacity: 0 }}
+             animate={{ y: 0, opacity: 1 }}
+             transition={{ delay: 0.5 }}
+             className="text-sm sm:text-base font-medium text-emerald-700 dark:text-emerald-400 mt-2 z-10 bg-emerald-100 dark:bg-emerald-900/40 px-4 py-2 rounded-xl text-center"
+           >
+             Acesso VIP Concedido
+           </motion.p>
+           <motion.p 
+             initial={{ opacity: 0 }}
+             animate={{ opacity: 1 }}
+             transition={{ delay: 0.6 }}
+             className="text-sm text-slate-500 dark:text-slate-400 text-center mt-4 z-10 font-bold"
+           >
+             {member?.name}
+           </motion.p>
         </motion.div>
       )}
 
@@ -566,14 +594,6 @@ export default function VerificationResult({
           </button>
         )}
         <div className="flex flex-col sm:flex-row gap-2 w-full">
-          {onScanNext && (
-            <button
-              onClick={onScanNext}
-              className="flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-black text-white bg-sky-600 hover:bg-sky-500 transition-colors shadow-lg"
-            >
-              Ler Próximo
-            </button>
-          )}
           <button
             onClick={() => setModalResetOpen(true)}
             className="flex-1 py-2.5 px-4 rounded-xl text-xs sm:text-sm font-bold text-slate-700 bg-slate-200 hover:bg-slate-300 transition-colors"

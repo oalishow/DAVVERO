@@ -26,12 +26,14 @@ export const INSTITUTION_DESCRIPTION_KEY = "davveroId_institution_description";
 export const CARD_DESCRIPTION_KEY = "davveroId_card_description";
 export const CUSTOM_ROLES_KEY = "davveroId_custom_roles";
 export const CUSTOM_COURSES_KEY = "davveroId_custom_courses";
-export const APP_VERSION = "6.1";
+export const APP_VERSION = "6.3";
 export const SETTINGS_DOC_PATH = (appId: string) =>
   `artifacts/${appId}/public/data/students/_settings_global`;
 export const ASSETS_DOC_PATH = (appId: string, assetType: string) =>
   `artifacts/${appId}/public/data/students/_asset_${assetType}`;
 export const CHANGELOG = [
+  "Versão 6.3.0 - Melhorias na Gestão de Agendamentos e PDF",
+  "Versão 6.2.0 - Correção e Exibição de Inscritos",
   "Versão 6.1.0 - Portal Católico e Animação de QR Code",
   "Versão 6.0.0 - Vínculos e Novos Links na Liturgia",
   "Expansão dos vínculos institucionais e novos atalhos litúrgicos (Orações, Notícias, etc)!",

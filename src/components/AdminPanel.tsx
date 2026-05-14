@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import {
   Settings,
   UserPlus,
@@ -54,11 +55,13 @@ import EventsRecycleBin from "./EventsRecycleBin";
 import NotificationsManager from "./NotificationsManager";
 import AdminAppointments from "./AdminAppointments";
 import DashboardPanel from "./DashboardPanel";
-import { Calendar, BriefcaseMedical, LayoutDashboard, CalendarDays, ShieldPlus } from "lucide-react";
+import PrintAppointmentsModal from "./PrintAppointmentsModal";
+import { Calendar, BriefcaseMedical, LayoutDashboard, CalendarDays, ShieldPlus, Printer } from "lucide-react";
 
 export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const { settings, updateSettings } = useSettings();
   const [activeTab, setActiveTab] = useState<"dashboard" | "members" | "events" | "appointments" | "notifications">("dashboard");
+  const [showPrintAppointments, setShowPrintAppointments] = useState(false);
   const [name, setName] = useState("");
   const [ra, setRa] = useState("");
   const [cpf, setCpf] = useState("");
@@ -599,12 +602,20 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
 
       {activeTab === "appointments" && (
         <div className="space-y-4">
-          <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 mb-6 font-display flex items-center gap-3">
-            <span className="bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400 p-2 rounded-xl">
-              <BriefcaseMedical className="w-5 h-5" />
-            </span>
-            Painel de Agendamentos (WhatsApp)
-          </h2>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+            <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 font-display flex items-center gap-3">
+              <span className="bg-sky-100 text-sky-600 dark:bg-sky-900/30 dark:text-sky-400 p-2 rounded-xl">
+                <BriefcaseMedical className="w-5 h-5" />
+              </span>
+              Painel de Agendamentos (WhatsApp)
+            </h2>
+            <button
+              onClick={() => setShowPrintAppointments(true)}
+              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold flex items-center gap-2 transition-colors border border-slate-200 dark:border-slate-700"
+            >
+              <Printer className="w-4 h-4" /> Exportar em PDF
+            </button>
+          </div>
           <AdminAppointments />
         </div>
       )}
@@ -1108,7 +1119,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
       {showRequests && (
         <AdminRequestsModal onClose={() => setShowRequests(false)} />
       )}
-      {showMyCard && adminMember && (
+      {showMyCard && adminMember && createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm no-print">
           <motion.div 
             initial={{ opacity: 0, scale: 0.9 }}
@@ -1127,10 +1138,13 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
             </div>
             <p className="text-[10px] text-slate-500 mt-6 text-center font-medium uppercase italic">Este card reflete o cadastro vinculado ao seu e-mail de acesso.</p>
           </motion.div>
-        </div>
+        </div>, document.body
       )}
       {showPrintReport && (
         <PrintReportModal onClose={() => setShowPrintReport(false)} />
+      )}
+      {showPrintAppointments && (
+        <PrintAppointmentsModal onClose={() => setShowPrintAppointments(false)} />
       )}
     </div>
   );

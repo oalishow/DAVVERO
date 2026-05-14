@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, ChangeEvent } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence, Reorder, useDragControls } from "motion/react";
 import { GraduationCap, Landmark, Image as ImageIcon, FileText, CheckCircle, Trash2, Pin, MessageSquare, BarChart2, Check, ExternalLink, X, Pencil, GripVertical, Heart, Send, MessageCircle } from "lucide-react";
 import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, updateDoc, doc, deleteDoc, getDoc, getDocs, limit, arrayUnion, arrayRemove } from "firebase/firestore";
@@ -784,7 +785,7 @@ export default function MuralPage() {
 
       {/* Delete Confirmation Modal */}
       <AnimatePresence>
-        {deleteConfirmId && (
+        {deleteConfirmId && createPortal(
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
             <motion.div 
               initial={{ opacity: 0 }}
@@ -821,7 +822,7 @@ export default function MuralPage() {
                 </button>
               </div>
             </motion.div>
-          </div>
+          </div>, document.body
         )}
       </AnimatePresence>
     </div>

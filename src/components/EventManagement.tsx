@@ -83,6 +83,8 @@ export default function EventManagement() {
   const [registrationDeadline, setRegistrationDeadline] = useState("");
   const [isSeminary, setIsSeminary] = useState(false);
   const [seminaryId, setSeminaryId] = useState(AVAILABLE_SEMINARIES[0]);
+  const [isPaid, setIsPaid] = useState(false);
+  const [price, setPrice] = useState("");
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
   const [eventSearchQuery, setEventSearchQuery] = useState("");
   const [statusMsg, setStatusMsg] = useState<{
@@ -121,7 +123,9 @@ export default function EventManagement() {
       const counts: Record<string, number> = {};
       const list = snap.docs.map(d => d.data() as Attendance);
       list.forEach((a) => {
-        counts[a.eventId] = (counts[a.eventId] || 0) + 1;
+        if (a.status !== "cancelado") {
+          counts[a.eventId] = (counts[a.eventId] || 0) + 1;
+        }
       });
       setAttendancesCount(counts);
     });
@@ -150,6 +154,8 @@ export default function EventManagement() {
     setRegistrationDeadline(event.registrationDeadline || "");
     setIsSeminary(event.isSeminary || false);
     setSeminaryId(event.seminaryId || "");
+    setIsPaid(event.isPaid || false);
+    setPrice(event.price ? event.price.toString() : "");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -171,11 +177,19 @@ export default function EventManagement() {
     setRegistrationDeadline("");
     setIsSeminary(false);
     setSeminaryId(AVAILABLE_SEMINARIES[0]);
+    setIsPaid(false);
+    setPrice("");
   };
 
   const handleSaveEvent = async () => {
     if (!title || !startDate || !endDate || !format) {
       setStatusMsg({ msg: "Preencha título, data inicial e final e formato.", type: "error" });
+      setTimeout(() => setStatusMsg(null), 4000);
+      return;
+    }
+
+    if (isPaid && (!price || Number(price) <= 0)) {
+      setStatusMsg({ msg: "Defina o valor do ingresso do evento.", type: "error" });
       setTimeout(() => setStatusMsg(null), 4000);
       return;
     }
@@ -201,6 +215,8 @@ export default function EventManagement() {
         schedulePdfUrl,
         isSeminary,
         seminaryId: isSeminary ? seminaryId : null,
+        isPaid,
+        price: isPaid && price ? Number(price) : null,
       };
       if (hours) {
         payload.hours = Number(hours);
@@ -502,6 +518,39 @@ export default function EventManagement() {
             />
           </div>
         </div>
+
+        {/* Informações de Pagamento */}
+        <div className="mt-4 p-4 rounded-xl border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-900/10">
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={isPaid}
+              onChange={(e) => setIsPaid(e.target.checked)}
+              className="w-5 h-5 text-emerald-600 focus:ring-emerald-500 rounded border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-900 focus:ring-2"
+            />
+            <span className="text-sm font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
+              Evento com Ingresso Pago
+            </span>
+          </label>
+
+          {isPaid && (
+            <div className="mt-3">
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
+                Valor do Ingresso (R$) <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                className="w-full sm:max-w-[200px] mt-1 bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-700 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm outline-none focus:border-emerald-500 dark:focus:border-emerald-500"
+                placeholder="Ex: 50.00"
+              />
+            </div>
+          )}
+        </div>
+
         <div className="mt-4">
           <label className="flex items-center gap-3 cursor-pointer p-4 bg-amber-50 dark:bg-amber-900/10 border border-amber-200 dark:border-amber-800/50 rounded-xl">
             <input

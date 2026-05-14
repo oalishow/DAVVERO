@@ -27,20 +27,6 @@ export default function Header({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
       setNotiPermission(Notification.permission);
-      
-      const hasAsked = localStorage.getItem('davveroId_noti_ask');
-      if (!hasAsked && Notification.permission === 'default') {
-        const ask = async () => {
-          const res = await showConfirm("Deseja receber notificações do instituto no seu celular e computador?", { 
-            title: "Ativar Notificações", type: "info", confirmText: "Ativar", cancelText: "Não Obrigado"
-          });
-          if (res) {
-            requestNotificationPermission();
-          }
-          localStorage.setItem('davveroId_noti_ask', 'true');
-        };
-        setTimeout(ask, 3000);
-      }
     }
   }, []);
 

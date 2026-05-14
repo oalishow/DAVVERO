@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { motion } from "motion/react";
 import { X, MessageSquare, Check, AlertCircle, ChevronRight } from "lucide-react";
 import { Member } from "../types";
@@ -168,8 +169,8 @@ export default function ImportWhatsappModal({ onClose, onImport, professionals, 
     }
   };
 
-  return (
-    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+  const modalContent = (
+    <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
       <motion.div 
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -187,7 +188,7 @@ export default function ImportWhatsappModal({ onClose, onImport, professionals, 
           </button>
         </div>
 
-        <div className="p-6 overflow-y-auto flex flex-col gap-6" style={{ maxHeight: '70vh' }}>
+        <div className="p-6 overflow-y-auto flex flex-col gap-6 min-h-0 flex-1">
           {step === 1 ? (
              <>
                <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 p-4 rounded-xl text-sm leading-relaxed border border-blue-100 dark:border-blue-800/50 shadow-sm flex gap-3 flex-shrink-0">
@@ -232,7 +233,7 @@ export default function ImportWhatsappModal({ onClose, onImport, professionals, 
                <div className="flex-grow flex flex-col">
                  <label className="block text-[10px] font-bold uppercase text-slate-500 mb-1.5">Texto da Mensagem *</label>
                  <textarea 
-                   className="w-full min-h-[200px] h-[300px] bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 text-sm font-mono outline-none resize-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all"
+                   className="w-full min-h-[150px] flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 text-sm font-mono outline-none resize-none focus:ring-2 focus:ring-green-500/20 focus:border-green-500 transition-all"
                    placeholder="23/04 (quinta-feira)&#10;14h: Alexandre&#10;15h:&#10;..."
                    value={text}
                    onChange={e => setText(e.target.value)}
@@ -302,7 +303,7 @@ export default function ImportWhatsappModal({ onClose, onImport, professionals, 
           )}
         </div>
 
-        <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex justify-between items-center gap-3 rounded-b-3xl h-[84px]">
+        <div className="p-6 border-t border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50 flex justify-between items-center gap-3 rounded-b-3xl min-h-[84px] flex-shrink-0">
            <button 
              onClick={onClose}
              disabled={isImporting}
@@ -347,4 +348,6 @@ export default function ImportWhatsappModal({ onClose, onImport, professionals, 
       </motion.div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { X, Wand2, Sparkles, CheckCircle, Save, Upload, Trash2, ZoomIn, ZoomOut } from "lucide-react";
 import type { Event, CertificateTemplate } from "../types";
 import { updateEvent, db, appId } from "../lib/firebase";
@@ -225,7 +226,7 @@ Instruções RIGOROSAS:
     }
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-2 sm:p-4 animate-in fade-in duration-200">
       <div className="bg-white dark:bg-slate-900 w-full max-w-6xl max-h-[95vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col pointer-events-auto border border-slate-200 dark:border-slate-800">
         
@@ -454,6 +455,6 @@ Instruções RIGOROSAS:
         </div>
 
       </div>
-    </div>
+    </div>, document.body
   );
 }

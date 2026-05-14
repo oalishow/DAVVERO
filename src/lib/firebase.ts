@@ -419,13 +419,18 @@ export const getEventSubscribers = async (
     const { collection, query, where, getDocs } = await import("firebase/firestore");
     const q = query(
       collection(db, `artifacts/${appId}/public/data/attendances`),
-      where("eventId", "==", eventId),
-      where("status", "in", ["inscrito", "presente", "apto_para_certificado"])
+      where("eventId", "==", eventId)
     );
     const snap = await getDocs(q);
     
     if (snap.empty) return [];
-    const studentIds = snap.docs.map(d => d.data().studentId);
+    
+    const validStatuses = ["inscrito", "presente", "apto_para_certificado"];
+    const validDocs = snap.docs.filter(d => validStatuses.includes(d.data().status));
+    
+    if (validDocs.length === 0) return [];
+    
+    const studentIds = validDocs.map(d => d.data().studentId);
 
     const membersSnap = await getDocs(
       query(collection(db, `artifacts/${appId}/public/data/students`)),

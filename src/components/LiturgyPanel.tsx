@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { createPortal } from "react-dom";
 import { BookHeart, ExternalLink, BookOpen, CalendarHeart, X, Youtube, Play } from "lucide-react";
 
 export default function LiturgyPanel() {
@@ -44,8 +45,8 @@ export default function LiturgyPanel() {
 
   return (
     <div className="space-y-6">
-      {selectedHour && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-white dark:bg-slate-900 animate-in fade-in zoom-in duration-200">
+      {selectedHour && createPortal(
+        <div className="fixed inset-0 z-[100] flex flex-col bg-white dark:bg-slate-900 animate-in fade-in zoom-in duration-200">
           <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-900/50">
             <div className="flex items-center gap-3">
               <div className="bg-rose-100 dark:bg-rose-900/30 p-2 rounded-lg">
@@ -99,7 +100,7 @@ export default function LiturgyPanel() {
               />
             )}
           </div>
-        </div>
+        </div>, document.body
       )}
 
       <div className="bg-rose-600 dark:bg-rose-700 rounded-3xl p-6 sm:p-8 text-white relative overflow-hidden shadow-lg border border-rose-500 dark:border-rose-600">

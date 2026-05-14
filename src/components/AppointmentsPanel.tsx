@@ -22,6 +22,8 @@ export default function AppointmentsPanel({ member }: AppointmentsPanelProps) {
   // Professional State
   const [myAvailabilities, setMyAvailabilities] = useState<Availability[]>([]);
   const [appointmentsAsProf, setAppointmentsAsProf] = useState<Appointment[]>([]);
+  const [profSearchQuery, setProfSearchQuery] = useState("");
+  const [profAvailSearchDate, setProfAvailSearchDate] = useState("");
   const [newDate, setNewDate] = useState("");
   const [newStartTime, setNewStartTime] = useState("");
   const [newEndTime, setNewEndTime] = useState("");
@@ -349,16 +351,31 @@ END:VCALENDAR`;
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* My Availabilities List */}
-            <div className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-3xl border border-slate-200 dark:border-slate-700">
-              <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4 flex items-center justify-between">
-                <span>Meus Horários</span>
-                <span className="bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-400 py-0.5 px-2 rounded-full text-[10px]">{myAvailabilities.length}</span>
-              </h4>
-              <div className="space-y-2 max-h-96 overflow-y-auto pr-1">
+            <div className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-3xl border border-slate-200 dark:border-slate-700 flex flex-col">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
+                <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                  <span>Meus Horários</span>
+                  <span className="bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-400 py-0.5 px-2 rounded-full text-[10px]">{myAvailabilities.length}</span>
+                </h4>
+                <div className="relative">
+                  <input
+                    type="date"
+                    value={profAvailSearchDate}
+                    onChange={(e) => setProfAvailSearchDate(e.target.value)}
+                    className="w-full sm:w-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs outline-none focus:border-purple-500 transition-colors"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2 overflow-y-auto pr-1 flex-1 min-h-0" style={{ maxHeight: '400px' }}>
                 {myAvailabilities.length === 0 ? (
                   <p className="text-xs text-slate-500 text-center py-4">Nenhum horário cadastrado.</p>
                 ) : (
-                  myAvailabilities.map(avail => (
+                  myAvailabilities
+                    .filter(avail => {
+                      if (!profAvailSearchDate) return true;
+                      return avail.date === profAvailSearchDate;
+                    })
+                    .map(avail => (
                     <div key={avail.id} className="bg-white dark:bg-slate-900 p-3 rounded-xl border border-slate-200 dark:border-slate-700 flex items-center justify-between shadow-sm">
                       <div>
                         <div className="flex items-center gap-2 mb-1">
@@ -395,16 +412,32 @@ END:VCALENDAR`;
             </div>
 
             {/* Agendamentos do Profissional */}
-            <div className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-3xl border border-slate-200 dark:border-slate-700">
-              <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-4 flex items-center justify-between">
-                <span>Meus Atendimentos</span>
-                <span className="bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400 py-0.5 px-2 rounded-full text-[10px]">{appointmentsAsProf.length}</span>
-              </h4>
-              <div className="space-y-3 max-h-96 overflow-y-auto pr-1">
+            <div className="bg-slate-50 dark:bg-slate-800/50 p-5 rounded-3xl border border-slate-200 dark:border-slate-700 flex flex-col">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
+                <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-2">
+                  <span>Meus Atendimentos</span>
+                  <span className="bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-400 py-0.5 px-2 rounded-full text-[10px]">{appointmentsAsProf.length}</span>
+                </h4>
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Buscar por nome..."
+                    value={profSearchQuery}
+                    onChange={(e) => setProfSearchQuery(e.target.value)}
+                    className="w-full sm:w-auto bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs outline-none focus:border-amber-500 transition-colors"
+                  />
+                </div>
+              </div>
+              <div className="space-y-3 overflow-y-auto pr-1 flex-1 min-h-0" style={{ maxHeight: '400px' }}>
                 {appointmentsAsProf.length === 0 ? (
                   <p className="text-xs text-slate-500 text-center py-4">Nenhum atendimento agendado.</p>
                 ) : (
-                  appointmentsAsProf.map(appt => {
+                  appointmentsAsProf.filter(appt => {
+                    if (!profSearchQuery) return true;
+                    const student = students[appt.memberId];
+                    const name = student?.name || appt.studentName || "";
+                    return name.toLowerCase().includes(profSearchQuery.toLowerCase());
+                  }).map(appt => {
                     const student = students[appt.memberId];
                     return (
                       <div key={appt.id} className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden">

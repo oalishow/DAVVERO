@@ -85,6 +85,8 @@ export interface Event {
   schedulePdfUrl?: string;
   isSeminary?: boolean; // NEW: Indicates if it's a seminary event
   seminaryId?: string; // SPSCJ, Marília, Bauru, or ALL
+  isPaid?: boolean; // Pagamento: true se for evento pago
+  price?: number;   // Pagamento: valor do evento
 }
 
 export interface Attendance {
@@ -95,6 +97,9 @@ export interface Attendance {
   isOrganizer?: boolean;
   timestamp: string;
   member?: Member;
+  paymentStatus?: "pendente" | "pago" | "isento";
+  transactionId?: string;
+  paymentMethod?: "mercadopago" | "paypal" | "pix_manual";
 }
 
 export interface Notification {

@@ -14,11 +14,10 @@ export default function NotificationObserver() {
   // Use the central hook that reads the 'notifications' collection and sets PWA Badge
   const { notifications, unreadCount } = useNotifications(recipientId);
 
+  // Auto-request removed to prevent annoying prompts on first load and QR scanning
+  // Users will have to accept via the Bell icon or settings.
   useEffect(() => {
-    // Also request notification permission so we can show Toast/Alert if needed
-    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
-      Notification.requestPermission().catch(console.error);
-    }
+    // Only syncing PWA Badge now
   }, []);
 
   // For PWA Push / Badge sync
