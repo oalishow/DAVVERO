@@ -131,10 +131,13 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
           visibleFields: mergedVisibleFields
         }));
       } else {
-        setDoc(docRef, DEFAULT_SETTINGS).catch(() => {});
+        setSettings(DEFAULT_SETTINGS);
       }
       setLoading(false);
-    }, () => setLoading(false));
+    }, (err) => {
+      console.error("Erro ao carregar configurações:", err);
+      setLoading(false);
+    });
     unsubscribes.push(unsubMain);
 
     // Listeners para Ativos Pesados individuais

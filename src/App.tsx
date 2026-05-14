@@ -24,6 +24,7 @@ import DynamicPWA from "./components/DynamicPWA";
 import NotificationObserver from "./components/NotificationObserver";
 import { useSettings } from "./context/SettingsContext";
 import { APP_VERSION, CHANGELOG } from "./lib/constants";
+import { playSound } from "./lib/sounds";
 
 const Verifier = lazy(() => import("./components/Verifier"));
 const Admin = lazy(() => import("./components/Admin"));
@@ -43,16 +44,41 @@ export default function App() {
   );
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [updateStatus, setUpdateStatus] = useState<"idle" | "success">("idle");
+  const [isUpdating, setIsUpdating] = useState(false);
 
   useEffect(() => {
-    // Monitorar atualizações do código-fonte, não do banco de dados para evitar piscar/sumir
-    const savedVersion = localStorage.getItem("last_seen_app_version");
-    if (savedVersion !== APP_VERSION) {
-      // Ocultar após o salvamento pra evitar mostrar novamente sem querer
-      const t = setTimeout(() => {
-        setShowUpdateModal(true);
-      }, 500);
-      return () => clearTimeout(t);
+    const handleClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (target.closest('button') || target.closest('a') || target.closest('[role="button"]') || target.closest('input[type="checkbox"]')) {
+        playSound('pop');
+      }
+    };
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, []);
+
+  useEffect(() => {
+    // Verificação de versão "Direta" conforme solicitado pelo usuário
+    const storedVersion = localStorage.getItem("app_version");
+    
+    // Se existir uma versão salva e for diferente da atual, atualizamos silenciosamente
+    if (storedVersion && storedVersion !== APP_VERSION) {
+      setIsUpdating(true);
+      console.log("Nova versão detectada: Atualizando diretamente...");
+      localStorage.setItem("app_version", APP_VERSION);
+      localStorage.setItem("last_seen_app_version", APP_VERSION);
+      
+      // Força o recarregamento limpando cache (conforme possível no navegador)
+      setTimeout(() => {
+        window.location.reload();
+      }, 800);
+      return;
+    }
+
+    // Se é a primeira vez ou já atualizou, garantimos que os registros estão em dia
+    localStorage.setItem("app_version", APP_VERSION);
+    if (!localStorage.getItem("last_seen_app_version")) {
+       localStorage.setItem("last_seen_app_version", APP_VERSION);
     }
   }, []);
 
@@ -157,18 +183,27 @@ export default function App() {
     };
     initFirebase();
 
-    // Update check
-    const storedVersion = localStorage.getItem("app_version");
-    if (storedVersion && storedVersion !== APP_VERSION) {
-      setShowUpdateModal(true);
-    }
-    localStorage.setItem("app_version", APP_VERSION);
-
     return () => systemPrefersDark.removeEventListener("change", themeListener);
   }, []);
 
   return (
     <div className="min-h-screen relative flex items-center justify-center p-0 sm:p-4 print:block print:p-0">
+      <AnimatePresence>
+        {isUpdating && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] bg-white dark:bg-slate-900 flex flex-col items-center justify-center gap-4"
+          >
+            <Loader2 className="w-10 h-10 text-sky-500 animate-spin" />
+            <div className="text-center">
+              <h2 className="text-lg font-bold text-slate-800 dark:text-white">Atualizando Sistema</h2>
+              <p className="text-xs text-slate-500">Preparando versão {APP_VERSION}...</p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       <DynamicPWA />
       <NotificationObserver />
       <div className="w-full max-w-3xl glass-panel rounded-none sm:rounded-3xl p-3 sm:p-5 md:p-10 animated-fade-in relative overflow-hidden print:max-w-none print:p-0 print:shadow-none print:bg-white print:dark:bg-white min-h-[100dvh] sm:min-h-0 print:min-h-0 print:border-none print:block">

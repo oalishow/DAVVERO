@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, ReactNode, useCallback } fr
 import { createPortal } from 'react-dom';
 import { X, AlertCircle, CheckCircle2, Info, Loader2, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { playSound } from '../lib/sounds';
 
 interface DialogOptions {
   title?: string;
@@ -29,6 +30,10 @@ export function DialogProvider({ children }: { children: ReactNode }) {
   const [dialogs, setDialogs] = useState<(DialogOptions & { id: string; resolve: (value: any) => void })[]>([]);
 
   const showAlert = useCallback((message: string, options?: Omit<DialogOptions, 'message' | 'isConfirm'>) => {
+    if (options?.type === 'error') playSound('error');
+    else if (options?.type === 'success') playSound('success');
+    else playSound('notification');
+
     return new Promise<void>((resolve) => {
       const id = Math.random().toString(36).substr(2, 9);
       setDialogs(prev => [...prev, { id, message, ...options, isConfirm: false, resolve }]);
@@ -36,6 +41,7 @@ export function DialogProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const showConfirm = useCallback((message: string, options?: Omit<DialogOptions, 'message' | 'isConfirm'>) => {
+    playSound('notification');
     return new Promise<boolean>((resolve) => {
       const id = Math.random().toString(36).substr(2, 9);
       setDialogs(prev => [...prev, { id, message, ...options, isConfirm: true, resolve }]);

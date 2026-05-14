@@ -734,11 +734,6 @@ export default function Verifier({
             setCodeInput("");
             setSuccessMsg("");
           }}
-          onScanNext={() => {
-            setValidationResult(null);
-            setCodeInput("");
-            setSuccessMsg("");
-          }}
           onEnrollAndCheckIn={async () => {
             if (!validationResult.member || !selectedEventId) return;
             try {

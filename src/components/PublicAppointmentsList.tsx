@@ -311,7 +311,7 @@ export default function PublicAppointmentsList({ member, onNavigateToStudent }: 
                         </div>
 
                         <div className="flex flex-wrap gap-2 pl-[76px] sm:pl-0 mt-2 sm:mt-0">
-                          {!slot.isBooked && !hasOtherAppointment && (
+                          {!slot.isBooked && (
                             <button
                               onClick={() => handleBook(slot)}
                               className="px-3 py-1.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"

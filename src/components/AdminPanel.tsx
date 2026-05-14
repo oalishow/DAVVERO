@@ -56,7 +56,7 @@ import NotificationsManager from "./NotificationsManager";
 import AdminAppointments from "./AdminAppointments";
 import DashboardPanel from "./DashboardPanel";
 import PrintAppointmentsModal from "./PrintAppointmentsModal";
-import { Calendar, BriefcaseMedical, LayoutDashboard, CalendarDays, ShieldPlus, Printer } from "lucide-react";
+import { Calendar, BriefcaseMedical, LayoutDashboard, CalendarDays, ShieldPlus } from "lucide-react";
 
 export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const { settings, updateSettings } = useSettings();
