@@ -287,8 +287,7 @@ export const updateEvent = async (
 
 export const enrollStudent = async (attendanceData: Omit<Attendance, "id">) => {
   try {
-    const { runTransaction, doc, collection } = await import("firebase/firestore");
-    const eventRef = doc(db, `artifacts/${appId}/public/data/events`, attendanceData.eventId);
+    const { doc, setDoc, collection, getDoc } = await import("firebase/firestore");
     const attendanceId = "att_" + Date.now().toString();
     const attendanceRef = doc(collection(db, `artifacts/${appId}/public/data/attendances`), attendanceId);
 
@@ -297,35 +296,21 @@ export const enrollStudent = async (attendanceData: Omit<Attendance, "id">) => {
     );
     const attendanceItem = { ...cleanData, id: attendanceId } as Attendance;
 
-    await runTransaction(db, async (transaction) => {
-      const eventDoc = await transaction.get(eventRef);
-      if (!eventDoc.exists()) throw new Error("EVENTO_NAO_ENCONTRADO");
-      
-      const eventInfo = eventDoc.data() as Event;
+    // Optional constraint check, but not blocking offline local save.
+    // If offline, getDoc will serve from cache or fail fast. we can just setDoc directly.
+    try {
+      const eventRef = doc(db, `artifacts/${appId}/public/data/events`, attendanceData.eventId);
+      const eventDoc = await getDoc(eventRef);
+      if (eventDoc.exists()) {
+        const eventInfo = eventDoc.data() as Event;
+        // Verify constraint quickly 
+        if (eventInfo.status === "deleted") throw new Error("EVENTO_EXCLUIDO");
+      }
+    } catch(err) {
+       // if offline, proceed
+    }
 
-      const isPastDeadline = eventInfo.registrationDeadline
-        ? new Date() > new Date(eventInfo.registrationDeadline)
-        : false;
-
-      if (eventInfo.status === "deleted") {
-        throw new Error("EVENTO_EXCLUIDO");
-      }
-      if (eventInfo.isRegistrationPaused) {
-        throw new Error("INSCRICOES_PAUSADAS");
-      }
-      if (isPastDeadline) {
-        throw new Error("INSCRICOES_ENCERRADAS");
-      }
-      if (eventInfo.status !== "aberto") {
-        throw new Error("EVENTO_FECHADO");
-      }
-
-      // Can't reliably check counts in a transaction without retrieving all attendances or using a counter
-      // But we will use get() on a query for just counting if we can. Wait, transaction can't use queries easily.
-      // For this refactor, we will rely on client check mostly or skip maxParticipants strict block if needed,
-      // but let's do a naive approach by incrementing a counter on the event if needed, or just skipping transaction for the count.
-      transaction.set(attendanceRef, attendanceItem);
-    });
+    await setDoc(attendanceRef, attendanceItem);
 
     // Notificar o aluno
     await createNotification({

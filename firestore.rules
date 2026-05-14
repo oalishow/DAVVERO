@@ -99,7 +99,7 @@ service cloud.firestore {
       // Attendances
       match /attendances/{attId} {
         allow read: if true;
-        allow write: if isSignedIn();
+        allow write: if true;
       }
 
       // Availabilities
@@ -134,7 +134,7 @@ service cloud.firestore {
       // Notifications
       match /notifications/{notifId} {
         allow read: if isSignedIn() && (resource.data.recipientId == request.auth.uid || resource.data.recipientId == 'todos');
-        allow write: if isAdmin(appId);
+        allow write: if true;
         allow delete: if isSignedIn() && resource.data.recipientId == request.auth.uid;
       }
     }

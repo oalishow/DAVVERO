@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
+import { playSound } from "../lib/sounds";
 import {
   Settings,
   UserPlus,
@@ -311,6 +312,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
   }, [settings.version]);
 
   const handleLogoutAdmin = async () => {
+    playSound('logout');
     sessionStorage.removeItem("adminMasterLogged");
     await signOut(auth);
     onLogout();

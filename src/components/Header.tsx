@@ -1,11 +1,12 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { ShieldCheck, Download, Sun, Moon, Bell, Trash2, Lock, Share2, Copy } from 'lucide-react';
+import { ShieldCheck, Download, Sun, Moon, Bell, Trash2, Lock, Share2, Copy, Volume2, VolumeX, Volume1 } from 'lucide-react';
 import { APP_VERSION } from '../lib/constants';
 import { useSettings } from '../context/SettingsContext';
 import { useDialog } from '../context/DialogContext';
 import { useState, useEffect, useRef } from 'react';
 import { useNotifications } from '../hooks/useNotifications';
 import { markAllNotificationsAsRead, markNotificationAsRead, clearAllNotifications, clearNotification } from '../lib/firebase';
+import { getSoundVolume, setSoundVolume, playSound } from '../lib/sounds';
 
 const STUDENT_BOND_KEY = 'davveroId_student_identity';
 const STUDENT_TRACK_KEY = 'davveroId_student_track_ra';
@@ -16,7 +17,16 @@ export default function Header({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isDark, setIsDark] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [showVolumeDropdown, setShowVolumeDropdown] = useState(false);
+  const [currentVolume, setCurrentVolume] = useState(() => getSoundVolume());
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const volumeDropdownRef = useRef<HTMLDivElement>(null);
+
+  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newVol = parseFloat(e.target.value);
+    setCurrentVolume(newVol);
+    setSoundVolume(newVol);
+  };
 
   const isMasterLogged = localStorage.getItem('adminMasterLogged') === 'true';
   const bondedId = localStorage.getItem(STUDENT_BOND_KEY) || localStorage.getItem(STUDENT_TRACK_KEY);
@@ -54,6 +64,9 @@ export default function Header({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         setShowDropdown(false);
+      }
+      if (volumeDropdownRef.current && !volumeDropdownRef.current.contains(e.target as Node)) {
+        setShowVolumeDropdown(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -180,8 +193,56 @@ export default function Header({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
         >
           {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </button>
+        <div className="flex items-center justify-center px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-400 font-medium">
+          v{APP_VERSION}
+        </div>
       </div>
       <div className="absolute top-0 right-0 flex items-center gap-2 z-50 no-print print:hidden">
+        <div className="relative" ref={volumeDropdownRef}>
+          <button
+            onClick={() => setShowVolumeDropdown(!showVolumeDropdown)}
+            className="relative p-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 transition-colors no-print hover:scale-110 active:scale-95"
+            title="Configurações de Som"
+          >
+            {currentVolume === 0 ? <VolumeX className="w-4 h-4 text-rose-500" /> : currentVolume < 0.1 ? <Volume1 className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+          </button>
+          <AnimatePresence>
+            {showVolumeDropdown && (
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-4 z-50 text-left"
+              >
+                <div className="flex items-center gap-3">
+                  {currentVolume === 0 ? (
+                    <VolumeX 
+                      className="w-4 h-4 text-rose-500 hover:opacity-75 cursor-pointer" 
+                      onClick={() => handleVolumeChange({ target: { value: '0.05' } } as any)}
+                    />
+                  ) : (
+                    <Volume2 
+                      className="w-4 h-4 text-sky-500 hover:opacity-75 cursor-pointer" 
+                      onClick={() => handleVolumeChange({ target: { value: '0' } } as any)}
+                    />
+                  )}
+                  <input 
+                    type="range" 
+                    min="0" 
+                    max="0.5" 
+                    step="0.01" 
+                    value={currentVolume}
+                    onChange={(e) => {
+                      handleVolumeChange(e);
+                      if (parseFloat(e.target.value) > 0) playSound('click');
+                    }}
+                    className="w-full accent-sky-500 outline-none h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full appearance-none cursor-pointer"
+                  />
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
         {recipientId && (
           <div className="relative" ref={dropdownRef}>
             <button 

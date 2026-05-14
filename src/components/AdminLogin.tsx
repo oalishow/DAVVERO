@@ -9,6 +9,7 @@ import {
 } from "firebase/auth";
 
 import { useDialog } from "../context/DialogContext";
+import { playSound } from '../lib/sounds';
 
 interface AdminLoginProps {
   onLogin: () => void;
@@ -63,6 +64,7 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
         await signInWithEmailAndPassword(auth, email, emailPassword);
         await showAlert("Logado com sucesso!", { type: 'success', title: 'Bem-vindo(a)' });
       }
+      playSound('login');
       onLogin();
     } catch (err: any) {
       console.error(err);

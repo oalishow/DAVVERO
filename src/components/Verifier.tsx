@@ -17,6 +17,7 @@ import PublicRequestModal from "./PublicRequestModal";
 import SuggestEditModal from "./SuggestEditModal";
 import Modal from "./Modal";
 import { useDialog } from "../context/DialogContext";
+import { playSound } from '../lib/sounds';
 
 import { motion, AnimatePresence } from "motion/react";
 
@@ -70,6 +71,16 @@ export default function Verifier({
   const [isAdminLogged, setIsAdminLogged] = useState(false);
   const [scanSuccessAnim, setScanSuccessAnim] = useState(false);
   const scanHandledRef = useRef(false);
+
+  useEffect(() => {
+    if (validationResult) {
+      if (validationResult.status === "VALID" || validationResult.status === "JUST_CHECKED_IN") {
+        playSound('success');
+      } else {
+        playSound('error');
+      }
+    }
+  }, [validationResult]);
 
   useEffect(() => {
     const checkAdmin = () => {
@@ -330,6 +341,7 @@ export default function Verifier({
                   scanHandledRef.current = true;
                   
                   // Trigger animation
+                  playSound('scan');
                   setScanSuccessAnim(true);
                   // Wait for animation before verifying
                   setTimeout(() => {
@@ -377,6 +389,7 @@ export default function Verifier({
                   if (scanHandledRef.current) return;
                   scanHandledRef.current = true;
                   
+                  playSound('scan');
                   setScanSuccessAnim(true);
                   setTimeout(() => {
                     setIsScanning(false);

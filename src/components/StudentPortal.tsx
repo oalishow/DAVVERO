@@ -47,6 +47,7 @@ import { CertificateRenderer } from "./CertificateRenderer";
 import { useDialog } from "../context/DialogContext";
 import { useSettings } from "../context/SettingsContext";
 import TermsOfUseModal from "./TermsOfUseModal";
+import { playSound } from '../lib/sounds';
 
 const AsyncCertificateRenderer = memo(
   ({
@@ -299,6 +300,7 @@ export default function StudentPortal({
         status: "inscrito",
         timestamp: new Date().toISOString(),
       });
+      playSound('enroll');
     } catch (err) {
       console.error(err);
       showAlert("Erro ao realizar inscrição.", { type: 'error' });
@@ -695,35 +697,43 @@ export default function StudentPortal({
           setPinConfirm(pinInput);
           setPinInput("");
           setError("Confirme o PIN");
+          playSound('notification');
         } else if (pinInput === pinConfirm) {
           localStorage.setItem(STUDENT_FALLBACK_PIN, pinInput);
           setIsGenerating(true);
+          playSound('generating');
           await new Promise((resolve) => setTimeout(resolve, 3000));
           setIsUnlocked(true);
           setIsGenerating(false);
           setPinMode("none");
           setError(null);
+          playSound('login');
         } else {
           setError("Os PINs não coincidem");
           setPinInput("");
           setPinConfirm("");
+          playSound('error');
         }
       } else {
         setError("O PIN deve ter 4 dígitos");
+        playSound('error');
       }
     } else if (pinMode === "verify") {
       const savedPin = localStorage.getItem(STUDENT_FALLBACK_PIN);
       if (pinInput === savedPin) {
         setIsGenerating(true);
+        playSound('generating');
         await new Promise((resolve) => setTimeout(resolve, 3000));
         setIsUnlocked(true);
         setIsGenerating(false);
         setPinMode("none");
         setError(null);
         setPinInput("");
+        playSound('login');
       } else {
         setError("PIN Incorreto");
         setPinInput("");
+        playSound('error');
       }
     }
   };
@@ -755,6 +765,7 @@ export default function StudentPortal({
 
   const confirmUnlink = () => {
     if (isOverrideMode) return;
+    playSound('logout');
     localStorage.removeItem(STUDENT_BOND_KEY);
     localStorage.removeItem(STUDENT_FALLBACK_PIN);
     localStorage.removeItem("davveroId_student_identity"); // clear the specific key requested if its different
@@ -1112,7 +1123,10 @@ export default function StudentPortal({
               {!isOverrideMode && (
                 <>
                   <button
-                    onClick={() => setIsUnlocked(false)}
+                    onClick={() => {
+                      playSound('logout');
+                      setIsUnlocked(false);
+                    }}
                     className="p-2 text-slate-400 hover:text-sky-500 transition-colors"
                     title="Bloquear Proteção"
                   >
@@ -1232,6 +1246,7 @@ export default function StudentPortal({
                   member={member}
                   status={member.isActive ? "VALID" : "INACTIVE"}
                   onReset={() => {
+                    playSound('logout');
                     localStorage.removeItem(STUDENT_BOND_KEY);
                     localStorage.removeItem(STUDENT_FALLBACK_PIN);
                     setMember(null);

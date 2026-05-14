@@ -1,4 +1,16 @@
-export const playSound = (type: 'click' | 'success' | 'error' | 'notification' | 'pop') => {
+const DAVVERO_SOUND_VOLUME = 'davveroId_sound_volume';
+
+export const getSoundVolume = (): number => {
+  const vol = localStorage.getItem(DAVVERO_SOUND_VOLUME);
+  if (vol === null) return 0.05; // default volume
+  return parseFloat(vol);
+};
+
+export const setSoundVolume = (vol: number) => {
+  localStorage.setItem(DAVVERO_SOUND_VOLUME, vol.toString());
+};
+
+export const playSound = (type: 'click' | 'success' | 'error' | 'notification' | 'pop' | 'flip' | 'scan' | 'generating' | 'login' | 'logout' | 'enroll') => {
   try {
     const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioContext) return;
@@ -16,12 +28,15 @@ export const playSound = (type: 'click' | 'success' | 'error' | 'notification' |
     gain.connect(ctx.destination);
 
     const now = ctx.currentTime;
+    const vol = getSoundVolume();
+
+    if (vol <= 0) return; // Muted
 
     if (type === 'click') {
       osc.type = 'sine';
       osc.frequency.setValueAtTime(600, now);
       osc.frequency.exponentialRampToValueAtTime(800, now + 0.03);
-      gain.gain.setValueAtTime(0.05, now);
+      gain.gain.setValueAtTime(vol, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.03);
       osc.start(now);
       osc.stop(now + 0.03);
@@ -29,16 +44,44 @@ export const playSound = (type: 'click' | 'success' | 'error' | 'notification' |
       osc.type = 'sine';
       osc.frequency.setValueAtTime(400, now);
       osc.frequency.exponentialRampToValueAtTime(800, now + 0.05);
-      gain.gain.setValueAtTime(0.05, now);
+      gain.gain.setValueAtTime(vol, now);
       gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
       osc.start(now);
       osc.stop(now + 0.05);
+    } else if (type === 'flip') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(300, now);
+      osc.frequency.exponentialRampToValueAtTime(150, now + 0.1);
+      gain.gain.setValueAtTime(vol * 0.4, now);
+      gain.gain.linearRampToValueAtTime(0.001, now + 0.1);
+      osc.start(now);
+      osc.stop(now + 0.1);
+    } else if (type === 'scan') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(1200, now);
+      osc.frequency.setValueAtTime(1200, now + 0.05);
+      gain.gain.setValueAtTime(vol, now);
+      gain.gain.linearRampToValueAtTime(0.001, now + 0.05);
+      osc.start(now);
+      osc.stop(now + 0.05);
+    } else if (type === 'generating') {
+      osc.type = 'triangle';
+      osc.frequency.setValueAtTime(200, now);
+      osc.frequency.linearRampToValueAtTime(600, now + 0.4);
+      osc.frequency.linearRampToValueAtTime(400, now + 0.8);
+      osc.frequency.linearRampToValueAtTime(800, now + 1.2);
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(vol * 0.6, now + 0.2);
+      gain.gain.setValueAtTime(vol * 0.6, now + 0.8);
+      gain.gain.linearRampToValueAtTime(0.001, now + 1.2);
+      osc.start(now);
+      osc.stop(now + 1.2);
     } else if (type === 'success') {
       osc.type = 'sine';
       osc.frequency.setValueAtTime(400, now);
       osc.frequency.setValueAtTime(600, now + 0.1);
       osc.frequency.setValueAtTime(1000, now + 0.2);
-      gain.gain.setValueAtTime(0.05, now);
+      gain.gain.setValueAtTime(vol, now);
       gain.gain.linearRampToValueAtTime(0.001, now + 0.3);
       osc.start(now);
       osc.stop(now + 0.3);
@@ -46,7 +89,7 @@ export const playSound = (type: 'click' | 'success' | 'error' | 'notification' |
       osc.type = 'sawtooth';
       osc.frequency.setValueAtTime(200, now);
       osc.frequency.linearRampToValueAtTime(150, now + 0.2);
-      gain.gain.setValueAtTime(0.05, now);
+      gain.gain.setValueAtTime(vol, now);
       gain.gain.linearRampToValueAtTime(0.001, now + 0.2);
       osc.start(now);
       osc.stop(now + 0.2);
@@ -54,10 +97,36 @@ export const playSound = (type: 'click' | 'success' | 'error' | 'notification' |
       osc.type = 'sine';
       osc.frequency.setValueAtTime(800, now);
       osc.frequency.setValueAtTime(1200, now + 0.1);
-      gain.gain.setValueAtTime(0.05, now);
+      gain.gain.setValueAtTime(vol, now);
       gain.gain.linearRampToValueAtTime(0.001, now + 0.4);
       osc.start(now);
       osc.stop(now + 0.4);
+    } else if (type === 'login') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(440, now); // A4
+      osc.frequency.setValueAtTime(554.37, now + 0.1); // C#5
+      osc.frequency.setValueAtTime(659.25, now + 0.2); // E5
+      gain.gain.setValueAtTime(vol, now);
+      gain.gain.linearRampToValueAtTime(0.001, now + 0.5);
+      osc.start(now);
+      osc.stop(now + 0.5);
+    } else if (type === 'logout') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(659.25, now); // E5
+      osc.frequency.setValueAtTime(554.37, now + 0.1); // C#5
+      osc.frequency.setValueAtTime(440, now + 0.2); // A4
+      gain.gain.setValueAtTime(vol, now);
+      gain.gain.linearRampToValueAtTime(0.001, now + 0.5);
+      osc.start(now);
+      osc.stop(now + 0.5);
+    } else if (type === 'enroll') {
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(800, now);
+      osc.frequency.exponentialRampToValueAtTime(1600, now + 0.15);
+      gain.gain.setValueAtTime(vol, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      osc.start(now);
+      osc.stop(now + 0.3);
     }
   } catch (e) {
     console.warn('Audio playback failed', e);
