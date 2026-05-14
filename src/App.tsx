@@ -31,12 +31,13 @@ const Admin = lazy(() => import("./components/Admin"));
 const StudentPortal = lazy(() => import("./components/StudentPortal"));
 const EventsPage = lazy(() => import("./components/EventsPage"));
 const MuralPage = lazy(() => import("./components/MuralPage"));
+const ToolsPanel = lazy(() => import("./components/ToolsPanel"));
 
 export default function App() {
   const { settings } = useSettings();
   const { showAlert } = useDialog();
   const [activeTab, setActiveTab] = useState<
-    "verifier" | "admin" | "student" | "events" | "liturgy" | "mural"
+    "verifier" | "admin" | "student" | "events" | "liturgy" | "mural" | "tools"
   >("verifier");
   const [targetVerifyCode, setTargetVerifyCode] = useState<string | null>(null);
   const [adminForceViewCode, setAdminForceViewCode] = useState<string | null>(
@@ -322,10 +323,9 @@ export default function App() {
               Mural
             </button>
             <button
-              onClick={() => showAlert("Em breve! Novas ferramentas estarão disponíveis nas próximas atualizações.", { type: "info" })}
-              className={`relative flex flex-col items-center justify-center py-2 text-[10px] font-black uppercase tracking-tighter rounded-lg transition-all duration-300 text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200`}
+              onClick={() => setActiveTab("tools")}
+              className={`flex flex-col items-center justify-center py-2 text-[10px] font-black uppercase tracking-tighter rounded-lg transition-all duration-300 ${activeTab === "tools" ? "bg-white dark:bg-amber-600 text-amber-600 dark:text-white shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"}`}
             >
-              <span className="absolute -top-1 -right-1 bg-rose-500 text-white text-[8px] font-bold px-1 rounded-full shadow-sm animate-pulse">NOVO</span>
               <Wrench className="w-4 h-4 mb-0.5" />
               Ferramentas
             </button>
@@ -373,6 +373,7 @@ export default function App() {
                   {activeTab === "events" && <EventsPage onNavigateToStudent={() => setActiveTab("student")} />}
                   {activeTab === "liturgy" && <LiturgyPanel />}
                   {activeTab === "mural" && <MuralPage />}
+                  {activeTab === "tools" && <ToolsPanel />}
                   {activeTab === "student" && (
                     <StudentPortal
                       overrideCode={adminForceViewCode}
