@@ -127,28 +127,42 @@ export default function Verifier({
       if (p.length === 0) return;
 
       let successes = 0;
+      const newPending = [];
       for (const ci of p) {
         try {
+          console.log("Attempting to update attendance:", ci.attendanceId, "Ref path:", `artifacts/${appId}/public/data/attendances/${ci.attendanceId}`);
           await updateAttendanceStatus(ci.attendanceId, "presente");
           successes++;
-        } catch (e) {
-          console.error("Sync error:", e);
+        } catch (e: any) {
+          const msg = e.message || "";
+          if (e.code === 'not-found' || msg.includes("No document to update") || e.code === 'permission-denied') {
+            // Document missing, drop it
+            console.error("Sync error - dropping record (code: " + e.code + ", path: " + ci.attendanceId + "):", e);
+          } else {
+            console.error("Sync error - keeping record (code: " + e.code + "):", e);
+            newPending.push(ci);
+          }
         }
       }
-      if (successes > 0) {
-        const remaining = p.slice(successes);
+      
+      if (successes > 0 || newPending.length < p.length) {
         localStorage.setItem(
           "davveroId_pending_checkins",
-          JSON.stringify(remaining),
+          JSON.stringify(newPending),
         );
-        setPendingCheckins(remaining);
-        showAlert(
-          `${successes} check-in(s) sincronizado(s) com sucesso com o servidor.`,
-          { type: 'success' }
-        );
+        setPendingCheckins(newPending);
+        if (successes > 0) {
+          showAlert(
+            `${successes} check-in(s) sincronizado(s) com sucesso com o servidor.`,
+            { type: 'success' }
+          );
+        }
       }
     };
     window.addEventListener("online", handleOnline);
+    if (navigator.onLine) {
+      handleOnline();
+    }
     return () => window.removeEventListener("online", handleOnline);
   }, []);
 

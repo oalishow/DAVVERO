@@ -8,9 +8,10 @@ import MemberEditModal from './MemberEditModal';
 
 interface MemberListProps {
   initialFilterStatus?: 'all' | 'active' | 'inactive' | 'visitor';
+  adminAccessLevel?: "ADMIN" | "GERENTE" | "LEITOR";
 }
 
-export default function MemberList({ initialFilterStatus = 'all' }: MemberListProps) {
+export default function MemberList({ initialFilterStatus = 'all', adminAccessLevel = "ADMIN" }: MemberListProps) {
   const [members, setMembers] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
   const [editingMember, setEditingMember] = useState<Member | null>(null);
@@ -172,9 +173,11 @@ export default function MemberList({ initialFilterStatus = 'all' }: MemberListPr
                       </p>
                     </div>
                   </div>
-                  <button onClick={() => setEditingMember(member)} className="flex-shrink-0 py-1.5 sm:py-2 px-2 sm:px-3 rounded-lg text-xs font-bold text-sky-700 dark:text-sky-300 bg-sky-100 dark:bg-sky-600/20 hover:bg-sky-500 hover:text-white border border-sky-300 dark:border-sky-500/30 transition-all no-print">
-                    Gerir
-                  </button>
+                  {adminAccessLevel !== "LEITOR" && (
+                    <button onClick={() => setEditingMember(member)} className="flex-shrink-0 py-1.5 sm:py-2 px-2 sm:px-3 rounded-lg text-xs font-bold text-sky-700 dark:text-sky-300 bg-sky-100 dark:bg-sky-600/20 hover:bg-sky-500 hover:text-white border border-sky-300 dark:border-sky-500/30 transition-all no-print">
+                      Gerir
+                    </button>
+                  )}
                 </div>
               );
             })}

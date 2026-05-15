@@ -30,12 +30,31 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
       return;
     }
 
+    let resolvedRole = "ADMIN";
+    let inviteDocRef: any = null;
+
     if (isRegister) {
-      const storedMaster =
-        localStorage.getItem(PASSWORD_STORAGE_KEY) || DEFAULT_ADMIN_PASSWORD;
-      if (masterConfirm !== storedMaster) {
-        setError("Senha Mestra incorreta para autorizar o registro.");
-        return;
+      let skipMaster = false;
+      try {
+        const { doc: getDocRef, getDoc } = await import("firebase/firestore");
+        const { db, appId } = await import("../lib/firebase");
+        inviteDocRef = getDocRef(db, `artifacts/${appId}/public/data/admin_invites`, email.toLowerCase());
+        const inviteSnap = await getDoc(inviteDocRef);
+        if (inviteSnap.exists()) {
+          skipMaster = true;
+          resolvedRole = (inviteSnap.data() as any)?.role || "ADMIN";
+        }
+      } catch (e) {
+        console.error(e);
+      }
+
+      if (!skipMaster) {
+        const storedMaster =
+          localStorage.getItem(PASSWORD_STORAGE_KEY) || DEFAULT_ADMIN_PASSWORD;
+        if (masterConfirm !== storedMaster) {
+          setError("Senha Mestra incorreta. Um convite prévio é necessário se não usar a senha mestra.");
+          return;
+        }
       }
     }
 
@@ -48,13 +67,18 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
         
         // Save to administrators collection
         try {
-          const { setDoc, doc } = await import("firebase/firestore");
+          const { setDoc, doc, deleteDoc } = await import("firebase/firestore");
           const { db, appId } = await import("../lib/firebase");
+          
           await setDoc(doc(db, `artifacts/${appId}/public/data/administrators`, userCred.user.uid), {
             email: userCred.user.email,
-            role: "ADMIN", // SUPER_ADMIN can be set manually in DB for the owner, or master pass makes it super later
+            role: resolvedRole,
             createdAt: new Date().toISOString()
           });
+
+          if (inviteDocRef) {
+            await deleteDoc(inviteDocRef);
+          }
         } catch (dbErr) {
           console.error("Failed to save admin record", dbErr);
         }

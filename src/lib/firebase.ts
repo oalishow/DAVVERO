@@ -335,8 +335,10 @@ export const updateAttendanceStatus = async (
     const { doc, updateDoc } = await import("firebase/firestore");
     const attRef = doc(db, `artifacts/${appId}/public/data/attendances`, attendanceId);
     await updateDoc(attRef, { status });
-  } catch (e) {
-    console.error("Error updating attendance status: ", e);
+  } catch (e: any) {
+    if (e.code !== 'not-found' && !e.message?.includes('No document to update')) {
+      console.error("Error updating attendance status: ", e);
+    }
     throw e;
   }
 };

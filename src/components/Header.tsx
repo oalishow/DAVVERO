@@ -22,7 +22,7 @@ export default function Header({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const volumeDropdownRef = useRef<HTMLDivElement>(null);
 
-  const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleVolumeChange = (e: any) => {
     const newVol = parseFloat(e.target.value);
     setCurrentVolume(newVol);
     setSoundVolume(newVol);

@@ -41,7 +41,7 @@ import CertificateEditor from "./CertificateEditor";
 import Modal from "./Modal";
 import { useDialog } from "../context/DialogContext";
 
-export default function EventManagement() {
+export default function EventManagement({ adminAccessLevel = "ADMIN" }: { adminAccessLevel?: "ADMIN" | "GERENTE" | "LEITOR" }) {
   const { showAlert } = useDialog();
   const [events, setEvents] = useState<Event[]>([]);
   const [attendancesCount, setAttendancesCount] = useState<
@@ -290,6 +290,7 @@ export default function EventManagement() {
         />
       )}
 
+      {adminAccessLevel !== "LEITOR" && (
       <div className="bg-white dark:bg-slate-800/40 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-700/50">
         <h3 className="text-base sm:text-lg font-medium text-slate-800 dark:text-slate-200 mb-4 flex items-center gap-2">
           {editingEventId ? (
@@ -604,6 +605,7 @@ export default function EventManagement() {
           )}
         </div>
       </div>
+      )}
 
       <div className="bg-white dark:bg-slate-800/40 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-700/50">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
@@ -761,66 +763,70 @@ export default function EventManagement() {
                         <Search className="w-3.5 h-3.5 shrink-0" />{" "}
                         <span className="truncate">Inscritos</span>
                       </button>
-                      <button
-                        onClick={() => setShowCertificateEditor({ event, type: "participant" })}
-                        className={`flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 hover:bg-white dark:hover:bg-slate-700 text-xs font-bold rounded-md transition-colors ${
-                          event.certificateTemplate?.isApproved 
-                            ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10" 
-                            : "text-indigo-600 dark:text-indigo-400"
-                        }`}
-                      >
-                        <Award className="w-3.5 h-3.5 shrink-0" />{" "}
-                        <span className="truncate">Certificado</span>
-                        {event.certificateTemplate?.isApproved && (
-                          <CheckCircle className="w-3 h-3 text-emerald-500 ml-1" />
-                        )}
-                      </button>
-                      <button
-                        onClick={() => setShowCertificateEditor({ event, type: "organizer" })}
-                        className={`flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 hover:bg-white dark:hover:bg-slate-700 text-xs font-bold rounded-md transition-colors ${
-                          event.organizationCertificateTemplate?.isApproved 
-                            ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10" 
-                            : "text-amber-600 dark:text-amber-400"
-                        }`}
-                        title="Certificado de Organização"
-                      >
-                        <Award className="w-3.5 h-3.5 shrink-0" />{" "}
-                        <span className="truncate">Cert. Org.</span>
-                        {event.organizationCertificateTemplate?.isApproved && (
-                          <CheckCircle className="w-3 h-3 text-emerald-500 ml-1" />
-                        )}
-                      </button>
-                      {(event.status === "aberto" || event.status === "encerrado") && (
-                        <button
-                          onClick={() => handleEditClick(event)}
-                          className="flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 hover:bg-white dark:hover:bg-slate-700 text-sky-600 dark:text-sky-400 text-xs font-bold rounded-md transition-colors"
-                        >
-                          <Edit className="w-3.5 h-3.5 shrink-0" />{" "}
-                          <span className="truncate">Editar</span>
-                        </button>
+                      {adminAccessLevel !== "LEITOR" && (
+                        <>
+                          <button
+                            onClick={() => setShowCertificateEditor({ event, type: "participant" })}
+                            className={`flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 hover:bg-white dark:hover:bg-slate-700 text-xs font-bold rounded-md transition-colors ${
+                              event.certificateTemplate?.isApproved 
+                                ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10" 
+                                : "text-indigo-600 dark:text-indigo-400"
+                            }`}
+                          >
+                            <Award className="w-3.5 h-3.5 shrink-0" />{" "}
+                            <span className="truncate">Certificado</span>
+                            {event.certificateTemplate?.isApproved && (
+                              <CheckCircle className="w-3 h-3 text-emerald-500 ml-1" />
+                            )}
+                          </button>
+                          <button
+                            onClick={() => setShowCertificateEditor({ event, type: "organizer" })}
+                            className={`flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 hover:bg-white dark:hover:bg-slate-700 text-xs font-bold rounded-md transition-colors ${
+                              event.organizationCertificateTemplate?.isApproved 
+                                ? "text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-500/10" 
+                                : "text-amber-600 dark:text-amber-400"
+                            }`}
+                            title="Certificado de Organização"
+                          >
+                            <Award className="w-3.5 h-3.5 shrink-0" />{" "}
+                            <span className="truncate">Cert. Org.</span>
+                            {event.organizationCertificateTemplate?.isApproved && (
+                              <CheckCircle className="w-3 h-3 text-emerald-500 ml-1" />
+                            )}
+                          </button>
+                          {(event.status === "aberto" || event.status === "encerrado") && (
+                            <button
+                              onClick={() => handleEditClick(event)}
+                              className="flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 hover:bg-white dark:hover:bg-slate-700 text-sky-600 dark:text-sky-400 text-xs font-bold rounded-md transition-colors"
+                            >
+                              <Edit className="w-3.5 h-3.5 shrink-0" />{" "}
+                              <span className="truncate">Editar</span>
+                            </button>
+                          )}
+                          <button
+                            onClick={() => {
+                              setConfirmModal({
+                                isOpen: true,
+                                title: "Excluir Evento",
+                                message:
+                                  "Tem certeza que deseja excluir este evento? Esta ação não pode ser desfeita.",
+                                variant: "danger",
+                                onConfirm: () => {
+                                  deleteEvent(event.id)
+                                    .catch((e) => showAlert(e.message, { type: 'error' }));
+                                },
+                              });
+                            }}
+                            className="flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 hover:bg-rose-50 dark:hover:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-bold rounded-md transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 shrink-0" />{" "}
+                            <span className="truncate">Excluir</span>
+                          </button>
+                        </>
                       )}
-                      <button
-                        onClick={() => {
-                          setConfirmModal({
-                            isOpen: true,
-                            title: "Excluir Evento",
-                            message:
-                              "Tem certeza que deseja excluir este evento? Esta ação não pode ser desfeita.",
-                            variant: "danger",
-                            onConfirm: () => {
-                              deleteEvent(event.id)
-                                .catch((e) => showAlert(e.message, { type: 'error' }));
-                            },
-                          });
-                        }}
-                        className="flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 hover:bg-rose-50 dark:hover:bg-rose-500/10 text-rose-600 dark:text-rose-400 text-xs font-bold rounded-md transition-colors"
-                      >
-                        <Trash2 className="w-3.5 h-3.5 shrink-0" />{" "}
-                        <span className="truncate">Excluir</span>
-                      </button>
                     </div>
 
-                    {event.status === "aberto" && (
+                    {adminAccessLevel !== "LEITOR" && event.status === "aberto" && (
                       <button
                         onClick={() => {
                           setConfirmModal({
@@ -842,7 +848,7 @@ export default function EventManagement() {
                       </button>
                     )}
 
-                    {event.status === "encerrado" && (
+                    {adminAccessLevel !== "LEITOR" && event.status === "encerrado" && (
                       <button
                         onClick={() => {
                           setConfirmModal({

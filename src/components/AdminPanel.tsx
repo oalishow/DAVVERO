@@ -45,6 +45,7 @@ import SettingsModal from "./SettingsModal";
 import RecycleBinModal from "./RecycleBinModal";
 import BackupModal from "./BackupModal";
 import AdminRequestsModal from "./AdminRequestsModal";
+import AdminAccessModal from "./AdminAccessModal";
 import FajopaIDCard from "./FajopaIDCard";
 import { motion, AnimatePresence } from "motion/react";
 import { X } from "lucide-react";
@@ -110,9 +111,29 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const [newRole, setNewRole] = useState("");
   const [adminMember, setAdminMember] = useState<Member | null>(null);
   const [showMyCard, setShowMyCard] = useState(false);
+  const [adminAccessLevel, setAdminAccessLevel] = useState<"ADMIN" | "GERENTE" | "LEITOR">("LEITOR");
+  const [showAccessManagement, setShowAccessManagement] = useState(false);
 
   useEffect(() => {
-    const fetchAdminMember = async () => {
+    const fetchAdminRoleAndMember = async () => {
+      let currentRole: "ADMIN" | "GERENTE" | "LEITOR" = "ADMIN";
+      const isMasterLogged = sessionStorage.getItem("adminMasterLogged") === "true";
+      
+      if (!isMasterLogged && auth.currentUser && !auth.currentUser.isAnonymous && auth.currentUser.email) {
+         try {
+            const { collection: getColRef, query, where, getDocs, limit } = await import("firebase/firestore");
+            const adminColRef = getColRef(db, `artifacts/${appId}/public/data/administrators`);
+            const q = query(adminColRef, where("email", "==", auth.currentUser.email), limit(1));
+            const querySnapshot = await getDocs(q);
+            if (!querySnapshot.empty) {
+               currentRole = (querySnapshot.docs[0].data().role as any) || "ADMIN";
+            }
+         } catch(e) {
+            console.error(e);
+         }
+      }
+      setAdminAccessLevel(currentRole);
+
       if (auth.currentUser && !auth.currentUser.isAnonymous && auth.currentUser.email) {
         try {
           const q = query(
@@ -129,16 +150,23 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
               name: auth.currentUser.displayName || "Administrador",
               photoUrl: auth.currentUser.photoURL,
               email: auth.currentUser.email,
-              roles: ["Admin"],
+              roles: [currentRole],
               isActive: true
             } as any);
+          } else {
+             setAdminMember({
+               name: auth.currentUser.email,
+               email: auth.currentUser.email,
+               roles: [currentRole],
+               isActive: true
+             } as any);
           }
         } catch (e) {
           console.error("Failed to load admin member info:", e);
         }
       }
     };
-    fetchAdminMember();
+    fetchAdminRoleAndMember();
   }, []);
 
   const customRoles = settings.customRoles;
@@ -512,13 +540,25 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
           </div>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
-          <button
-            onClick={() => setShowSettings(true)}
-            className="p-1.5 sm:p-2 text-sky-600 dark:text-sky-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-all"
-            title="Configurações"
-          >
-            <Settings className="w-5 h-5" />
-          </button>
+          {adminAccessLevel === "ADMIN" && (
+            <button
+              onClick={() => setShowAccessManagement(true)}
+              className="px-2 py-1.5 sm:px-3 sm:py-2 bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 rounded-lg text-xs sm:text-sm font-bold flex items-center gap-2 transition-all border border-emerald-200 dark:border-emerald-500/30"
+              title="Gestão de Acessos"
+            >
+              <ShieldPlus className="w-4 h-4" />
+              <span className="hidden sm:inline">Acessos</span>
+            </button>
+          )}
+          {adminAccessLevel === "ADMIN" && (
+            <button
+              onClick={() => setShowSettings(true)}
+              className="p-1.5 sm:p-2 text-sky-600 dark:text-sky-400 hover:bg-slate-200 dark:hover:bg-slate-800 rounded-lg transition-all"
+              title="Configurações"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+          )}
           <button
             onClick={handleLogoutAdmin}
             className="py-1.5 px-3 sm:py-2 sm:px-4 border border-slate-300 dark:border-slate-600/60 rounded-lg text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-rose-50 dark:hover:text-rose-500 transition-all flex items-center gap-2"
@@ -595,10 +635,12 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
 
       {activeTab === "events" && (
         <div className="space-y-12">
-          <EventManagement />
-          <div className="pt-8 border-t border-slate-200 dark:border-slate-800/60 mt-8">
-            <EventsRecycleBin />
-          </div>
+          <EventManagement adminAccessLevel={adminAccessLevel} />
+          {adminAccessLevel !== "LEITOR" && (
+            <div className="pt-8 border-t border-slate-200 dark:border-slate-800/60 mt-8">
+              <EventsRecycleBin />
+            </div>
+          )}
         </div>
       )}
 
@@ -647,8 +689,10 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
               </p>
             </button>
             <button
-              onClick={() => setShowRequests(true)}
-              className="bg-white dark:bg-slate-800/40 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/50 flex flex-col items-center justify-center text-center shadow-sm hover:border-sky-500/50 transition-colors group"
+              onClick={() => {
+                if (adminAccessLevel !== "LEITOR") setShowRequests(true);
+              }}
+              className={`bg-white dark:bg-slate-800/40 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/50 flex flex-col items-center justify-center text-center shadow-sm ${adminAccessLevel !== "LEITOR" ? "hover:border-sky-500/50 cursor-pointer" : "cursor-default opacity-80"} transition-colors group`}
             >
               <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400 flex items-center justify-center mb-2 relative group-hover:scale-110 transition-transform">
                 <Clock className="w-4 h-4" />
@@ -684,8 +728,10 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
               </p>
             </button>
             <button
-              onClick={() => setShowBin(true)}
-              className="bg-white dark:bg-slate-800/40 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/50 flex flex-col items-center justify-center text-center shadow-sm hover:border-sky-500/50 transition-colors group"
+              onClick={() => {
+                if (adminAccessLevel !== "LEITOR") setShowBin(true);
+              }}
+              className={`bg-white dark:bg-slate-800/40 p-4 rounded-2xl border border-slate-200 dark:border-slate-700/50 flex flex-col items-center justify-center text-center shadow-sm ${adminAccessLevel !== "LEITOR" ? "hover:border-sky-500/50 cursor-pointer" : "cursor-default opacity-80"} transition-colors group`}
             >
               <div className="w-8 h-8 rounded-full bg-rose-100 dark:bg-rose-500/20 text-rose-600 dark:text-rose-400 flex items-center justify-center mb-2 group-hover:scale-110 transition-transform">
                 <Trash2 className="w-4 h-4" />
@@ -700,9 +746,12 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
           </div>
 
           <div className="mb-8">
-            <ImportExportMembers members={allMembers} onImportComplete={() => {}} />
+            {adminAccessLevel !== "LEITOR" && (
+              <ImportExportMembers members={allMembers} onImportComplete={() => {}} />
+            )}
           </div>
 
+          {adminAccessLevel !== "LEITOR" && (
           <div className="bg-white dark:bg-slate-800/40 p-4 sm:p-6 rounded-2xl border border-slate-200 dark:border-slate-700/50 no-print mb-8">
             <button 
               onClick={() => setIsRegistrationOpen(!isRegistrationOpen)}
@@ -957,7 +1006,9 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
             </div>
             )}
           </div>
+          )}
 
+          {adminAccessLevel !== "LEITOR" && (
           <div className="bg-emerald-50 dark:bg-emerald-900/10 p-4 sm:p-6 rounded-2xl border border-emerald-200 dark:border-emerald-500/30 no-print mt-6">
             <button 
               onClick={() => setIsVisitorOpen(!isVisitorOpen)}
@@ -1012,6 +1063,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
             </div>
             )}
           </div>
+          )}
 
           {status && status.type !== "loading" && (
             <div
@@ -1044,36 +1096,42 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
                   <Printer className="w-4 h-4" /> Imprimir
                 </button>
 
-                <button
-                  onClick={() => setShowBackup(true)}
-                  className="btn-modern flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 text-xs sm:text-sm font-medium dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-500/30"
-                >
-                  <Database className="w-4 h-4" /> Backups
-                </button>
+                {adminAccessLevel !== "LEITOR" && (
+                  <button
+                    onClick={() => setShowBackup(true)}
+                    className="btn-modern flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl border border-emerald-300 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 text-xs sm:text-sm font-medium dark:bg-emerald-900/20 dark:text-emerald-300 dark:border-emerald-500/30"
+                  >
+                    <Database className="w-4 h-4" /> Backups
+                  </button>
+                )}
 
-                <button
-                  onClick={() => setShowBin(true)}
-                  className="btn-modern flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl border border-rose-300 text-rose-700 bg-rose-50 hover:bg-rose-100 text-xs sm:text-sm font-medium dark:bg-rose-900/20 dark:text-rose-300 dark:border-rose-500/30"
-                >
-                  <Trash2 className="w-4 h-4" /> Lixeira
-                </button>
+                {adminAccessLevel !== "LEITOR" && (
+                  <button
+                    onClick={() => setShowBin(true)}
+                    className="btn-modern flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl border border-rose-300 text-rose-700 bg-rose-50 hover:bg-rose-100 text-xs sm:text-sm font-medium dark:bg-rose-900/20 dark:text-rose-300 dark:border-rose-500/30"
+                  >
+                    <Trash2 className="w-4 h-4" /> Lixeira
+                  </button>
+                )}
 
-                <button
-                  onClick={() => setShowRequests(true)}
-                  className={`btn-modern flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl border font-medium transition-all text-xs sm:text-sm relative ${stats.totalPending > 0 ? "bg-amber-500 border-amber-600 text-slate-900 shadow-md animate-pulse-gentle" : "border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-500/30"}`}
-                >
-                  <Bell className="w-4 h-4" />
-                  Solicitações
-                  {stats.totalPending > 0 && (
-                    <span className="absolute -top-2 -right-1.5 bg-rose-600 text-white text-[10px] sm:text-xs font-black min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full shadow-lg border-2 border-white dark:border-slate-800 animate-bounce">
-                      {stats.totalPending}
-                    </span>
-                  )}
-                </button>
+                {adminAccessLevel !== "LEITOR" && (
+                  <button
+                    onClick={() => setShowRequests(true)}
+                    className={`btn-modern flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl border font-medium transition-all text-xs sm:text-sm relative ${stats.totalPending > 0 ? "bg-amber-500 border-amber-600 text-slate-900 shadow-md animate-pulse-gentle" : "border-amber-300 text-amber-700 bg-amber-50 hover:bg-amber-100 dark:bg-amber-900/20 dark:text-amber-300 dark:border-amber-500/30"}`}
+                  >
+                    <Bell className="w-4 h-4" />
+                    Solicitações
+                    {stats.totalPending > 0 && (
+                      <span className="absolute -top-2 -right-1.5 bg-rose-600 text-white text-[10px] sm:text-xs font-black min-w-[20px] h-5 px-1.5 flex items-center justify-center rounded-full shadow-lg border-2 border-white dark:border-slate-800 animate-bounce">
+                        {stats.totalPending}
+                      </span>
+                    )}
+                  </button>
+                )}
               </div>
             </div>
 
-            {showList && <MemberList initialFilterStatus={listFilterStatus} />}
+            {showList && <MemberList initialFilterStatus={listFilterStatus} adminAccessLevel={adminAccessLevel} />}
 
             <div className="bg-gradient-to-br from-sky-500/10 to-blue-500/10 border border-sky-200 dark:border-sky-500/20 p-4 rounded-2xl mb-4 mt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
               <div className="flex items-center gap-3">
@@ -1118,6 +1176,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
       {showBin && <RecycleBinModal onClose={() => setShowBin(false)} />}
       {showBackup && <BackupModal onClose={() => setShowBackup(false)} />}
+      {showAccessManagement && <AdminAccessModal onClose={() => setShowAccessManagement(false)} />}
       {showRequests && (
         <AdminRequestsModal onClose={() => setShowRequests(false)} />
       )}

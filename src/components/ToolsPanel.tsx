@@ -6,7 +6,7 @@ export default function ToolsPanel() {
   const tools = [
     {
       name: 'Quiz Catequético',
-      url: 'https://quizzcatequetico.netlify.app',
+      url: 'https://quizcatequetico.netlify.app',
       icon: HelpCircle,
       color: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400',
       description: 'Teste e aprimore seus conhecimentos catequéticos'
