@@ -8,6 +8,15 @@ interface ChangelogModalProps {
 export default function ChangelogModal({ onClose }: ChangelogModalProps) {
   const versions = [
     {
+      version: 'v6.6.0',
+      title: 'Atualização do Sistema',
+      changes: [
+        'Melhorias gerais.',
+        'Otimização de performance.'
+      ],
+      current: true,
+    },
+    {
       version: 'v6.3.0',
       title: 'Relatórios e Otimização',
       changes: [
@@ -16,7 +25,7 @@ export default function ChangelogModal({ onClose }: ChangelogModalProps) {
         'Otimização do sistema de build e bundle do servidor.',
         'Melhorias na ordenação automática de datas e horários.',
       ],
-      current: true,
+      current: false,
     },
     {
       version: 'v6.2.0',

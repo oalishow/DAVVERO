@@ -123,7 +123,7 @@ export default function Verifier({
     const handleOnline = async () => {
       const pendingJson = localStorage.getItem("davveroId_pending_checkins");
       if (!pendingJson) return;
-      const p = JSON.parse(pendingJson) as { attendanceId: string }[];
+      const p = JSON.parse(pendingJson) as { attendanceId: string; dateString?: string }[];
       if (p.length === 0) return;
 
       let successes = 0;
@@ -131,7 +131,7 @@ export default function Verifier({
       for (const ci of p) {
         try {
           console.log("Attempting to update attendance:", ci.attendanceId, "Ref path:", `artifacts/${appId}/public/data/attendances/${ci.attendanceId}`);
-          await updateAttendanceStatus(ci.attendanceId, "presente");
+          await updateAttendanceStatus(ci.attendanceId, "presente", ci.dateString);
           successes++;
         } catch (e: any) {
           const msg = e.message || "";
@@ -548,7 +548,9 @@ export default function Verifier({
           return;
         }
 
-        if (attendance.status === "presente") {
+        const todayStr = new Date().toISOString().split("T")[0];
+        
+        if (attendance.status === "presente" && (!attendance.checkInDates || attendance.checkInDates.includes(todayStr))) {
           setValidationResult({
             member: finalMember,
             status: "ALREADY_PRESENT",
@@ -559,7 +561,7 @@ export default function Verifier({
 
         try {
           // Attempt online update
-          updateAttendanceStatus(attendance.id, "presente").catch(() => {});
+          updateAttendanceStatus(attendance.id, "presente", todayStr).catch(() => {});
           setSuccessMsg("Check-in realizado com sucesso!");
         } catch (e) {
           // Ignored here, we just save to pending
@@ -570,8 +572,8 @@ export default function Verifier({
           "davveroId_pending_checkins",
         );
         const pList = savedPendingText ? JSON.parse(savedPendingText) : [];
-        if (!pList.find((p: any) => p.attendanceId === attendance.id)) {
-          pList.push({ attendanceId: attendance.id });
+        if (!pList.find((p: any) => p.attendanceId === attendance.id && p.dateString === todayStr)) {
+          pList.push({ attendanceId: attendance.id, dateString: todayStr });
           localStorage.setItem(
             "davveroId_pending_checkins",
             JSON.stringify(pList),
@@ -584,7 +586,7 @@ export default function Verifier({
         }
 
         const updatedAttendances = attendancesCache.map((a) =>
-          a.id === attendance.id ? { ...a, status: "presente" as const } : a,
+          a.id === attendance.id ? { ...a, status: "presente" as const, checkInDates: [...(a.checkInDates || []), todayStr] } : a,
         );
         setAttendancesCache(updatedAttendances);
         localStorage.setItem(
@@ -765,10 +767,12 @@ export default function Verifier({
             if (!validationResult.member || !selectedEventId) return;
             try {
               setIsProcessing(true);
+              const todayStr = new Date().toISOString().split("T")[0];
               await enrollStudent({
                 eventId: selectedEventId,
                 studentId: validationResult.member.id,
                 status: "presente",
+                checkInDates: [todayStr],
                 timestamp: new Date().toISOString(),
               });
               // Add to cache to prevent second time
@@ -779,6 +783,7 @@ export default function Verifier({
                   eventId: selectedEventId,
                   studentId: validationResult.member!.id,
                   status: "presente",
+                  checkInDates: [todayStr],
                   timestamp: new Date().toISOString(),
                 },
               ]);

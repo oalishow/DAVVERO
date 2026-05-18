@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { X, Search, CheckCircle, Clock, Trash2, Shield, ShieldAlert, Star } from "lucide-react";
+import { X, Search, CheckCircle, Clock, Trash2, Shield, ShieldAlert, Star, ScanLine } from "lucide-react";
 import type { Event, Attendance, Member } from "../types";
-import { db, appId, unsubscribeFromEvent, updateAttendanceDetails } from "../lib/firebase";
+import { db, appId, unsubscribeFromEvent, updateAttendanceDetails, updateAttendanceStatus } from "../lib/firebase";
 import { doc, getDoc, collection, getDocs, query, where } from "firebase/firestore";
 import Modal from "./Modal";
 import { useDialog } from "../context/DialogContext";
@@ -102,6 +102,17 @@ export default function EventAttendeesModal({
     });
   };
 
+  const handleMarkPresent = async (attendanceId: string) => {
+    try {
+      const todayStr = new Date().toISOString().split("T")[0];
+      await updateAttendanceStatus(attendanceId, "presente", todayStr);
+      loadData();
+      showAlert("Presença registrada via painel.", { type: 'success' });
+    } catch (err) {
+      showAlert("Erro ao marcar presença.", { type: 'error' });
+    }
+  };
+
   const handleToggleOrganizer = async (eventId: string, studentId: string, currentStatus: boolean) => {
     try {
       await updateAttendanceDetails(eventId, studentId, { isOrganizer: !currentStatus });
@@ -126,6 +137,37 @@ export default function EventAttendeesModal({
     // We update the DOM directly before printing inside the invisible area, or just dynamically build HTML
     const printWindow = window.open("", "_blank");
     if (printWindow) {
+      let daysHeader = `<th class="border border-black p-2 w-48 text-center">ASSINATURA DO INSCRITO</th>`;
+      let evaluateDaysRow = () => `<td class="border border-black p-2 align-bottom"><div class="w-full h-8 border-b border-black border-dashed opacity-50"></div></td>`;
+
+      if (event?.startDate && event?.endDate) {
+        const start = new Date(event.startDate).getTime();
+        const end = new Date(event.endDate).getTime();
+        // If event spans more than 1 day
+        if (end > start) {
+          // Normalize to handle timezones slightly better by using simple math on ms, rough estimate:
+          const numDays = Math.round((end - start) / (1000 * 60 * 60 * 24)) + 1;
+          if (numDays > 1 && numDays <= 30) {
+            daysHeader = "";
+            let daysDataTemplate = "";
+            for (let i = 0; i < numDays; i++) {
+              const d = new Date(start + i * (1000 * 60 * 60 * 24));
+              const dayStr = `${String(d.getDate() + 1).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}`;
+              // +1 to date conceptually, but wait, `new Date(event.startDate)` parses YYYY-MM-DD as UTC midnight.
+              // So `d` will be the correct dates UTC. To be safe with `getDate()`, we can just use setUTCDate or similar, actually let's just parse properly.
+              // For simplicity:
+              const realD = new Date(event.startDate);
+              realD.setDate(realD.getDate() + i);
+              const properDayStr = `${String(realD.getDate()).padStart(2,'0')}/${String(realD.getMonth()+1).padStart(2,'0')}`;
+              
+              daysHeader += `<th class="border border-black p-2 w-28 text-center text-[10px]">ASSINATURA DO INSCRITO<br/>${properDayStr}</th>`;
+              daysDataTemplate += `<td class="border border-black p-2 align-bottom"><div class="w-full h-8 border-b border-black border-dashed opacity-50"></div></td>`;
+            }
+            evaluateDaysRow = () => daysDataTemplate;
+          }
+        }
+      }
+
       let trs = "";
       toPrint.forEach((sub, idx) => {
         const rolesText = [
@@ -139,9 +181,7 @@ export default function EventAttendeesModal({
             <td class="border border-black p-2 uppercase font-semibold">${sub.member?.name || "Desconhecido"}</td>
             <td class="border border-black p-2 text-center">${sub.member?.ra || (sub.member as any)?.cpf || "-"}</td>
             <td class="border border-black p-2 text-[10px] uppercase">${rolesText}</td>
-            <td class="border border-black p-2 align-bottom">
-              <div class="w-full h-8 border-b border-black border-dashed opacity-50"></div>
-            </td>
+            ${evaluateDaysRow()}
           </tr>
         `;
       });
@@ -154,7 +194,7 @@ export default function EventAttendeesModal({
           <p class="text-sm font-bold mt-2 uppercase">${event?.title}</p>
           <p class="text-xs font-semibold mt-1 bg-gray-200 inline-block px-2 py-0.5 rounded">${titleAddon}</p>
           <p class="text-xs mt-1">
-            Data de Início: ${event?.startDate ? new Date(event.startDate).toLocaleDateString("pt-BR") : "N/D"}
+            Data de Início: ${event?.startDate ? new Date(event.startDate + "T12:00:00").toLocaleDateString("pt-BR") : "N/D"}
           </p>
         </div>
         <table class="w-full border-collapse border border-black text-xs">
@@ -164,7 +204,7 @@ export default function EventAttendeesModal({
               <th class="border border-black p-2 text-left">NOME DO INSCRITO</th>
               <th class="border border-black p-2 w-24 text-center">R.A. / CPF</th>
               <th class="border border-black p-2 text-left">VÍNCULO / DIOCESE</th>
-              <th class="border border-black p-2 w-48 text-center">ASSINATURA DO INSCRITO</th>
+              ${daysHeader}
             </tr>
           </thead>
           <tbody>
@@ -515,9 +555,19 @@ export default function EventAttendeesModal({
                     {a.status === "presente" ||
                     a.status === "apto_para_certificado" ? (
                       <>
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-lg border border-emerald-200 dark:border-emerald-500/20">
-                          <CheckCircle className="w-3.5 h-3.5" /> Presente
-                        </span>
+                        <div className="flex flex-col items-end gap-1">
+                          <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 text-xs font-bold rounded-lg border border-emerald-200 dark:border-emerald-500/20">
+                            <CheckCircle className="w-3.5 h-3.5" /> Presente
+                          </span>
+                          {a.checkInDates && a.checkInDates.length > 0 && (
+                            <span className="text-[10px] text-slate-500 font-medium whitespace-nowrap">
+                              Dia(s): {a.checkInDates.map(d => {
+                                const [y,m,day] = d.split('-');
+                                return `${day}/${m}`;
+                              }).join(', ')}
+                            </span>
+                          )}
+                        </div>
                         <button
                           onClick={() => handleRemove(event.id, a.studentId)}
                           className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors border border-transparent hover:border-rose-200 dark:hover:border-rose-500/20"
@@ -528,9 +578,13 @@ export default function EventAttendeesModal({
                       </>
                     ) : (
                       <>
-                        <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold rounded-lg border border-slate-200 dark:border-slate-600">
-                          <Clock className="w-3.5 h-3.5" /> Inscrito
-                        </span>
+                        <button
+                          onClick={() => handleMarkPresent(a.id)}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold rounded-lg transition-colors shadow-sm"
+                          title="Marcar presença manualmente"
+                        >
+                          <ScanLine className="w-3.5 h-3.5" /> Fazer Check-in
+                        </button>
                         <button
                           onClick={() => handleRemove(event.id, a.studentId)}
                           className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors border border-transparent hover:border-rose-200 dark:hover:border-rose-500/20"

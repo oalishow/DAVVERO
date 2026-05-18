@@ -65,22 +65,12 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
       if (isRegister) {
         const userCred = await createUserWithEmailAndPassword(auth, email, emailPassword);
         
-        // Save to administrators collection
-        try {
-          const { setDoc, doc, deleteDoc } = await import("firebase/firestore");
-          const { db, appId } = await import("../lib/firebase");
-          
-          await setDoc(doc(db, `artifacts/${appId}/public/data/administrators`, userCred.user.uid), {
-            email: userCred.user.email,
-            role: resolvedRole,
-            createdAt: new Date().toISOString()
-          });
-
-          if (inviteDocRef) {
+        // Remove administrator save since we no longer manage access there
+        if (inviteDocRef) {
+          try {
+            const { deleteDoc } = await import("firebase/firestore");
             await deleteDoc(inviteDocRef);
-          }
-        } catch (dbErr) {
-          console.error("Failed to save admin record", dbErr);
+          } catch(e) {}
         }
         
         await showAlert("Administrador registrado com sucesso!", { type: 'success' });

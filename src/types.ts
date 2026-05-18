@@ -94,6 +94,7 @@ export interface Attendance {
   eventId: string;
   studentId: string;
   status: "inscrito" | "presente" | "apto_para_certificado" | "cancelado";
+  checkInDates?: string[]; // Array of YYYY-MM-DD
   isOrganizer?: boolean;
   timestamp: string;
   member?: Member;

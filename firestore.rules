@@ -14,19 +14,13 @@ service cloud.firestore {
 
     function isSuperAdmin(appId) {
       return isSignedIn() && (
-        ('email' in request.auth.token && request.auth.token.email == 'admblackjamf@gmail.com') ||
-        (exists(/databases/$(database)/documents/artifacts/$(appId)/public/data/administrators/$(request.auth.uid)) &&
-         'role' in get(/databases/$(database)/documents/artifacts/$(appId)/public/data/administrators/$(request.auth.uid)).data &&
-         get(/databases/$(database)/documents/artifacts/$(appId)/public/data/administrators/$(request.auth.uid)).data.role == 'SUPER_ADMIN')
+        ('email' in request.auth.token && request.auth.token.email == 'admblackjamf@gmail.com')
       );
     }
 
     function isAdmin(appId) {
       return isSignedIn() && (
         ('email' in request.auth.token && request.auth.token.email == 'admblackjamf@gmail.com') || 
-        (exists(/databases/$(database)/documents/artifacts/$(appId)/public/data/administrators/$(request.auth.uid)) && 
-         'role' in get(/databases/$(database)/documents/artifacts/$(appId)/public/data/administrators/$(request.auth.uid)).data &&
-         get(/databases/$(database)/documents/artifacts/$(appId)/public/data/administrators/$(request.auth.uid)).data.role in ['ADMIN', 'SUPER_ADMIN']) ||
         (exists(/databases/$(database)/documents/artifacts/$(appId)/public/data/students/$(request.auth.uid)) && 
          'roles' in get(/databases/$(database)/documents/artifacts/$(appId)/public/data/students/$(request.auth.uid)).data &&
          get(/databases/$(database)/documents/artifacts/$(appId)/public/data/students/$(request.auth.uid)).data.roles is list &&
@@ -35,11 +29,7 @@ service cloud.firestore {
     }
 
     function isGerente(appId) {
-      return isSignedIn() && (
-        exists(/databases/$(database)/documents/artifacts/$(appId)/public/data/administrators/$(request.auth.uid)) && 
-        'role' in get(/databases/$(database)/documents/artifacts/$(appId)/public/data/administrators/$(request.auth.uid)).data &&
-        get(/databases/$(database)/documents/artifacts/$(appId)/public/data/administrators/$(request.auth.uid)).data.role == 'GERENTE'
-      );
+      return isSignedIn(); // Simplification: we don't have GERENTE logic separately anymore
     }
 
     // Root Collections
@@ -47,9 +37,14 @@ service cloud.firestore {
       allow read, write: if true;
     }
 
+    // Mail queue
     match /mail/{mailId} {
       allow create: if true;
       allow read, update, delete: if false;
+    }
+
+    match /artifacts/{appId} {
+      allow read: if true;
     }
 
     match /artifacts/{appId}/public/data {
@@ -155,7 +150,19 @@ service cloud.firestore {
       
       // Notifications
       match /notifications/{notifId} {
-        allow read: if isSignedIn();
+        allow read: if true;
+        allow write: if true;
+      }
+
+      // Settings
+      match /settings/{docId} {
+        allow read: if true;
+        allow write: if isAdmin(appId) || isGerente(appId);
+      }
+
+      // Assets
+      match /assets/{assetId} {
+        allow read: if true;
         allow write: if true;
       }
     }

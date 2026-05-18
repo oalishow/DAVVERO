@@ -45,7 +45,6 @@ import SettingsModal from "./SettingsModal";
 import RecycleBinModal from "./RecycleBinModal";
 import BackupModal from "./BackupModal";
 import AdminRequestsModal from "./AdminRequestsModal";
-import AdminAccessModal from "./AdminAccessModal";
 import FajopaIDCard from "./FajopaIDCard";
 import { motion, AnimatePresence } from "motion/react";
 import { X } from "lucide-react";
@@ -111,27 +110,12 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
   const [newRole, setNewRole] = useState("");
   const [adminMember, setAdminMember] = useState<Member | null>(null);
   const [showMyCard, setShowMyCard] = useState(false);
-  const [adminAccessLevel, setAdminAccessLevel] = useState<"ADMIN" | "GERENTE" | "LEITOR">("LEITOR");
-  const [showAccessManagement, setShowAccessManagement] = useState(false);
+  const [adminAccessLevel, setAdminAccessLevel] = useState<"ADMIN" | "GERENTE" | "LEITOR">("ADMIN");
 
   useEffect(() => {
     const fetchAdminRoleAndMember = async () => {
       let currentRole: "ADMIN" | "GERENTE" | "LEITOR" = "ADMIN";
-      const isMasterLogged = sessionStorage.getItem("adminMasterLogged") === "true";
       
-      if (!isMasterLogged && auth.currentUser && !auth.currentUser.isAnonymous && auth.currentUser.email) {
-         try {
-            const { collection: getColRef, query, where, getDocs, limit } = await import("firebase/firestore");
-            const adminColRef = getColRef(db, `artifacts/${appId}/public/data/administrators`);
-            const q = query(adminColRef, where("email", "==", auth.currentUser.email), limit(1));
-            const querySnapshot = await getDocs(q);
-            if (!querySnapshot.empty) {
-               currentRole = (querySnapshot.docs[0].data().role as any) || "ADMIN";
-            }
-         } catch(e) {
-            console.error(e);
-         }
-      }
       setAdminAccessLevel(currentRole);
 
       if (auth.currentUser && !auth.currentUser.isAnonymous && auth.currentUser.email) {
@@ -540,16 +524,6 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
           </div>
         </div>
         <div className="flex items-center gap-2 sm:gap-3">
-          {adminAccessLevel === "ADMIN" && (
-            <button
-              onClick={() => setShowAccessManagement(true)}
-              className="px-2 py-1.5 sm:px-3 sm:py-2 bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 rounded-lg text-xs sm:text-sm font-bold flex items-center gap-2 transition-all border border-emerald-200 dark:border-emerald-500/30"
-              title="Gestão de Acessos"
-            >
-              <ShieldPlus className="w-4 h-4" />
-              <span className="hidden sm:inline">Acessos</span>
-            </button>
-          )}
           {adminAccessLevel === "ADMIN" && (
             <button
               onClick={() => setShowSettings(true)}
@@ -1176,7 +1150,6 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
       {showBin && <RecycleBinModal onClose={() => setShowBin(false)} />}
       {showBackup && <BackupModal onClose={() => setShowBackup(false)} />}
-      {showAccessManagement && <AdminAccessModal onClose={() => setShowAccessManagement(false)} />}
       {showRequests && (
         <AdminRequestsModal onClose={() => setShowRequests(false)} />
       )}
