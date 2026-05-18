@@ -12,6 +12,7 @@ import {
   User,
   Download,
   ExternalLink,
+  Share2,
 } from "lucide-react";
 import {
   collection,
@@ -108,6 +109,23 @@ export default function EventsPage({ onNavigateToStudent, renderSeminary = false
 
     return () => unsubEvents();
   }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const eventIdFromUrl = params.get("event");
+    if (eventIdFromUrl && events.length > 0) {
+      setTimeout(() => {
+        const eventEl = document.getElementById(`event-${eventIdFromUrl}`);
+        if (eventEl) {
+          eventEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          eventEl.classList.add("ring-4", "ring-indigo-500", "transition-all", "duration-1000");
+          setTimeout(() => {
+            eventEl.classList.remove("ring-4", "ring-indigo-500");
+          }, 3000);
+        }
+      }, 500); // Wait a bit for render
+    }
+  }, [events]);
 
   const hasPrivilegedRole = member?.roles?.some(r => ["ADMIN", "COORDENADOR", "GERENTE", "REITOR", "VICE-REITOR", "DIRETOR ESPIRITUAL", "PADRE"].includes(r.toUpperCase()));
 
@@ -368,6 +386,7 @@ END:VCALENDAR`;
 
             return (
               <div
+                id={`event-${event.id}`}
                 key={event.id}
                 className="bg-white dark:bg-slate-800/80 p-5 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm relative overflow-hidden group hover:border-sky-300 dark:hover:border-sky-700 transition-colors"
               >
@@ -531,13 +550,27 @@ END:VCALENDAR`;
                       </div>
                     )}
                     
-                    {/* Botão de Adicionar ao Calendário */}
-                    <button
-                      onClick={() => exportToCalendar(event)}
-                      className="mt-3 flex items-center justify-center sm:justify-start gap-2 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all shadow-sm w-max"
-                    >
-                      <CalendarPlus className="w-3.5 h-3.5" /> Adicionar ao Calendário
-                    </button>
+                    {/* Botão de Adicionar ao Calendário e Compartilhar */}
+                    <div className="flex flex-wrap gap-2 mt-3">
+                      <button
+                        onClick={() => exportToCalendar(event)}
+                        className="flex items-center justify-center sm:justify-start gap-2 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all shadow-sm w-max"
+                      >
+                        <CalendarPlus className="w-3.5 h-3.5" /> Adicionar ao Calendário
+                      </button>
+                      
+                      <button
+                        onClick={() => {
+                          const url = new URL(window.location.href);
+                          url.searchParams.set("event", event.id);
+                          navigator.clipboard.writeText(url.toString());
+                          showAlert("Link do evento copiado para a área de transferência!", { type: 'success' });
+                        }}
+                        className="flex items-center justify-center sm:justify-start gap-2 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all shadow-sm w-max"
+                      >
+                        <Share2 className="w-3.5 h-3.5" /> Compartilhar Evento
+                      </button>
+                    </div>
                   </div>
 
                   {/* Right Column - Action */}

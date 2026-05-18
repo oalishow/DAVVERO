@@ -38,7 +38,16 @@ export default function App() {
   const { showAlert } = useDialog();
   const [activeTab, setActiveTab] = useState<
     "verifier" | "admin" | "student" | "events" | "liturgy" | "mural" | "tools"
-  >("verifier");
+  >(() => {
+    // Only access window parameters on component mount
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      if (params.has("event")) {
+        return "events";
+      }
+    }
+    return "verifier";
+  });
   const [targetVerifyCode, setTargetVerifyCode] = useState<string | null>(null);
   const [adminForceViewCode, setAdminForceViewCode] = useState<string | null>(
     null,
