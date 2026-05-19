@@ -142,12 +142,13 @@ export default function EventsPage({ onNavigateToStudent, renderSeminary = false
   useEffect(() => {
     if (!member) return;
 
-    const qAttendances = query(collection(db, `artifacts/${appId}/public/data/attendances`));
+    const qAttendances = query(
+      collection(db, `artifacts/${appId}/public/data/attendances`),
+      where("studentId", "==", member.id)
+    );
     const unsubAttendances = onSnapshot(qAttendances, (snap) => {
       const atts = snap.docs.map(d => d.data() as Attendance);
-      setMyAttendances(
-        atts.filter((a: Attendance) => a.studentId === member.id),
-      );
+      setMyAttendances(atts);
     });
 
     return () => unsubAttendances();

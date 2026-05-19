@@ -10,7 +10,7 @@ import { motion } from "motion/react";
 
 const COLORS = ['#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
 
-export default function DashboardPanel() {
+export default function DashboardPanel({ allMembers }: { allMembers: any[] }) {
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState<{
     totalMembers: number;
@@ -28,9 +28,6 @@ export default function DashboardPanel() {
     const fetchDashboardData = async () => {
       try {
         setLoading(true);
-        // Fetch all members
-        const studentsQuery = query(collection(db, `artifacts/${appId}/public/data/students`));
-        const studentsSnapshot = await getDocs(studentsQuery);
         
         // Fetch appointments
         const appointmentsQuery = query(collection(db, `artifacts/${appId}/public/data/appointments`));
@@ -54,8 +51,7 @@ export default function DashboardPanel() {
             dateCounts[dateStr][type]++;
         };
 
-        studentsSnapshot.forEach((doc) => {
-          const data = doc.data();
+        allMembers.forEach((data) => {
           // Filter out trash/deleted
           if (data.isTrash) return;
 
@@ -172,7 +168,7 @@ export default function DashboardPanel() {
     };
 
     fetchDashboardData();
-  }, []);
+  }, [allMembers]);
 
   if (loading) {
     return (

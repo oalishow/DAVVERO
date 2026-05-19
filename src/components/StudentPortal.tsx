@@ -256,10 +256,13 @@ export default function StudentPortal({
         setSeminaryPastEvents(evts.filter((e) => e.status === "encerrado" && e.isSeminary && (!e.seminaryId || e.seminaryId === member.seminary || hasPrivilegedRole)));
       });
 
-      const qAttendances = query(collection(db, `artifacts/${appId}/public/data/attendances`));
+      const qAttendances = query(
+        collection(db, `artifacts/${appId}/public/data/attendances`),
+        where("studentId", "==", member.id)
+      );
       unsubAttendances = onSnapshot(qAttendances, (snap) => {
         const list = snap.docs.map(d => d.data() as Attendance);
-        setMyAttendances(list.filter((a) => a.studentId === member.id));
+        setMyAttendances(list);
       });
 
       return () => {

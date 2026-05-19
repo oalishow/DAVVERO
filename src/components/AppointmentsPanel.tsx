@@ -45,48 +45,50 @@ export default function AppointmentsPanel({ member }: AppointmentsPanelProps) {
   const loadData = async () => {
     setLoading(true);
     try {
-      // Load all students into map for photo resolution
-      const studentQ = query(collection(db, `artifacts/${appId}/public/data/students`));
-      const studentSnap = await getDocs(studentQ);
-      const studMap: Record<string, Member> = {};
-      studentSnap.forEach(doc => { studMap[doc.id] = { ...doc.data(), id: doc.id } as Member; });
-      setStudents(studMap);
+        // Load all students into map for photo resolution
+        const studentQ = query(collection(db, `artifacts/${appId}/public/data/students`));
+        const studentSnap = await getDocs(studentQ);
+        const studMap: Record<string, Member> = {};
+        const allStudentsList: Member[] = [];
+        studentSnap.forEach(doc => { 
+          const mem = { ...doc.data(), id: doc.id } as Member;
+          studMap[doc.id] = mem; 
+          allStudentsList.push(mem);
+        });
+        setStudents(studMap);
 
-      if (isProfessional) {
-        // Load professional's availabilities
-        const availQ = query(
-          collection(db, `artifacts/${appId}/public/data/availabilities`),
-          where("professionalId", "==", member.id)
-        );
-        const availSnap = await getDocs(availQ);
-        const avails = availSnap.docs.map(d => ({ id: d.id, ...d.data() } as Availability));
-        setMyAvailabilities(avails.sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime)));
+        if (isProfessional) {
+          // Load professional's availabilities
+          const availQ = query(
+            collection(db, `artifacts/${appId}/public/data/availabilities`),
+            where("professionalId", "==", member.id)
+          );
+          const availSnap = await getDocs(availQ);
+          const avails = availSnap.docs.map(d => ({ id: d.id, ...d.data() } as Availability));
+          setMyAvailabilities(avails.sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime)));
 
-        // Load professional's appointments
-        const apptQ = query(
-          collection(db, `artifacts/${appId}/public/data/appointments`),
-          where("professionalId", "==", member.id)
-        );
-        const apptSnap = await getDocs(apptQ);
-        const appts = apptSnap.docs.map(d => ({ id: d.id, ...d.data() } as Appointment));
-        setAppointmentsAsProf(appts.sort((a, b) => b.date.localeCompare(a.date)));
+          // Load professional's appointments
+          const apptQ = query(
+            collection(db, `artifacts/${appId}/public/data/appointments`),
+            where("professionalId", "==", member.id)
+          );
+          const apptSnap = await getDocs(apptQ);
+          const appts = apptSnap.docs.map(d => ({ id: d.id, ...d.data() } as Appointment));
+          setAppointmentsAsProf(appts.sort((a, b) => b.date.localeCompare(a.date)));
 
-      } else {
-        // Load student's appointments
-        const myApptQ = query(
-          collection(db, `artifacts/${appId}/public/data/appointments`),
-          where("memberId", "==", member.id)
-        );
-        const myApptSnap = await getDocs(myApptQ);
-        const myAppts = myApptSnap.docs.map(d => ({ id: d.id, ...d.data() } as Appointment));
-        setMyAppointments(myAppts.sort((a, b) => b.date.localeCompare(a.date)));
+        } else {
+          // Load student's appointments
+          const myApptQ = query(
+            collection(db, `artifacts/${appId}/public/data/appointments`),
+            where("memberId", "==", member.id)
+          );
+          const myApptSnap = await getDocs(myApptQ);
+          const myAppts = myApptSnap.docs.map(d => ({ id: d.id, ...d.data() } as Appointment));
+          setMyAppointments(myAppts.sort((a, b) => b.date.localeCompare(a.date)));
 
-        // Load all professionals
-        const profsQ = query(collection(db, `artifacts/${appId}/public/data/students`));
-        const profsSnap = await getDocs(profsQ);
-        const dbProfList = profsSnap.docs
-          .map(d => ({ id: d.id, ...d.data() } as Member))
-          .filter(m => m.roles?.some(r => ["REITOR", "VICE-REITOR", "PSICÓLOGA", "PSICÓLOGO", "DIRETOR ESPIRITUAL", "DIRETORA ESPIRITUAL", "PADRE"].includes(r.toUpperCase())));
+          // Load all professionals from the previously fetched student list
+          const dbProfList = allStudentsList
+            .filter(m => m.roles?.some(r => ["REITOR", "VICE-REITOR", "PSICÓLOGA", "PSICÓLOGO", "DIRETOR ESPIRITUAL", "DIRETORA ESPIRITUAL", "PADRE"].includes(r.toUpperCase())));
         
         // Merge custom professionals from settings
         const customProfs: Member[] = [];

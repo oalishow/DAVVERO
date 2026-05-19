@@ -604,7 +604,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
       </div>
 
       {activeTab === "dashboard" && (
-        <DashboardPanel />
+        <DashboardPanel allMembers={allMembers} />
       )}
 
       {activeTab === "events" && (
