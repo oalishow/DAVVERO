@@ -748,7 +748,7 @@ export default function StudentPortal({
         await verifyBiometric(credId);
         setIsGenerating(true);
         playSound('generating');
-        await new Promise(r => setTimeout(r, 1000));
+        await new Promise(r => setTimeout(r, 3000));
         setIsUnlocked(true);
         setIsGenerating(false);
         setPinMode("none");
@@ -759,7 +759,7 @@ export default function StudentPortal({
         localStorage.setItem("student_biometric_credential_id", newCredId);
         setIsGenerating(true);
         playSound('generating');
-        await new Promise(r => setTimeout(r, 1000));
+        await new Promise(r => setTimeout(r, 3000));
         setIsUnlocked(true);
         setIsGenerating(false);
         setPinMode("none");
@@ -911,40 +911,40 @@ export default function StudentPortal({
         );
       }
 
-      if (pinMode !== "none") {
-        if (isGenerating) {
-          return (
-            <div className="flex flex-col items-center justify-center py-24 px-4 text-center space-y-8 animate-in fade-in duration-500">
-              <div className="relative">
-                <motion.div
-                  className="w-24 h-24 rounded-3xl border-4 border-slate-100 border-t-indigo-500 animate-spin"
-                  style={{ borderRadius: "2rem" }}
-                />
-                <div className="absolute inset-0 flex items-center justify-center">
-                  <CreditCard className="w-10 h-10 text-indigo-500 animate-pulse" />
-                </div>
-              </div>
-              <div className="space-y-3">
-                <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">
-                  Gerando Documento
-                </h3>
-                <p className="text-xs text-slate-500 font-bold uppercase tracking-widest leading-relaxed">
-                  Criptografando dados e<br />
-                  aplicando selo de autenticidade
-                </p>
-              </div>
-              <div className="w-48 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
-                <motion.div
-                  className="h-full bg-indigo-500"
-                  initial={{ width: 0 }}
-                  animate={{ width: "100%" }}
-                  transition={{ duration: 3, ease: "linear" }}
-                />
+      if (isGenerating) {
+        return (
+          <div className="flex flex-col items-center justify-center py-24 px-4 text-center space-y-8 animate-in fade-in duration-500">
+            <div className="relative">
+              <motion.div
+                className="w-24 h-24 rounded-3xl border-4 border-slate-100 border-t-indigo-500 animate-spin"
+                style={{ borderRadius: "2rem" }}
+              />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <CreditCard className="w-10 h-10 text-indigo-500 animate-pulse" />
               </div>
             </div>
-          );
-        }
+            <div className="space-y-3">
+              <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">
+                Gerando Documento
+              </h3>
+              <p className="text-xs text-slate-500 font-bold uppercase tracking-widest leading-relaxed">
+                Criptografando dados e<br />
+                aplicando selo de autenticidade
+              </p>
+            </div>
+            <div className="w-48 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+              <motion.div
+                className="h-full bg-indigo-500"
+                initial={{ width: 0 }}
+                animate={{ width: "100%" }}
+                transition={{ duration: 3, ease: "linear" }}
+              />
+            </div>
+          </div>
+        );
+      }
 
+      if (pinMode !== "none") {
         const title =
           pinMode === "create"
             ? !pinConfirm

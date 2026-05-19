@@ -136,6 +136,9 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
     setSuccessMsg(null);
     try {
       const provider = new GoogleAuthProvider();
+      provider.setCustomParameters({
+         prompt: 'select_account'
+      });
       const result = await signInWithPopup(auth, provider);
       
       if (isRegister) {
@@ -146,11 +149,16 @@ export default function AdminLogin({ onLogin }: AdminLoginProps) {
       playSound('login');
       onLogin();
     } catch (err: any) {
-      console.error(err);
+      console.error("Autenticação Google erro:", err);
       if (err.code === "auth/popup-closed-by-user") {
-        setError("Login com o Google cancelado.");
+        setError("Login com o Google cancelado pela janela.");
+      } else if (err.code === "auth/unauthorized-domain") {
+        setError("Domínio não autorizado no Firebase. Adicione a URL atual em Authentication > Settings > Authorized domains.");
+      } else if (err.message && err.message.includes("Cross-Origin")) {
+        setError("Erro de permissão no navegador. Se estiver no preview, abra o app em uma nova guia.");
       } else {
-        setError("Erro ao autenticar com o Google: " + err.message);
+        // Fallback genérico melhorado
+        setError("Erro de autenticação com o Google. Se estiver vendo isso dentro de uma pré-visualização ou iframe, tente abrir o aplicativo em uma NOVA GUIA no navegador. Detalhe: " + err.message);
       }
     } finally {
       setLoading(false);
