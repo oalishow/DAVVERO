@@ -10,13 +10,18 @@ export const setSoundVolume = (vol: number) => {
   localStorage.setItem(DAVVERO_SOUND_VOLUME, vol.toString());
 };
 
+let sharedAudioContext: AudioContext | any = null;
+
 export const playSound = (type: 'click' | 'success' | 'error' | 'notification' | 'pop' | 'flip' | 'scan' | 'generating' | 'login' | 'logout' | 'enroll') => {
   try {
-    const AudioContext = window.AudioContext || (window as any).webkitAudioContext;
-    if (!AudioContext) return;
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!AudioContextClass) return;
     
-    // Resume audio context if it's suspended
-    const ctx = new AudioContext();
+    if (!sharedAudioContext) {
+      sharedAudioContext = new AudioContextClass();
+    }
+    
+    const ctx = sharedAudioContext;
     if (ctx.state === 'suspended') {
       ctx.resume();
     }
