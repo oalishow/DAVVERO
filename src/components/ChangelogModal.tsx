@@ -8,13 +8,22 @@ interface ChangelogModalProps {
 export default function ChangelogModal({ onClose }: ChangelogModalProps) {
   const versions = [
     {
+      version: 'v6.7.0',
+      title: 'Acesso com Biometria e Senha',
+      changes: [
+        'Adicionado suporte a métodos de biometria (Face ID, Touch ID, etc.) para desbloquear o passe.',
+        'Melhorias de acesso e segurança.'
+      ],
+      current: true,
+    },
+    {
       version: 'v6.6.0',
       title: 'Atualização do Sistema',
       changes: [
         'Melhorias gerais.',
         'Otimização de performance.'
       ],
-      current: true,
+      current: false,
     },
     {
       version: 'v6.3.0',

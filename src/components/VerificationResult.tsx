@@ -21,6 +21,7 @@ interface VerificationResultProps {
   onReset: () => void;
   onScanNext?: () => void;
   isMyID?: boolean;
+  isAdminLogged?: boolean;
   onEnrollAndCheckIn?: () => void;
 }
 
@@ -30,6 +31,7 @@ export default function VerificationResult({
   onReset,
   onScanNext,
   isMyID = false,
+  isAdminLogged = false,
   onEnrollAndCheckIn,
 }: VerificationResultProps) {
   const { showAlert } = useDialog();
@@ -286,7 +288,7 @@ export default function VerificationResult({
         </motion.div>
       )}
 
-      {status === "VALID" && member?.roles?.includes("VISITANTE") ? (
+      {status === "VALID" && member?.roles?.includes("VISITANTE") && !member?.roles?.some(r => r !== "VISITANTE") && !isAdminLogged && !isMyID ? (
         <div id="validation-card-capture" className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-[2rem] p-8 border-2 border-slate-200 dark:border-slate-800 shadow-xl flex flex-col items-center animate-success-pop text-center space-y-6">
           <div>
             <h3 className="text-xs font-black text-emerald-500 uppercase tracking-widest mb-2">Passe Visitante</h3>
@@ -376,6 +378,21 @@ export default function VerificationResult({
                   RA: {member.ra}
                 </p>
               )}
+              {(isMyID || isAdminLogged) && member?.cpf && (
+                <p className="text-[9px] font-medium text-slate-500 mt-0.5">
+                  CPF: {member.cpf}
+                </p>
+              )}
+              {(isMyID || isAdminLogged) && member?.birthdate && (
+                <p className="text-[9px] font-medium text-slate-500 mt-0.5">
+                  Nasc: {new Date(member.birthdate + "T12:00:00").toLocaleDateString("pt-BR")}
+                </p>
+              )}
+              {(isMyID || isAdminLogged) && member?.email && (
+                <p className="text-[9px] font-medium text-slate-500 mt-0.5">
+                  {member.email}
+                </p>
+              )}
 
               {member?.roles && member.roles.length > 0 && (
                 <div className="mt-1 flex flex-wrap justify-center gap-1">
@@ -396,6 +413,16 @@ export default function VerificationResult({
                   </p>
                   <p className="text-[10px] sm:text-xs font-bold text-sky-600 dark:text-sky-400 uppercase mt-0.5">
                     {member.course}
+                  </p>
+                </div>
+              )}
+              {member?.seminary && (
+                <div className="mt-2 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg p-1.5 text-center">
+                  <p className="text-[8px] text-slate-500 uppercase tracking-widest font-semibold">
+                    Seminário
+                  </p>
+                  <p className="text-[9px] sm:text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase mt-0.5">
+                    {member.seminary}
                   </p>
                 </div>
               )}

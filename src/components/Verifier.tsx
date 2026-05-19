@@ -758,6 +758,7 @@ export default function Verifier({
         <VerificationResult
           member={validationResult.member}
           status={validationResult.status}
+          isAdminLogged={isAdminLogged}
           onReset={() => {
             setValidationResult(null);
             setCodeInput("");

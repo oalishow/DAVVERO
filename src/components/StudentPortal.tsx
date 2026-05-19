@@ -18,7 +18,8 @@ import {
   CalendarHeart,
   BookHeart,
   HeartHandshake,
-  Trash2
+  Trash2,
+  Fingerprint
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { jsPDF } from "jspdf";
@@ -48,6 +49,7 @@ import { useDialog } from "../context/DialogContext";
 import { useSettings } from "../context/SettingsContext";
 import TermsOfUseModal from "./TermsOfUseModal";
 import { playSound } from '../lib/sounds';
+import { isWebAuthnSupported, registerBiometric, verifyBiometric } from "../lib/webauthn";
 
 const AsyncCertificateRenderer = memo(
   ({
@@ -738,6 +740,38 @@ export default function StudentPortal({
     }
   };
 
+  const handleBiometricAuth = async () => {
+    try {
+      setError(null);
+      const credId = localStorage.getItem("student_biometric_credential_id");
+      if (credId) {
+        await verifyBiometric(credId);
+        setIsGenerating(true);
+        playSound('generating');
+        await new Promise(r => setTimeout(r, 1000));
+        setIsUnlocked(true);
+        setIsGenerating(false);
+        setPinMode("none");
+        playSound('login');
+      } else {
+        if (!member) return;
+        const newCredId = await registerBiometric(member.email || "aluno@fajopa", member.name);
+        localStorage.setItem("student_biometric_credential_id", newCredId);
+        setIsGenerating(true);
+        playSound('generating');
+        await new Promise(r => setTimeout(r, 1000));
+        setIsUnlocked(true);
+        setIsGenerating(false);
+        setPinMode("none");
+        playSound('login');
+      }
+    } catch (e: any) {
+      console.error(e);
+      setError(e.message || "Falha na biometria");
+      playSound('error');
+    }
+  };
+
   const handleUnlockScreen = () => {
     const hasPin = localStorage.getItem(STUDENT_FALLBACK_PIN);
     if (hasPin) {
@@ -768,6 +802,7 @@ export default function StudentPortal({
     playSound('logout');
     localStorage.removeItem(STUDENT_BOND_KEY);
     localStorage.removeItem(STUDENT_FALLBACK_PIN);
+    localStorage.removeItem("student_biometric_credential_id");
     localStorage.removeItem("davveroId_student_identity"); // clear the specific key requested if its different
     setBondedId(null);
     setMember(null);
@@ -964,6 +999,15 @@ export default function StudentPortal({
             >
               Confirmar
             </button>
+            {isWebAuthnSupported() && (
+              <button
+                onClick={handleBiometricAuth}
+                className="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-slate-300 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2"
+              >
+                <Fingerprint className="w-5 h-5" />
+                {localStorage.getItem("student_biometric_credential_id") ? "Usar Biometria" : "Cadastrar Biometria"}
+              </button>
+            )}
             <div className="flex flex-col gap-2 mt-4 w-full">
               {pinMode === "verify" && (
                 <button
@@ -1017,15 +1061,27 @@ export default function StudentPortal({
                 Use sua senha para desbloquear a sua carteirinha.
               </p>
             </div>
-            <button
-              onClick={handleUnlockScreen}
-              className="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-bold shadow-xl shadow-slate-900/20 transition-all active:scale-95 flex items-center justify-center gap-2"
-            >
-              <KeyRound className="w-5 h-5" />
-              {localStorage.getItem(STUDENT_FALLBACK_PIN)
-                ? "Digitar Senha / PIN"
-                : "Criar Senha de Acesso"}
-            </button>
+            <div className="flex flex-col gap-3 w-full">
+              <button
+                onClick={handleUnlockScreen}
+                className="w-full py-4 bg-slate-900 hover:bg-slate-800 text-white rounded-2xl font-bold shadow-xl shadow-slate-900/20 transition-all active:scale-95 flex items-center justify-center gap-2"
+              >
+                <KeyRound className="w-5 h-5" />
+                {localStorage.getItem(STUDENT_FALLBACK_PIN)
+                  ? "Digitar Senha / PIN"
+                  : "Criar Senha de Acesso"}
+              </button>
+
+              {isWebAuthnSupported() && localStorage.getItem("student_biometric_credential_id") && (
+                <button
+                  onClick={handleBiometricAuth}
+                  className="w-full py-4 bg-sky-100 hover:bg-sky-200 text-sky-700 dark:bg-sky-900/30 dark:hover:bg-sky-900/50 dark:text-sky-300 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2"
+                >
+                  <Fingerprint className="w-5 h-5" />
+                  Acessar com Biometria
+                </button>
+              )}
+            </div>
             {error && (
               <p className="text-[10px] text-rose-500 font-bold uppercase">
                 {error}
