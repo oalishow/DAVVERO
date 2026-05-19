@@ -799,12 +799,12 @@ export default function Verifier({
               setIsProcessing(false);
             }
           }}
-          onScanNext={verifyMode === "EVENT" ? () => {
+          onScanNext={() => {
             setValidationResult(null);
             setCodeInput("");
             setSuccessMsg("");
             startScanner();
-          } : undefined}
+          }}
         />
         {validationResult.member && validationResult.status !== "NOT_FOUND" && (
           <div className="mt-4 w-full max-w-sm px-1 no-print">

@@ -65,17 +65,20 @@ export const playSound = (type: 'click' | 'success' | 'error' | 'notification' |
       osc.start(now);
       osc.stop(now + 0.05);
     } else if (type === 'generating') {
-      osc.type = 'triangle';
-      osc.frequency.setValueAtTime(200, now);
-      osc.frequency.linearRampToValueAtTime(600, now + 0.4);
-      osc.frequency.linearRampToValueAtTime(400, now + 0.8);
-      osc.frequency.linearRampToValueAtTime(800, now + 1.2);
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(440, now); // A4
+      osc.frequency.setValueAtTime(554.37, now + 0.15); // C#5
+      osc.frequency.setValueAtTime(659.25, now + 0.3); // E5
+      osc.frequency.setValueAtTime(880, now + 0.45); // A5
+      osc.frequency.setValueAtTime(1108.73, now + 0.6); // C#6
+      osc.frequency.setValueAtTime(1318.51, now + 0.75); // E6
+      
       gain.gain.setValueAtTime(0, now);
-      gain.gain.linearRampToValueAtTime(vol * 0.6, now + 0.2);
-      gain.gain.setValueAtTime(vol * 0.6, now + 0.8);
-      gain.gain.linearRampToValueAtTime(0.001, now + 1.2);
+      gain.gain.linearRampToValueAtTime(vol * 0.4, now + 0.1);
+      gain.gain.setValueAtTime(vol * 0.4, now + 0.6);
+      gain.gain.linearRampToValueAtTime(0.001, now + 0.9);
       osc.start(now);
-      osc.stop(now + 1.2);
+      osc.stop(now + 0.9);
     } else if (type === 'success') {
       osc.type = 'sine';
       osc.frequency.setValueAtTime(400, now);

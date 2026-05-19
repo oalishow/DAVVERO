@@ -1,5 +1,9 @@
 import { precacheAndRoute, createHandlerBoundToURL } from 'workbox-precaching';
 import { NavigationRoute, registerRoute } from 'workbox-routing';
+import { StaleWhileRevalidate, NetworkFirst } from 'workbox-strategies';
+import { ExpirationPlugin } from 'workbox-expiration';
+import { CacheableResponsePlugin } from 'workbox-cacheable-response';
+import { BackgroundSyncPlugin } from 'workbox-background-sync';
 
 declare const self: any;
 
@@ -18,6 +22,43 @@ try {
 } catch (e) {
   console.log("Could not set up navigation fallback", e);
 }
+
+// Background Sync para operações Firestore offline
+const bgSyncPlugin = new BackgroundSyncPlugin('firestore-queue', {
+  maxRetentionTime: 24 * 60, // Retry for max of 24 Hours (specified in minutes)
+});
+
+// Cache para chamadas do Firestore e APIs (Dados básicos)
+registerRoute(
+  ({ url }) => url.origin.includes('firestore.googleapis.com'),
+  new NetworkFirst({
+    cacheName: 'firestore-data-cache',
+    plugins: [
+      new ExpirationPlugin({
+        maxEntries: 100,
+        maxAgeSeconds: 24 * 60 * 60, // 24 hours
+      }),
+      bgSyncPlugin,
+    ]
+  })
+);
+
+// Cache para imagens profile/eventos
+registerRoute(
+  ({ request, url }) => request.destination === 'image' || url.origin.includes('firebasestorage.googleapis.com'),
+  new StaleWhileRevalidate({
+    cacheName: 'images-cache',
+    plugins: [
+      new CacheableResponsePlugin({
+        statuses: [0, 200],
+      }),
+      new ExpirationPlugin({
+        maxEntries: 50,
+        maxAgeSeconds: 30 * 24 * 60 * 60, // 30 dias
+      }),
+    ],
+  })
+);
 
 self.addEventListener("push", (event: any) => {
   const data = event.data ? event.data.json() : { title: "Nova Notificação", body: "Você recebeu uma mensagem." };

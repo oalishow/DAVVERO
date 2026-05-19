@@ -543,7 +543,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-6 pb-2 border-b border-slate-200 dark:border-slate-700/60 no-print">
+      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-6 pb-2 border-b border-slate-200 dark:border-slate-700/60 print:hidden">
         <button
           onClick={() => setActiveTab("dashboard")}
           className={`flex items-center gap-2 px-4 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all whitespace-nowrap border ${

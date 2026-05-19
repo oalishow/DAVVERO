@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Printer, CheckCircle, QrCode } from "lucide-react";
+import { Printer, CheckCircle, QrCode, Keyboard } from "lucide-react";
 import type { Member } from "../types";
 import { QRCodeSVG } from "qrcode.react";
 import { URL_STORAGE_KEY, DEFAULT_PUBLIC_URL } from "../lib/constants";
@@ -49,7 +49,7 @@ export default function VerificationResult({
   switch (status) {
     case "VALID":
       themeClass = "emerald";
-      titleText = "Identidade Validada";
+      titleText = "Verificado com Sucesso";
       subtitleText = "Documento Estudantil Digital";
       descHtml =
         "Acesso Concedido. Membro da comunidade devidamente matriculado.";
@@ -231,16 +231,28 @@ export default function VerificationResult({
   return (
     <div className="w-full mt-2 print:mt-1 animated-fade-in flex flex-col items-center">
       {onScanNext && (
-        <motion.button
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.2 }}
-          onClick={onScanNext}
-          className="w-full max-w-sm mb-4 py-4 px-4 rounded-2xl text-base sm:text-lg font-black text-white bg-sky-600 hover:bg-sky-500 transition-all shadow-xl shadow-sky-600/30 flex items-center justify-center gap-3"
-        >
-          <QrCode className="w-6 h-6 animate-bounce" />
-          Ler Próximo QR Code
-        </motion.button>
+        <div className="w-full max-w-sm mb-4 flex gap-2">
+          <motion.button
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.2 }}
+            onClick={onScanNext}
+            className="flex-1 py-4 px-2 rounded-2xl text-sm sm:text-base font-black text-white bg-sky-600 hover:bg-sky-500 transition-all shadow-xl shadow-sky-600/30 flex items-center justify-center gap-2"
+          >
+            <QrCode className="w-5 h-5 sm:w-6 sm:h-6 animate-bounce" />
+            Escanear
+          </motion.button>
+          <motion.button
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ type: "spring", stiffness: 300, damping: 20, delay: 0.3 }}
+            onClick={onReset}
+            className="flex-1 py-4 px-2 rounded-2xl text-sm sm:text-base font-black text-slate-600 dark:text-slate-300 bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 transition-all shadow-xl flex items-center justify-center gap-2"
+          >
+            <Keyboard className="w-5 h-5 sm:w-6 sm:h-6" />
+            Digitar Cód.
+          </motion.button>
+        </div>
       )}
 
       {status === 'JUST_CHECKED_IN' && (
@@ -353,8 +365,17 @@ export default function VerificationResult({
           </div>
 
           <h2
-            className={`text-base sm:text-xl font-black mb-0.5 sm:mb-1 uppercase tracking-widest ${status === "VALID" || status === "JUST_CHECKED_IN" ? "text-emerald-600 dark:text-emerald-400" : status === "INACTIVE" || status === "ALREADY_PRESENT" ? "text-amber-600 dark:text-amber-400" : "text-rose-600 dark:text-rose-400"}`}
+            className={`text-base sm:text-xl font-black mb-0.5 sm:mb-1 uppercase tracking-widest flex items-center justify-center gap-1.5 ${status === "VALID" || status === "JUST_CHECKED_IN" ? "text-emerald-600 dark:text-emerald-400" : status === "INACTIVE" || status === "ALREADY_PRESENT" ? "text-amber-600 dark:text-amber-400" : "text-rose-600 dark:text-rose-400"}`}
           >
+            {(status === "VALID" || status === "JUST_CHECKED_IN") && (
+              <motion.div
+                initial={{ scale: 0, rotate: -180 }}
+                animate={{ scale: 1, rotate: 0 }}
+                transition={{ type: "spring", stiffness: 200, damping: 12, delay: 0.1 }}
+              >
+                <CheckCircle className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-500" />
+              </motion.div>
+            )}
             {titleText}
           </h2>
           <p

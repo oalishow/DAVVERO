@@ -5,7 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, Legend, ResponsiveContainer,
   PieChart, Pie, Cell, LineChart, Line
 } from "recharts";
-import { Users, Calendar, Activity, Loader2, TrendingUp, UserCheck, Shield } from "lucide-react";
+import { Users, Calendar, Activity, Loader2, TrendingUp, UserCheck, Shield, Printer } from "lucide-react";
 import { motion } from "motion/react";
 
 const COLORS = ['#0ea5e9', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899', '#14b8a6', '#f97316'];
@@ -187,14 +187,23 @@ export default function DashboardPanel() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center gap-3 mb-6">
-        <div className="bg-sky-100 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400 p-2.5 rounded-xl">
-          <Activity className="w-5 h-5" />
+      <div className="flex items-center gap-3 mb-6 justify-between">
+        <div className="flex items-center gap-3">
+          <div className="bg-sky-100 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400 p-2.5 rounded-xl">
+            <Activity className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Dashboard Analítico</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Métricas e acompanhamento do uso do sistema</p>
+          </div>
         </div>
-        <div>
-          <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Dashboard Analítico</h2>
-          <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Métricas e acompanhamento do uso do sistema</p>
-        </div>
+        <button
+          onClick={() => window.print()}
+          className="flex items-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-bold shadow-sm transition-all shadow-black/5 active:scale-95 print:hidden"
+        >
+          <Printer className="w-4 h-4" />
+          <span className="hidden sm:inline">Imprimir</span>
+        </button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

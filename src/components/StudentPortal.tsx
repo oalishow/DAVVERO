@@ -476,7 +476,7 @@ export default function StudentPortal({
         } else {
           // If the user has a PIN, require them to unlock, ONLY if they are not already unlocked in this session
           const isAlreadyUnlockedInSession = sessionStorage.getItem("davveroId_unlocked") === "true";
-          if (localStorage.getItem(STUDENT_FALLBACK_PIN) && !isAlreadyUnlockedInSession) {
+          if ((localStorage.getItem(STUDENT_FALLBACK_PIN) || localStorage.getItem("student_biometric_credential_id")) && !isAlreadyUnlockedInSession) {
             setIsUnlocked(false);
           } else {
             setIsUnlocked(true);
@@ -583,7 +583,7 @@ export default function StudentPortal({
 
         // Start PrePinAnimation with slower progression bar
         setLinkMode(false);
-        setPinMode("create");
+        setPinMode("none");
         setIsPrePinAnimation(true);
         // We will manage the loading bar in the UI during this 3000ms delay
         await new Promise((resolve) => setTimeout(resolve, 3000));
@@ -853,65 +853,65 @@ export default function StudentPortal({
 
   if (bondedId && member) {
     if (!isUnlocked) {
-      if (pinMode !== "none") {
-        if (isPrePinAnimation && member) {
-          return (
-            <div className="flex flex-col items-center justify-center py-24 px-4 text-center space-y-8 animate-in fade-in zoom-in duration-500">
-              <div className="relative w-full max-w-[240px]">
-                <div className="absolute -inset-4 bg-emerald-500/20 dark:bg-emerald-500/10 rounded-[2rem] blur-xl animate-pulse z-0" />
-                <div className="relative bg-white dark:bg-slate-900 border-2 border-emerald-100 dark:border-emerald-900/40 rounded-3xl p-6 shadow-xl shadow-emerald-500/10 z-10 space-y-6">
-                  <div className="mx-auto w-16 h-16 bg-emerald-100 dark:bg-emerald-500/20 rounded-2xl flex items-center justify-center">
-                    <User className="w-8 h-8 text-emerald-600 dark:text-emerald-400 animate-pulse" />
+      if (isPrePinAnimation && member) {
+        return (
+          <div className="flex flex-col items-center justify-center py-24 px-4 text-center space-y-8 animate-in fade-in zoom-in duration-500">
+            <div className="relative w-full max-w-[240px]">
+              <div className="absolute -inset-4 bg-emerald-500/20 dark:bg-emerald-500/10 rounded-[2rem] blur-xl animate-pulse z-0" />
+              <div className="relative bg-white dark:bg-slate-900 border-2 border-emerald-100 dark:border-emerald-900/40 rounded-3xl p-6 shadow-xl shadow-emerald-500/10 z-10 space-y-6">
+                <div className="mx-auto w-16 h-16 bg-emerald-100 dark:bg-emerald-500/20 rounded-2xl flex items-center justify-center">
+                  <User className="w-8 h-8 text-emerald-600 dark:text-emerald-400 animate-pulse" />
+                </div>
+
+                <div className="space-y-4">
+                  <div className="space-y-1">
+                    <motion.h3
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-tighter"
+                    >
+                      Identidade Localizada
+                    </motion.h3>
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.1 }}
+                      className="text-sm text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest leading-tight"
+                    >
+                      {member.name.split(" ")[0]}
+                    </motion.p>
                   </div>
 
-                  <div className="space-y-4">
-                    <div className="space-y-1">
-                      <motion.h3
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-tighter"
+                  <div className="space-y-2">
+                    <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                      <motion.div
+                        initial={{ width: "0%" }}
+                        animate={{ width: "100%" }}
+                        transition={{ duration: 1.5, ease: "easeInOut" }}
+                        className="h-full bg-emerald-500 relative"
                       >
-                        Identidade Localizada
-                      </motion.h3>
-                      <motion.p
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.1 }}
-                        className="text-sm text-slate-700 dark:text-slate-300 font-bold uppercase tracking-widest leading-tight"
-                      >
-                        {member.name.split(" ")[0]}
-                      </motion.p>
+                        <div className="absolute top-0 right-0 bottom-0 left-0 bg-white/20 animate-pulse" />
+                      </motion.div>
                     </div>
-
-                    <div className="space-y-2">
-                      <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
-                        <motion.div
-                          initial={{ width: "0%" }}
-                          animate={{ width: "100%" }}
-                          transition={{ duration: 1.5, ease: "easeInOut" }}
-                          className="h-full bg-emerald-500 relative"
-                        >
-                          <div className="absolute top-0 right-0 bottom-0 left-0 bg-white/20 animate-pulse" />
-                        </motion.div>
-                      </div>
-                      <motion.p
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.2 }}
-                        className="text-[10px] sm:text-xs font-bold text-emerald-600 dark:text-emerald-400 tracking-wider leading-relaxed"
-                      >
-                        Preparando ambiente seguro e{" "}
-                        <br className="hidden sm:block" /> aplicando camadas de
-                        segurança...
-                      </motion.p>
-                    </div>
+                    <motion.p
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.2 }}
+                      className="text-[10px] sm:text-xs font-bold text-emerald-600 dark:text-emerald-400 tracking-wider leading-relaxed"
+                    >
+                      Preparando ambiente seguro e{" "}
+                      <br className="hidden sm:block" /> aplicando camadas de
+                      segurança...
+                    </motion.p>
                   </div>
                 </div>
               </div>
             </div>
-          );
-        }
+          </div>
+        );
+      }
 
+      if (pinMode !== "none") {
         if (isGenerating) {
           return (
             <div className="flex flex-col items-center justify-center py-24 px-4 text-center space-y-8 animate-in fade-in duration-500">
@@ -1072,13 +1072,13 @@ export default function StudentPortal({
                   : "Criar Senha de Acesso"}
               </button>
 
-              {isWebAuthnSupported() && localStorage.getItem("student_biometric_credential_id") && (
+              {isWebAuthnSupported() && (
                 <button
                   onClick={handleBiometricAuth}
                   className="w-full py-4 bg-sky-100 hover:bg-sky-200 text-sky-700 dark:bg-sky-900/30 dark:hover:bg-sky-900/50 dark:text-sky-300 rounded-2xl font-bold transition-all active:scale-95 flex items-center justify-center gap-2"
                 >
                   <Fingerprint className="w-5 h-5" />
-                  Acessar com Biometria
+                  {localStorage.getItem("student_biometric_credential_id") ? "Acessar com Biometria" : "Habilitar Biometria"}
                 </button>
               )}
             </div>
@@ -2088,6 +2088,9 @@ export default function StudentPortal({
               <Clock className="w-5 h-5 text-indigo-500/70 group-hover:text-indigo-500 group-hover:scale-110 group-hover:-rotate-12 transition-all duration-300" />
               <span className="relative z-10 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">Acompanhar Pedido</span>
             </button>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium text-center leading-relaxed px-2 mt-4">
+              Para solicitar o seu <strong className="text-slate-700 dark:text-slate-200">Primeiro Acesso</strong>, clique em <strong>Solicitar Nova ID</strong> acima e preencha os seus dados.
+            </p>
             <button
               onClick={() => setModalHelpOpen(true)}
               className="w-full py-4 text-slate-500 hover:text-slate-700 dark:hover:text-slate-300 font-bold flex items-center justify-center gap-2 active:scale-95 mt-2"
