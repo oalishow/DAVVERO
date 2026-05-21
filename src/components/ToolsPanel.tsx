@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'motion/react';
-import { ExternalLink, LayoutGrid, HelpCircle, Users } from 'lucide-react';
+import { ExternalLink, LayoutGrid, HelpCircle, Users, Trophy } from 'lucide-react';
 
 export default function ToolsPanel() {
   const tools = [
@@ -24,6 +24,13 @@ export default function ToolsPanel() {
       icon: Users,
       color: 'bg-rose-50 text-rose-600 dark:bg-rose-900/30 dark:text-rose-400',
       description: 'Crie e organize equipes facilmente para seus eventos'
+    },
+    {
+      name: 'Vou Ganhei!',
+      url: 'https://vouganhei.netlify.app',
+      icon: Trophy,
+      color: 'bg-amber-50 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400',
+      description: 'Gerencie e realize sorteios de rifas e prêmios de forma prática'
     }
   ];
 

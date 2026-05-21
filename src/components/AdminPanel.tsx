@@ -543,62 +543,62 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center gap-2 sm:gap-3 mb-6 pb-2 border-b border-slate-200 dark:border-slate-700/60 print:hidden">
+      <div className="flex flex-wrap items-center gap-2 mb-6 pb-4 border-b border-slate-200 dark:border-slate-700/60 print:hidden w-full">
         <button
           onClick={() => setActiveTab("dashboard")}
-          className={`flex items-center gap-2 px-4 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all whitespace-nowrap border ${
+          className={`flex items-center justify-center gap-1.5 sm:gap-2 px-3 py-2 sm:py-2.5 rounded-lg sm:rounded-full font-bold text-xs sm:text-sm transition-all whitespace-nowrap border flex-grow sm:flex-grow-0 ${
             activeTab === "dashboard"
               ? "bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-600/30 dark:border-sky-400/30"
               : "bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/80"
           }`}
         >
-          <LayoutDashboard className="w-4 h-4" />
+          <LayoutDashboard className="w-4 h-4 hidden sm:block" />
           Dashboard
         </button>
         <button
           onClick={() => setActiveTab("members")}
-          className={`flex items-center gap-2 px-4 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all whitespace-nowrap border ${
+          className={`flex items-center justify-center gap-1.5 sm:gap-2 px-3 py-2 sm:py-2.5 rounded-lg sm:rounded-full font-bold text-xs sm:text-sm transition-all whitespace-nowrap border flex-grow sm:flex-grow-0 ${
             activeTab === "members"
               ? "bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-600/30 dark:border-sky-400/30"
               : "bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/80"
           }`}
         >
-          <Users className="w-4 h-4" />
-          Membros & Cadastros
+          <Users className="w-4 h-4 hidden sm:block" />
+          Membros
         </button>
         <button
           onClick={() => setActiveTab("events")}
-          className={`flex items-center gap-2 px-4 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all whitespace-nowrap border ${
+          className={`flex items-center justify-center gap-1.5 sm:gap-2 px-3 py-2 sm:py-2.5 rounded-lg sm:rounded-full font-bold text-xs sm:text-sm transition-all whitespace-nowrap border flex-grow sm:flex-grow-0 ${
             activeTab === "events"
               ? "bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-600/30 dark:border-sky-400/30"
               : "bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/80"
           }`}
         >
-          <Calendar className="w-4 h-4" />
-          Eventos e Presenças
+          <Calendar className="w-4 h-4 hidden sm:block" />
+          Eventos
         </button>
 
         <button
           onClick={() => setActiveTab("appointments")}
-          className={`flex items-center gap-2 px-4 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all whitespace-nowrap border ${
+          className={`flex items-center justify-center gap-1.5 sm:gap-2 px-3 py-2 sm:py-2.5 rounded-lg sm:rounded-full font-bold text-xs sm:text-sm transition-all whitespace-nowrap border flex-grow sm:flex-grow-0 ${
             activeTab === "appointments"
               ? "bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-600/30 dark:border-sky-400/30"
               : "bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/80"
           }`}
         >
-          <Clock className="w-4 h-4" />
+          <Clock className="w-4 h-4 hidden sm:block" />
           Agendamentos
         </button>
 
         <button
           onClick={() => setActiveTab("notifications")}
-          className={`flex items-center gap-2 px-4 py-2 sm:py-2.5 rounded-full font-bold text-xs sm:text-sm transition-all whitespace-nowrap border ${
+          className={`flex items-center justify-center gap-1.5 sm:gap-2 px-3 py-2 sm:py-2.5 rounded-lg sm:rounded-full font-bold text-xs sm:text-sm transition-all whitespace-nowrap border flex-grow sm:flex-grow-0 ${
             activeTab === "notifications"
               ? "bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-600/30 dark:border-sky-400/30"
               : "bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/80"
           }`}
         >
-          <Bell className="w-4 h-4" />
+          <Bell className="w-4 h-4 hidden sm:block" />
           Notificações
         </button>
       </div>

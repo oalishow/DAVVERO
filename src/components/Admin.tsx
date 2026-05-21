@@ -20,6 +20,7 @@ export default function Admin() {
     return () => unsub();
   }, []);
 
+
   if (isAuthenticated === null) return null; // Loading
 
   return (

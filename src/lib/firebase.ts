@@ -3,6 +3,7 @@ import { getAuth, signInAnonymously, onAuthStateChanged } from "firebase/auth";
 import { getStorage } from "firebase/storage";
 import {
   initializeFirestore,
+  getFirestore,
   setLogLevel,
   doc,
   getDoc,
@@ -37,13 +38,23 @@ const firebaseConfig = {
 export const app = initializeApp(firebaseConfig);
 
 // Modern DB initialization with persistent local cache
-export const db = initializeFirestore(app, {
-  ignoreUndefinedProperties: true,
-  localCache:
-    typeof window !== "undefined"
-      ? persistentLocalCache({ tabManager: persistentMultipleTabManager() })
-      : undefined,
-});
+let dbInstance;
+try {
+  dbInstance = initializeFirestore(app, {
+    ignoreUndefinedProperties: true,
+    localCache:
+      typeof window !== "undefined"
+        ? persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+        : undefined,
+  });
+} catch (e: any) {
+  if (e.message && e.message.includes('has already been called')) {
+    dbInstance = getFirestore(app);
+  } else {
+    throw e;
+  }
+}
+export const db = dbInstance;
 
 export const auth = getAuth(app);
 export const storage = getStorage(app);

@@ -149,7 +149,7 @@ export default function App() {
       } else if (savedTheme === "light") {
         applyTheme(false);
       } else {
-        applyTheme(systemPrefersDark.matches);
+        applyTheme(false); // Default to light mode as requested
       }
     };
 
@@ -159,7 +159,7 @@ export default function App() {
     // Listener for system changes
     const themeListener = () => {
       if (!localStorage.getItem("theme")) {
-        applyTheme(systemPrefersDark.matches);
+        applyTheme(false); // Default to light mode as requested
       }
     };
 

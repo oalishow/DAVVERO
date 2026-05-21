@@ -185,50 +185,52 @@ export default function DashboardPanel({ allMembers }: { allMembers: any[] }) {
     <div className="space-y-6">
       <div className="flex items-center gap-3 mb-6 justify-between">
         <div className="flex items-center gap-3">
-          <div className="bg-sky-100 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400 p-2.5 rounded-xl">
-            <Activity className="w-5 h-5" />
+          <div className="bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 p-3 rounded-2xl ring-1 ring-sky-500/20">
+            <Activity className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Dashboard Analítico</h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">Métricas e acompanhamento do uso do sistema</p>
+            <h2 className="text-2xl font-black text-slate-800 dark:text-slate-100 tracking-tight">Dashboard Analítico</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 font-medium mt-0.5">Métricas e acompanhamento do uso do sistema</p>
           </div>
         </div>
         <button
           onClick={() => window.print()}
-          className="flex items-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-bold shadow-sm transition-all shadow-black/5 active:scale-95 print:hidden"
+          className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-bold shadow-sm ring-1 ring-slate-200 dark:ring-slate-700 transition-all active:scale-95 print:hidden"
         >
           <Printer className="w-4 h-4" />
           <span className="hidden sm:inline">Imprimir</span>
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 tracking-tight sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
         <motion.div 
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-5 shadow-sm"
+          className="bg-white dark:bg-slate-800/40 rounded-3xl p-5 md:p-6 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] ring-1 ring-slate-100 dark:ring-slate-700/50 flex flex-col items-center text-center relative overflow-hidden group"
         >
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-slate-600 dark:text-slate-300 text-sm">Total de Cadastros</h3>
-            <Users className="w-5 h-5 text-sky-500" />
+          <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-sky-400 to-sky-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="bg-sky-50 dark:bg-sky-500/10 p-3 rounded-2xl mb-3 ring-1 ring-sky-500/20">
+            <Users className="w-6 h-6 text-sky-500" />
           </div>
-          <p className="text-4xl font-black text-slate-800 dark:text-white">{stats.totalMembers}</p>
+          <p className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white tracking-tight">{stats.totalMembers}</p>
+          <h3 className="font-bold text-slate-500 dark:text-slate-400 text-xs md:text-sm mt-1 uppercase tracking-wider">Total de Cadastros</h3>
         </motion.div>
 
         <motion.div 
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
-          className="bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-5 shadow-sm"
+          className="bg-white dark:bg-slate-800/40 rounded-3xl p-5 md:p-6 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] ring-1 ring-slate-100 dark:ring-slate-700/50 flex flex-col items-center text-center relative overflow-hidden group"
         >
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-slate-600 dark:text-slate-300 text-sm">Membros Ativos</h3>
-            <UserCheck className="w-5 h-5 text-emerald-500" />
+          <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-emerald-400 to-emerald-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="bg-emerald-50 dark:bg-emerald-500/10 p-3 rounded-2xl mb-3 ring-1 ring-emerald-500/20">
+            <UserCheck className="w-6 h-6 text-emerald-500" />
           </div>
-          <p className="text-4xl font-black text-slate-800 dark:text-white">{stats.activeMembers}</p>
-          <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-2 font-medium">
-            {stats.totalMembers > 0 ? Math.round((stats.activeMembers / stats.totalMembers) * 100) : 0}% de taxa de ativação
+          <p className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white tracking-tight">{stats.activeMembers}</p>
+          <h3 className="font-bold text-slate-500 dark:text-slate-400 text-xs md:text-sm mt-1 uppercase tracking-wider">Membros Ativos</h3>
+          <p className="text-[10px] md:text-xs text-emerald-600 dark:text-emerald-400 mt-2 font-bold bg-emerald-50 dark:bg-emerald-500/20 px-2.5 py-1 rounded-full">
+            {stats.totalMembers > 0 ? Math.round((stats.activeMembers / stats.totalMembers) * 100) : 0}% ativos
           </p>
         </motion.div>
 
@@ -236,16 +238,17 @@ export default function DashboardPanel({ allMembers }: { allMembers: any[] }) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.3 }}
-          className="bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-5 shadow-sm"
+          className="bg-white dark:bg-slate-800/40 rounded-3xl p-5 md:p-6 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] ring-1 ring-slate-100 dark:ring-slate-700/50 flex flex-col items-center text-center col-span-2 md:col-span-1 relative overflow-hidden group"
         >
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-slate-600 dark:text-slate-300 text-sm">Crescimento Recente</h3>
-            <TrendingUp className="w-5 h-5 text-indigo-500" />
+          <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-indigo-400 to-indigo-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="bg-indigo-50 dark:bg-indigo-500/10 p-3 rounded-2xl mb-3 ring-1 ring-indigo-500/20">
+            <TrendingUp className="w-6 h-6 text-indigo-500" />
           </div>
-          <p className="text-4xl font-black text-slate-800 dark:text-white">
+          <p className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white tracking-tight">
             {stats.recentActivity.reduce((acc, curr) => acc + curr.membersAdded, 0)}
           </p>
-          <p className="text-xs text-indigo-600 dark:text-indigo-400 mt-2 font-medium">
+          <h3 className="font-bold text-slate-500 dark:text-slate-400 text-xs md:text-sm mt-1 uppercase tracking-wider">Novos Cadastros</h3>
+          <p className="text-[10px] md:text-xs text-indigo-600 dark:text-indigo-400 mt-2 font-bold bg-indigo-50 dark:bg-indigo-500/20 px-2.5 py-1 rounded-full">
             Últimos 14 dias
           </p>
         </motion.div>
@@ -254,56 +257,64 @@ export default function DashboardPanel({ allMembers }: { allMembers: any[] }) {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
-          className="bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-5 shadow-sm"
+          className="bg-white dark:bg-slate-800/40 rounded-3xl p-5 md:p-6 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] ring-1 ring-slate-100 dark:ring-slate-700/50 flex flex-col items-center text-center relative overflow-hidden group"
         >
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-slate-600 dark:text-slate-300 text-sm">Quantidade de Eventos</h3>
-            <Calendar className="w-5 h-5 text-fuchsia-500" />
+          <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-fuchsia-400 to-fuchsia-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="bg-fuchsia-50 dark:bg-fuchsia-500/10 p-3 rounded-2xl mb-3 ring-1 ring-fuchsia-500/20">
+            <Calendar className="w-6 h-6 text-fuchsia-500" />
           </div>
-          <p className="text-4xl font-black text-slate-800 dark:text-white">{stats.totalEvents}</p>
+          <p className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white tracking-tight">{stats.totalEvents}</p>
+          <h3 className="font-bold text-slate-500 dark:text-slate-400 text-xs md:text-sm mt-1 uppercase tracking-wider">Eventos Criados</h3>
         </motion.div>
 
         <motion.div 
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.5 }}
-          className="bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-5 shadow-sm"
+          className="bg-white dark:bg-slate-800/40 rounded-3xl p-5 md:p-6 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] ring-1 ring-slate-100 dark:ring-slate-700/50 flex flex-col items-center text-center relative overflow-hidden group"
         >
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-slate-600 dark:text-slate-300 text-sm">Total de Atendimentos</h3>
-            <Activity className="w-5 h-5 text-amber-500" />
+          <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-amber-400 to-amber-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="bg-amber-50 dark:bg-amber-500/10 p-3 rounded-2xl mb-3 ring-1 ring-amber-500/20">
+            <Activity className="w-6 h-6 text-amber-500" />
           </div>
-          <p className="text-4xl font-black text-slate-800 dark:text-white">{stats.totalAppointments}</p>
+          <p className="text-3xl md:text-4xl font-black text-slate-800 dark:text-white tracking-tight">{stats.totalAppointments}</p>
+          <h3 className="font-bold text-slate-500 dark:text-slate-400 text-xs md:text-sm mt-1 uppercase tracking-wider">Atendimentos</h3>
         </motion.div>
 
         <motion.div 
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.6 }}
-          className="bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-5 shadow-sm"
+          className="bg-white dark:bg-slate-800/40 rounded-3xl p-5 md:p-6 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] ring-1 ring-slate-100 dark:ring-slate-700/50 flex flex-col items-center text-center col-span-2 md:col-span-1 relative overflow-hidden group"
         >
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-slate-600 dark:text-slate-300 text-sm">Pico de Atividade</h3>
-            <Activity className="w-5 h-5 text-rose-500" />
+          <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-rose-400 to-rose-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+          <div className="bg-rose-50 dark:bg-rose-500/10 p-3 rounded-2xl mb-3 ring-1 ring-rose-500/20">
+            <Activity className="w-6 h-6 text-rose-500" />
           </div>
-          <p className="text-4xl font-black text-slate-800 dark:text-white">{stats.peakUsageDate !== 'N/A' ? new Date(stats.peakUsageDate).toLocaleDateString('pt-BR') : '--'}</p>
-          <p className="text-xs text-rose-600 dark:text-rose-400 mt-2 font-medium">
-            {stats.peakUsageCount} interações nesse dia
+          <p className="text-xl md:text-2xl font-black text-slate-800 dark:text-white tracking-tight mt-1">{stats.peakUsageDate !== 'N/A' ? new Date(stats.peakUsageDate).toLocaleDateString('pt-BR') : '--'}</p>
+          <h3 className="font-bold text-slate-500 dark:text-slate-400 text-xs md:text-sm mt-1 uppercase tracking-wider">Pico de Atividade</h3>
+          <p className="text-[10px] md:text-xs text-rose-600 dark:text-rose-400 mt-2 font-bold bg-rose-50 dark:bg-rose-500/20 px-2.5 py-1 rounded-full">
+            {stats.peakUsageCount} interações
           </p>
         </motion.div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 md:gap-6 mt-6">
         {/* Distribuição por Cargo */}
         <motion.div 
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.4 }}
-          className="bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-6 shadow-sm"
+          className="bg-white dark:bg-slate-800/40 rounded-3xl p-5 md:p-6 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] ring-1 ring-slate-100 dark:ring-slate-700/50 flex flex-col"
         >
-          <div className="flex items-center gap-2 mb-6">
-            <Shield className="w-5 h-5 text-sky-500" />
-            <h3 className="font-bold text-slate-800 dark:text-slate-200">Distribuição por Cargo</h3>
+          <div className="flex items-center gap-3 mb-6 bg-slate-50 dark:bg-slate-800/80 p-3 rounded-2xl ring-1 ring-slate-100 dark:ring-slate-700/50">
+            <div className="bg-sky-100 dark:bg-sky-500/20 p-2 rounded-xl text-sky-600 dark:text-sky-400">
+              <Shield className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-black text-slate-800 dark:text-slate-200 tracking-tight text-sm md:text-base">Distribuição por Cargo</h3>
+              <p className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Top funções</p>
+            </div>
           </div>
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -326,11 +337,16 @@ export default function DashboardPanel({ allMembers }: { allMembers: any[] }) {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.5 }}
-          className="bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-6 shadow-sm"
+          className="bg-white dark:bg-slate-800/40 rounded-3xl p-5 md:p-6 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] ring-1 ring-slate-100 dark:ring-slate-700/50 flex flex-col"
         >
-          <div className="flex items-center gap-2 mb-6">
-            <Calendar className="w-5 h-5 text-indigo-500" />
-            <h3 className="font-bold text-slate-800 dark:text-slate-200">Seminário / Local</h3>
+          <div className="flex items-center gap-3 mb-6 bg-slate-50 dark:bg-slate-800/80 p-3 rounded-2xl ring-1 ring-slate-100 dark:ring-slate-700/50">
+            <div className="bg-indigo-100 dark:bg-indigo-500/20 p-2 rounded-xl text-indigo-600 dark:text-indigo-400">
+               <Calendar className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-black text-slate-800 dark:text-slate-200 tracking-tight text-sm md:text-base">Seminário / Local</h3>
+              <p className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Origem dos Membros</p>
+            </div>
           </div>
           <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
@@ -372,13 +388,18 @@ export default function DashboardPanel({ allMembers }: { allMembers: any[] }) {
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.6 }}
-          className="bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/50 rounded-2xl p-6 shadow-sm col-span-1 lg:col-span-2"
+          className="bg-white dark:bg-slate-800/40 rounded-3xl p-5 md:p-6 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] ring-1 ring-slate-100 dark:ring-slate-700/50 flex flex-col col-span-1 lg:col-span-2"
         >
-          <div className="flex items-center gap-2 mb-6">
-            <Activity className="w-5 h-5 text-emerald-500" />
-            <h3 className="font-bold text-slate-800 dark:text-slate-200">Evolução de Uso (Últimos dias)</h3>
+          <div className="flex items-center gap-3 mb-6 bg-slate-50 dark:bg-slate-800/80 p-3 rounded-2xl ring-1 ring-slate-100 dark:ring-slate-700/50">
+            <div className="bg-emerald-100 dark:bg-emerald-500/20 p-2 rounded-xl text-emerald-600 dark:text-emerald-400">
+              <Activity className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-black text-slate-800 dark:text-slate-200 tracking-tight text-sm md:text-base">Evolução de Uso</h3>
+              <p className="text-[10px] md:text-xs text-slate-500 dark:text-slate-400 font-bold uppercase tracking-wider">Geral do Sistema (14 dias)</p>
+            </div>
           </div>
-          <div className="h-[250px] w-full">
+          <div className="h-[250px] md:h-[300px] w-full mt-2">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={stats.recentActivity} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
                 <CartesianGrid strokeDasharray="3 3" opacity={0.2} vertical={false} />
