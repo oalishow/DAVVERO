@@ -4,8 +4,20 @@ import { StaleWhileRevalidate, NetworkFirst } from 'workbox-strategies';
 import { ExpirationPlugin } from 'workbox-expiration';
 import { CacheableResponsePlugin } from 'workbox-cacheable-response';
 import { BackgroundSyncPlugin } from 'workbox-background-sync';
+import { clientsClaim } from 'workbox-core';
 
 declare const self: any;
+
+// Ativar e registrar imediatamente o novo service worker e assumir o controle dos clientes
+self.skipWaiting();
+clientsClaim();
+
+// Ouvinte para mensagens de SKIP_WAITING enviadas pelo aplicativo cliente
+self.addEventListener('message', (event: any) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
+});
 
 precacheAndRoute(self.__WB_MANIFEST);
 
