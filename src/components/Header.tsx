@@ -361,7 +361,7 @@ export default function Header({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
         )}
         <button 
           onClick={async () => {
-            const shareUrl = window.location.origin + '/?install=true';
+            const shareUrl = 'https://davvero.netlify.app/?install=true';
             if (navigator.share) {
               try {
                 await navigator.share({

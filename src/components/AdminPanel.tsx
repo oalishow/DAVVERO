@@ -1124,7 +1124,7 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
               </div>
               <button
                 onClick={() => {
-                  const url = new URL(window.location.origin);
+                  const url = new URL("https://davvero.netlify.app");
                   url.searchParams.set("install", "true");
                   navigator.clipboard.writeText(url.toString());
                   setStatus({
