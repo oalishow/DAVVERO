@@ -85,6 +85,8 @@ export default function EventManagement({ adminAccessLevel = "ADMIN" }: { adminA
   const [seminaryId, setSeminaryId] = useState(AVAILABLE_SEMINARIES[0]);
   const [isPaid, setIsPaid] = useState(false);
   const [price, setPrice] = useState("");
+  const [paymentLink, setPaymentLink] = useState("");
+  const [googleFormUrl, setGoogleFormUrl] = useState("");
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
   const [eventSearchQuery, setEventSearchQuery] = useState("");
   const [statusMsg, setStatusMsg] = useState<{
@@ -156,6 +158,8 @@ export default function EventManagement({ adminAccessLevel = "ADMIN" }: { adminA
     setSeminaryId(event.seminaryId || "");
     setIsPaid(event.isPaid || false);
     setPrice(event.price ? event.price.toString() : "");
+    setPaymentLink(event.paymentLink || "");
+    setGoogleFormUrl(event.googleFormUrl || "");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -179,6 +183,8 @@ export default function EventManagement({ adminAccessLevel = "ADMIN" }: { adminA
     setSeminaryId(AVAILABLE_SEMINARIES[0]);
     setIsPaid(false);
     setPrice("");
+    setPaymentLink("");
+    setGoogleFormUrl("");
   };
 
   const handleSaveEvent = async () => {
@@ -217,6 +223,8 @@ export default function EventManagement({ adminAccessLevel = "ADMIN" }: { adminA
         seminaryId: isSeminary ? seminaryId : null,
         isPaid,
         price: isPaid && price ? Number(price) : null,
+        paymentLink: isPaid && paymentLink ? paymentLink : null,
+        googleFormUrl: googleFormUrl || null,
       };
       if (hours) {
         payload.hours = Number(hours);
@@ -473,6 +481,18 @@ export default function EventManagement({ adminAccessLevel = "ADMIN" }: { adminA
           </div>
           <div className="space-y-1">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
+              Link do Google Forms (Inscrição Obrigatória) (Opcional)
+            </label>
+            <input
+              type="text"
+              value={googleFormUrl}
+              onChange={(e) => setGoogleFormUrl(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm outline-none focus:border-sky-500 dark:focus:border-sky-500"
+              placeholder="https://docs.google.com/forms/..."
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
               Data Limite Inscrição (Opcional)
             </label>
             <input
@@ -535,19 +555,33 @@ export default function EventManagement({ adminAccessLevel = "ADMIN" }: { adminA
           </label>
 
           {isPaid && (
-            <div className="mt-3">
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
-                Valor do Ingresso (R$) <span className="text-red-500">*</span>
-              </label>
-              <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={price}
-                onChange={(e) => setPrice(e.target.value)}
-                className="w-full sm:max-w-[200px] mt-1 bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-700 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm outline-none focus:border-emerald-500 dark:focus:border-emerald-500"
-                placeholder="Ex: 50.00"
-              />
+            <div className="mt-3 space-y-3">
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
+                  Valor do Ingresso (R$) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={price}
+                  onChange={(e) => setPrice(e.target.value)}
+                  className="w-full sm:max-w-[200px] mt-1 bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-700 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm outline-none focus:border-emerald-500 dark:focus:border-emerald-500"
+                  placeholder="Ex: 50.00"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
+                  Link do Evento / Página de Pagamento (Hotmart) <span className="text-[10px] text-slate-400 font-normal normal-case">(Opcional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={paymentLink}
+                  onChange={(e) => setPaymentLink(e.target.value)}
+                  className="w-full mt-1 bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-700 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm outline-none focus:border-emerald-500 dark:focus:border-emerald-500"
+                  placeholder="Ex: https://hotmart.com/... ou link onde o evento será realizado"
+                />
+              </div>
             </div>
           )}
         </div>

@@ -27,6 +27,7 @@ import {
   appId,
   enrollStudent,
   unsubscribeFromEvent,
+  updateAttendanceDetails,
 } from "../lib/firebase";
 import type { Event, Attendance, Member } from "../types";
 import PublicAttendeesModal from "./PublicAttendeesModal";
@@ -52,6 +53,10 @@ export default function EventsPage({ onNavigateToStudent, renderSeminary = false
     onConfirm: () => void;
   } | null>(null);
   const [showLoginWarning, setShowLoginWarning] = useState(false);
+  const [showPaymentModal, setShowPaymentModal] = useState<{ event: Event; attendance?: Attendance } | null>(null);
+  const [transactionId, setTransactionId] = useState("");
+  const [isSubmittingPayment, setIsSubmittingPayment] = useState(false);
+  const [showGoogleFormModal, setShowGoogleFormModal] = useState<Event | null>(null);
 
   useEffect(() => {
     // Load student if logged in
@@ -203,6 +208,63 @@ export default function EventsPage({ onNavigateToStudent, renderSeminary = false
         }
       },
     });
+  };
+
+  const handleConfirmPaidPayment = async () => {
+    if (!showPaymentModal || !member) return;
+    const { event, attendance } = showPaymentModal;
+    setIsSubmittingPayment(true);
+    
+    try {
+      if (attendance) {
+        await updateAttendanceDetails(event.id, member.id, {
+          paymentStatus: "pago",
+          transactionId: transactionId.trim() || undefined,
+        });
+        showAlert("Comprovante de pagamento atualizado! Inscrição confirmada com sucesso.", { type: "success" });
+      } else {
+        await enrollStudent({
+          eventId: event.id,
+          studentId: member.id,
+          status: "inscrito",
+          timestamp: new Date().toISOString(),
+          paymentStatus: "pago",
+          transactionId: transactionId.trim() || undefined,
+        });
+        showAlert("Inscrição e pagamento confirmados com sucesso! Seja bem-vindo(a)!", { type: "success" });
+      }
+      setShowPaymentModal(null);
+      setTransactionId("");
+    } catch (e) {
+      console.error(e);
+      showAlert("Ocorreu um erro ao registrar a confirmação da inscrição.", { type: "error" });
+    } finally {
+      setIsSubmittingPayment(false);
+    }
+  };
+
+  const handleEnrollAndPayLater = async () => {
+    if (!showPaymentModal || !member) return;
+    const { event } = showPaymentModal;
+    setIsSubmittingPayment(true);
+    
+    try {
+      await enrollStudent({
+        eventId: event.id,
+        studentId: member.id,
+        status: "inscrito",
+        timestamp: new Date().toISOString(),
+        paymentStatus: "pendente",
+      });
+      showAlert("Pré-inscrição realizada! Pague o ingresso em breve para confirmar sua participação por completo.", { type: "warning" });
+      setShowPaymentModal(null);
+      setTransactionId("");
+    } catch (e) {
+      console.error(e);
+      showAlert("Erro ao realizar inscrição pendente.", { type: "error" });
+    } finally {
+      setIsSubmittingPayment(false);
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -469,6 +531,15 @@ END:VCALENDAR`;
                         )}
                         {event.format === "hibrido" ? "Híbrido" : event.format}
                       </span>
+                      {event.isPaid ? (
+                        <span className="inline-flex items-center gap-1 bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider border border-emerald-200 dark:border-emerald-800/20">
+                          R$ {event.price?.toFixed(2)}
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-400 text-[10px] font-extrabold px-2 py-0.5 rounded-full uppercase tracking-wider border border-blue-200 dark:border-blue-800/20">
+                          Gratuito
+                        </span>
+                      )}
                     </div>
                     <h3 className="text-lg font-black text-slate-800 dark:text-slate-100 mb-2">
                       {event.title}
@@ -515,7 +586,7 @@ END:VCALENDAR`;
                     </div>
                     
                     {/* Event Links Section */}
-                    {(event.schedulePdfUrl || event.link || event.locationOrLink) && (
+                    {(event.schedulePdfUrl || event.link || event.locationOrLink || (event.isPaid && event.paymentLink)) && (
                       <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-3 text-xs font-bold uppercase mt-5 pt-4 border-t border-slate-200 dark:border-slate-700/80">
                         {event.schedulePdfUrl && (
                           <>
@@ -546,6 +617,16 @@ END:VCALENDAR`;
                             className="flex items-center justify-center sm:justify-start gap-2 bg-indigo-50 dark:bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-500/20 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 px-4 py-2.5 rounded-xl transition-all shadow-sm"
                           >
                             <Video className="w-4 h-4" /> {event.format === "presencial" ? "Acessar Conteúdo (Formulário)" : "Acessar Link do Evento"}
+                          </a>
+                        )}
+                        {event.isPaid && event.paymentLink && (
+                          <a
+                            href={event.paymentLink.startsWith("http") ? event.paymentLink : `https://${event.paymentLink}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="flex items-center justify-center sm:justify-start gap-2 bg-orange-50 dark:bg-orange-500/10 text-orange-700 dark:text-orange-400 border border-orange-200 dark:border-orange-500/20 hover:bg-orange-100 dark:hover:bg-orange-500/20 px-4 py-2.5 rounded-xl transition-all shadow-sm font-extrabold"
+                          >
+                            <ExternalLink className="w-4 h-4 text-orange-500" /> Acessar Hotmart / Pagamento
                           </a>
                         )}
                       </div>
@@ -582,18 +663,56 @@ END:VCALENDAR`;
                     >
                       <Users className="w-3.5 h-3.5" /> Ver Inscritos
                     </button>
+                    {event.isPaid && event.paymentLink && (
+                      <a
+                        href={event.paymentLink.startsWith("http") ? event.paymentLink : `https://${event.paymentLink}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full py-1.5 mb-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-extrabold rounded-lg text-[10px] uppercase transition-all shadow-sm flex items-center justify-center gap-1 hover:scale-105 active:scale-95 text-center"
+                      >
+                        <ExternalLink className="w-3 h-3" /> Pagar Inscrição
+                      </a>
+                    )}
                     {enrolled ? (
                       <div className="flex flex-col gap-2">
-                        <div className="flex flex-col items-center justify-center p-3 sm:px-2 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl border border-emerald-200 dark:border-emerald-500/20 text-center">
-                          <UserCheck className="w-5 h-5 text-emerald-500 mb-1" />
-                          <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-tight">
-                            {enrolled.status === "presente" || enrolled.status === "apto_para_certificado" ? "Participou" : "Inscrito"}
-                          </span>
-                        </div>
+                        {event.isPaid && enrolled.paymentStatus !== "pago" ? (
+                          <div className="flex flex-col gap-2 w-full">
+                            <div className="flex flex-col items-center justify-center p-3 sm:px-2 bg-amber-50 dark:bg-amber-500/10 rounded-xl border border-amber-200 dark:border-amber-500/20 text-center">
+                              <Clock className="w-5 h-5 text-amber-500 mb-1 animate-pulse" />
+                              <span className="text-xs font-bold text-amber-700 dark:text-amber-400 uppercase tracking-tight">
+                                Pagamento Pendente
+                              </span>
+                              <span className="text-[9px] font-semibold text-slate-500 dark:text-slate-400 mt-0.5">
+                                R$ {event.price?.toFixed(2)}
+                              </span>
+                            </div>
+                            <button
+                              onClick={() => {
+                                setTransactionId(enrolled.transactionId || "");
+                                setShowPaymentModal({ event, attendance: enrolled });
+                              }}
+                              className="w-full py-2 bg-orange-500 hover:bg-orange-600 text-white font-extrabold rounded-lg text-[10px] uppercase transition-all shadow-sm flex items-center justify-center gap-1 hover:scale-105 active:scale-95 cursor-pointer"
+                            >
+                              <ExternalLink className="w-3 h-3" /> Confirmar Pago
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex flex-col items-center justify-center p-3 sm:px-2 bg-emerald-50 dark:bg-emerald-500/10 rounded-xl border border-emerald-200 dark:border-emerald-500/20 text-center">
+                            <UserCheck className="w-5 h-5 text-emerald-500 mb-1" />
+                            <span className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-tight">
+                              {enrolled.status === "presente" || enrolled.status === "apto_para_certificado" ? "Participou" : "Inscrito"}
+                            </span>
+                            {event.isPaid && (
+                              <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase mt-0.5">
+                                Pago ✓
+                              </span>
+                            )}
+                          </div>
+                        )}
                         {isOpen && !isDeleted && (
                           <button
                             onClick={() => handleUnenroll(event.id, member.id)}
-                            className="w-full py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 rounded-lg text-[10px] font-bold uppercase transition-colors flex items-center justify-center gap-1 border border-rose-200 dark:border-rose-500/20"
+                            className="w-full py-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-500/10 dark:hover:bg-rose-500/20 text-rose-600 dark:text-rose-400 rounded-lg text-[10px] font-bold uppercase transition-colors flex items-center justify-center gap-1 border border-rose-200 dark:border-rose-500/20 cursor-pointer"
                           >
                             <Ban className="w-3 h-3" /> Cancelar
                           </button>
@@ -601,7 +720,20 @@ END:VCALENDAR`;
                       </div>
                     ) : canEnroll ? (
                       <button
-                        onClick={() => handleEnroll(event.id)}
+                        onClick={() => {
+                          if (!member) {
+                            setShowLoginWarning(true);
+                            return;
+                          }
+                          if (event.googleFormUrl) {
+                            setShowGoogleFormModal(event);
+                          } else if (event.isPaid) {
+                            setTransactionId("");
+                            setShowPaymentModal({ event });
+                          } else {
+                            handleEnroll(event.id);
+                          }
+                        }}
                         disabled={isEnrollingInProgress === event.id}
                         className={`w-full h-full min-h-[44px] sm:min-h-0 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center cursor-pointer ${
                           isEnrollingInProgress === event.id
@@ -662,6 +794,185 @@ END:VCALENDAR`;
         <p className="text-slate-600 dark:text-slate-400 py-4 font-medium text-center">
           Para se inscrever em eventos, você precisa vincular sua identidade na aba <strong>MINHA ID</strong> primeiro.
         </p>
+      </Modal>
+
+      <Modal
+        isOpen={!!showPaymentModal}
+        onClose={() => {
+          setShowPaymentModal(null);
+          setTransactionId("");
+        }}
+        title={showPaymentModal?.attendance ? "Confirmar Pagamento" : "Inscrição em Evento Pago"}
+        hideFooter={true}
+      >
+        <div className="space-y-4 py-2">
+          <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+            <h4 className="font-black text-slate-800 dark:text-slate-100 text-sm uppercase tracking-tight">
+              {showPaymentModal?.event.title}
+            </h4>
+            <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/60">
+              <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">Valor do Ingresso:</span>
+              <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">
+                R$ {showPaymentModal?.event.price?.toFixed(2)}
+              </span>
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <div className="font-bold text-xs text-slate-500 uppercase tracking-wider pl-1">
+              Passo 1: Efetuar pagamento no Hotmart
+            </div>
+            {showPaymentModal?.event.paymentLink ? (
+              <a
+                href={showPaymentModal.event.paymentLink.startsWith("http") ? showPaymentModal.event.paymentLink : `https://${showPaymentModal.event.paymentLink}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-600 hover:to-amber-600 text-white font-extrabold py-3 px-4 rounded-xl text-xs uppercase tracking-wider transition-all shadow-md hover:scale-[1.02] active:scale-[0.98] text-center"
+              >
+                <ExternalLink className="w-4 h-4" /> Ir para página de compra (Hotmart)
+              </a>
+            ) : (
+              <p className="text-xs text-slate-500 pl-1"><em>Link da Hotmart não configurado para este evento.</em></p>
+            )}
+          </div>
+
+          <div className="border-t border-slate-100 dark:border-slate-800 my-4" />
+
+          <div className="space-y-3">
+            <div className="font-bold text-xs text-slate-500 uppercase tracking-wider pl-1">
+              Passo 2: Confirmar Inscrição no Aplicativo
+            </div>
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 leading-normal pl-1">
+              Informe abaixo o <strong>Código de Transação</strong> gerado pela Hotmart (começa com HP...) ou o seu e-mail/CPF de compra para confirmarmos sua inscrição.
+            </p>
+            <div>
+              <input
+                type="text"
+                placeholder="Ex: HP123456789 ou seu e-mail de compra"
+                value={transactionId}
+                onChange={(e) => setTransactionId(e.target.value)}
+                className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm outline-none focus:border-sky-500 dark:focus:border-sky-500 text-slate-800 dark:text-slate-100"
+              />
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 pt-3">
+            <button
+              onClick={() => {
+                setShowPaymentModal(null);
+                setTransactionId("");
+              }}
+              className="flex-1 py-3 px-4 rounded-xl text-xs font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors uppercase tracking-wider"
+              disabled={isSubmittingPayment}
+            >
+              Voltar
+            </button>
+            <button
+              onClick={handleConfirmPaidPayment}
+              disabled={isSubmittingPayment || !transactionId.trim()}
+              className="flex-1 py-3 px-4 rounded-xl text-xs font-black text-white bg-sky-600 hover:bg-sky-500 disabled:bg-slate-300 dark:disabled:bg-slate-800 disabled:text-slate-400 disabled:cursor-not-allowed transition-all shadow-md active:scale-95 uppercase tracking-wider cursor-pointer"
+            >
+              {isSubmittingPayment ? "Registrando..." : "Confirmar Inscrição"}
+            </button>
+          </div>
+
+          {!showPaymentModal?.attendance && (
+            <div className="text-center pt-2">
+              <button
+                onClick={handleEnrollAndPayLater}
+                disabled={isSubmittingPayment}
+                className="text-[10px] uppercase font-extrabold text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 transition-colors underline bg-transparent border-0 cursor-pointer"
+              >
+                Garantir pré-inscrição e pagar depois
+              </button>
+            </div>
+          )}
+        </div>
+      </Modal>
+
+      <Modal
+        isOpen={!!showGoogleFormModal}
+        onClose={() => setShowGoogleFormModal(null)}
+        title="Inscrição via Google Forms"
+        hideFooter={true}
+      >
+        <div className="space-y-4 py-2">
+          <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-800">
+            <h4 className="font-black text-slate-800 dark:text-slate-100 text-sm uppercase tracking-tight">
+              {showGoogleFormModal?.title}
+            </h4>
+            <p className="text-xs text-slate-500 mt-1">
+              Este evento exige o preenchimento de um formulário externo do Google Forms para concluir seu cadastro.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            <div className="font-bold text-xs text-slate-500 uppercase tracking-wider pl-1">
+              Passo 1: Preencher o Formulário
+            </div>
+            {showGoogleFormModal?.googleFormUrl ? (
+              <a
+                href={showGoogleFormModal.googleFormUrl.startsWith("http") ? showGoogleFormModal.googleFormUrl : `https://${showGoogleFormModal.googleFormUrl}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-sky-500 to-indigo-500 hover:from-sky-600 hover:to-indigo-600 text-white font-extrabold py-3 px-4 rounded-xl text-xs uppercase tracking-wider transition-all shadow-md hover:scale-[1.02] active:scale-[0.98] text-center"
+              >
+                <ExternalLink className="w-4 h-4" /> Abrir Formulário do Google
+              </a>
+            ) : (
+              <p className="text-xs text-slate-500 pl-1"><em>Link do Google Forms não configurado para este evento.</em></p>
+            )}
+          </div>
+
+          <div className="border-t border-slate-100 dark:border-slate-800 my-4" />
+
+          <div className="space-y-3">
+            <div className="font-bold text-xs text-slate-500 uppercase tracking-wider pl-1">
+              Passo 2: Confirmar Inscrição no Aplicativo
+            </div>
+            <p className="text-xs font-medium text-slate-500 dark:text-slate-400 leading-normal pl-1">
+              Após concluir o preenchimento do formulário no Google Forms, clique no botão abaixo para que o sistema confirme sua inscrição.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3 pt-3">
+            <button
+              onClick={() => setShowGoogleFormModal(null)}
+              className="flex-1 py-3 px-4 rounded-xl text-xs font-bold text-slate-500 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors uppercase tracking-wider"
+            >
+              Voltar
+            </button>
+            <button
+              onClick={async () => {
+                if (!showGoogleFormModal) return;
+                const eventId = showGoogleFormModal.id;
+                setShowGoogleFormModal(null);
+                setIsEnrollingInProgress(eventId);
+                try {
+                  await enrollStudent({
+                    eventId,
+                    studentId: member!.id,
+                    status: "inscrito",
+                    timestamp: new Date().toISOString(),
+                  });
+                  showAlert("Inscrição confirmada com sucesso! Seja bem-vindo(a)!", { type: 'success' });
+                } catch (err: any) {
+                  console.error(err);
+                  if (err.message === "LIMITE_EXCEDIDO") {
+                    showAlert("Desculpe, a lotação para este evento está esgotada.", { type: 'warning' });
+                  } else {
+                    showAlert("Erro ao realizar inscrição.", { type: 'error' });
+                  }
+                } finally {
+                  setIsEnrollingInProgress(null);
+                }
+              }}
+              className="flex-1 py-3 px-4 rounded-xl text-xs font-black text-white bg-emerald-600 hover:bg-emerald-500 transition-all shadow-md active:scale-95 uppercase tracking-wider cursor-pointer"
+            >
+              Confirmar Inscrição
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );

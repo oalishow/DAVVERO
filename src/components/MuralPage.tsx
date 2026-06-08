@@ -7,6 +7,22 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { signInAnonymously } from "firebase/auth";
 import { db, storage, auth, appId, handleFirestoreError, OperationType } from "../lib/firebase";
 import { MuralPost, Member, MuralComment } from "../types";
+import Modal from "./Modal";
+
+const checkIsAdminRole = (roles?: string[]) => {
+  if (!roles) return false;
+  const adminRoles = [
+    'admin', 'coordenador', 'coordenadora', 'gerente', 'reitor', 'vice-reitor', 
+    'padre', 'diretor espiritual', 'diretora espiritual', 'diretoria', 'gestão', 
+    'gestao', 'comunicação', 'comunicacao', 'secretaria', 'secretária'
+  ];
+  return roles.some(r => {
+    const roleClean = r.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
+    return adminRoles.some(adm => 
+      adm.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() === roleClean
+    );
+  });
+};
 
 export default function MuralPage() {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
@@ -29,7 +45,7 @@ export default function MuralPage() {
     if (cachedMemberStr) {
       try {
         const m = JSON.parse(cachedMemberStr) as Member;
-        if (m.roles && m.roles.some(r => ['admin', 'diretoria', 'gestão', 'comunicação', 'secretaria'].includes(r.toLowerCase()))) {
+        if (checkIsAdminRole(m.roles)) {
           return true;
         }
       } catch(e) {}
@@ -130,7 +146,7 @@ export default function MuralPage() {
           try {
              const m = JSON.parse(cachedMemberStr) as Member;
              setCurrentUserData({ id: m.id, name: m.name, photoUrl: m.photoUrl, roles: m.roles });
-             if (m.roles && m.roles.some(r => ['admin', 'diretoria', 'gestão', 'comunicação', 'secretaria'].includes(r.toLowerCase()))) {
+             if (checkIsAdminRole(m.roles)) {
                setIsAdmin(true);
              }
           } catch(e) {}
@@ -146,7 +162,7 @@ export default function MuralPage() {
             if (!snap.empty) {
               const m = snap.docs[0].data() as Member;
               setCurrentUserData({ id: snap.docs[0].id, name: m.name, photoUrl: m.photoUrl, roles: m.roles });
-              if (m.roles && m.roles.some(r => ['admin', 'diretoria', 'gestão', 'comunicação', 'secretaria'].includes(r.toLowerCase()))) {
+              if (checkIsAdminRole(m.roles)) {
                 setIsAdmin(true);
               }
             }
@@ -503,7 +519,9 @@ export default function MuralPage() {
   const approvePost = async (id: string) => {
     try {
       await updateDoc(doc(db, `artifacts/${appId}/public/data/mural_posts`, id), { status: "approved" });
-    } catch (err) {
+    } catch (err: any) {
+      console.error("Erro ao aprovar publicação:", err);
+      alert("Não foi possível aprovar a publicação: " + (err.message || String(err)));
       handleFirestoreError(err, OperationType.UPDATE, `artifacts/${appId}/public/data/mural_posts`);
     }
   };
@@ -511,7 +529,9 @@ export default function MuralPage() {
   const togglePin = async (post: MuralPost) => {
     try {
       await updateDoc(doc(db, `artifacts/${appId}/public/data/mural_posts`, post.id), { isPinned: !post.isPinned });
-    } catch (err) {
+    } catch (err: any) {
+      console.error("Erro ao fixar publicação:", err);
+      alert("Não foi possível alterar a fixação da publicação: " + (err.message || String(err)));
       handleFirestoreError(err, OperationType.UPDATE, `artifacts/${appId}/public/data/mural_posts`);
     }
   };
@@ -520,7 +540,9 @@ export default function MuralPage() {
     try {
       await deleteDoc(doc(db, `artifacts/${appId}/public/data/mural_posts`, id));
       setDeleteConfirmId(null);
-    } catch (err) {
+    } catch (err: any) {
+      console.error("Erro ao excluir publicação:", err);
+      alert("Não foi possível excluir a publicação: " + (err.message || String(err)));
       handleFirestoreError(err, OperationType.DELETE, `artifacts/${appId}/public/data/mural_posts`);
     }
   };
@@ -784,47 +806,24 @@ export default function MuralPage() {
      </div>
 
       {/* Delete Confirmation Modal */}
-      <AnimatePresence>
-        {deleteConfirmId && createPortal(
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setDeleteConfirmId(null)}
-              className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
-            />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="relative w-full max-w-sm bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-8 border border-slate-200 dark:border-slate-700 text-center"
-            >
-              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 text-red-600 mx-auto rounded-full flex items-center justify-center mb-4">
-                <Trash2 className="w-8 h-8" />
-              </div>
-              <h3 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-tighter">Excluir Publicação?</h3>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
-                Esta ação não poderá ser desfeita. O recado será removido permanentemente do mural.
-              </p>
-              <div className="grid grid-cols-2 gap-3 mt-8">
-                <button 
-                  onClick={() => setDeleteConfirmId(null)}
-                  className="py-3 rounded-xl text-xs font-black uppercase tracking-widest text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button 
-                  onClick={() => deletePost(deleteConfirmId)}
-                  className="py-3 rounded-xl text-xs font-black uppercase tracking-widest bg-red-600 text-white hover:bg-red-700 transition-colors shadow-lg shadow-red-600/20"
-                >
-                  Confirmar
-                </button>
-              </div>
-            </motion.div>
-          </div>, document.body
-        )}
-      </AnimatePresence>
+      <Modal
+        isOpen={!!deleteConfirmId}
+        onClose={() => setDeleteConfirmId(null)}
+        title="Excluir Publicação?"
+        confirmLabel="Confirmar"
+        onConfirm={() => deleteConfirmId && deletePost(deleteConfirmId)}
+        confirmVariant="danger"
+      >
+        <div className="text-center py-4">
+          <div className="w-16 h-16 bg-rose-100 dark:bg-rose-900/30 text-rose-600 mx-auto rounded-full flex items-center justify-center mb-4">
+            <Trash2 className="w-8 h-8" />
+          </div>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
+            Esta ação não poderá ser desfeita. O recado será removido permanentemente do mural.
+          </p>
+        </div>
+      </Modal>
+
     </div>
   );
 }

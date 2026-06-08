@@ -87,6 +87,8 @@ export interface Event {
   seminaryId?: string; // SPSCJ, Marília, Bauru, or ALL
   isPaid?: boolean; // Pagamento: true se for evento pago
   price?: number;   // Pagamento: valor do evento
+  paymentLink?: string; // Link da página onde será feito / Compra do ingresso (hotmart)
+  googleFormUrl?: string; // Google Forms form link (Optional)
 }
 
 export interface Attendance {
