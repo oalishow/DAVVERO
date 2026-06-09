@@ -27,6 +27,7 @@ import {
   Plus,
   Database,
 } from "lucide-react";
+import { GoogleGenAI } from "@google/genai";
 import FajopaIDCard from "./FajopaIDCard";
 import BackupModal from "./BackupModal";
 import { useSettings } from "../context/SettingsContext";
@@ -292,34 +293,68 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
 
     try {
       setIsAnalyzing(true);
-      
-      const promptText = `Analyze this corporate logo and generate 3 distinct, professional color palettes (Modern, Classic, Vibrant) that would work well for a physical ID card and a web application theme. 
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+
+      const base64Data = instLogo.split(",")[1];
+      const mimeType = instLogo.split(";")[0].split(":")[1];
+
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: {
+          parts: [
+            {
+              inlineData: {
+                data: base64Data,
+                mimeType: mimeType,
+              },
+            },
+            {
+              text: `Analyze this corporate logo and generate 3 distinct, professional color palettes (Modern, Classic, Vibrant) that would work well for a physical ID card and a web application theme. 
               Each palette must include:
               - A name
               - A primary color (derived from the logo)
               - A complementary secondary color
               - An accent color
-              - A short description of the vibe.`;
-
-      const base64Data = instLogo.split(",")[1];
-      const mimeType = instLogo.split(";")[0].split(":")[1];
-
-      const response = await fetch("/api/ai/analyze-logo", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ base64Data, mimeType, promptText })
+              - A short description of the vibe.`,
+            },
+          ],
+        },
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                name: { type: Type.STRING },
+                primary: {
+                  type: Type.STRING,
+                  description: "Hex code including #",
+                },
+                secondary: {
+                  type: Type.STRING,
+                  description: "Hex code including #",
+                },
+                accent: {
+                  type: Type.STRING,
+                  description: "Hex code including #",
+                },
+                description: { type: Type.STRING },
+              },
+              required: [
+                "name",
+                "primary",
+                "secondary",
+                "accent",
+                "description",
+              ],
+            },
+          },
+        },
       });
 
-      if (!response.ok) {
-        let errMsg = "Erro interno";
-        try {
-          errMsg = (await response.json()).error || errMsg;
-        } catch (_) {}
-        throw new Error(errMsg);
-      }
-
-      const palettes = await response.json();
-      if (palettes && palettes.length > 0) {
+      const palettes = JSON.parse(response.text || "[]");
+      if (palettes.length > 0) {
         setAiPalettes(palettes);
         showStatus("Sugestões de paletas geradas!", "success");
       } else {

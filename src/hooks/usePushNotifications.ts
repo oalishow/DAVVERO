@@ -54,29 +54,21 @@ export function usePushNotifications() {
     return () => unsub();
   }, [subscription]);
 
-  const subscribe = async (silent = false) => {
+  const subscribe = async () => {
     try {
       if (!('Notification' in window)) {
-        if (!silent) alert("Seu navegador não suporta Notificações Push ou você está rodando no painel (iFrame). Abra o app em uma nova guia para ativar.");
-        return;
-      }
-
-      if (!navigator.onLine) {
-        if (!silent) alert("Você está offline. Conecte-se à internet para ativar as notificações.");
+        alert("Seu navegador não suporta Notificações Push ou você está rodando no painel (iFrame). Abra o app em uma nova guia para ativar.");
         return;
       }
 
       const perm = await Notification.requestPermission();
       if (perm !== "granted") {
         console.warn("User denied push notifications");
-        if (!silent) alert("Permissão para notificações foi negada. Por favor, libere nas configurações do navegador (ícone de cadeado na barra de endereços).");
+        alert("Permissão para notificações foi negada. Por favor, libere nas configurações do navegador (ícone de cadeado na barra de endereços).");
         return;
       }
 
       const response = await fetch("/api/push/public-key");
-      if (!response.ok) {
-        throw new Error("Failed to fetch public key");
-      }
       const { publicKey } = await response.json();
 
       if (!publicKey) {
@@ -97,7 +89,7 @@ export function usePushNotifications() {
       return sub;
     } catch (error) {
       console.error("Error subscribing to push:", error);
-      if (!silent) alert("Falha ao se inscrever nas notificações. Verifique a permissão do seu navegador e a conexão à internet.");
+      alert("Falha ao se inscrever nas notificações. Verifique a permissão do seu navegador.");
     }
   };
 

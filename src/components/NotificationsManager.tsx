@@ -4,6 +4,7 @@ import { Send, Sparkles, AlertCircle, RefreshCw, Wand2, X, Bell, BellOff } from 
 import { createNotification, db, appId } from "../lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
 import { useDialog } from "../context/DialogContext";
+import { GoogleGenAI, Type } from "@google/genai";
 import { usePushNotifications } from "../hooks/usePushNotifications";
 
 const NOTIFICATION_TEMPLATES = [
@@ -12,12 +13,6 @@ const NOTIFICATION_TEMPLATES = [
     title: "Novidades Chegaram! 🚀",
     message: "Uma nova atualização está disponível! Atualize a página e confira as melhorias preparadas especialmente para você.",
     type: "sistema",
-  },
-  {
-    label: "Aviso de Aula",
-    title: "Aula Iniciou! 📚",
-    message: "Atenção: A nossa aula já começou ou está prestes a começar! Acesse a plataforma ou dirija-se à sala para acompanhar.",
-    type: "evento",
   },
   {
     label: "Aviso de Evento",
@@ -29,12 +24,6 @@ const NOTIFICATION_TEMPLATES = [
     label: "Recesso/Feriado",
     title: "Aviso de Recesso 🏖️",
     message: "Informamos que entraremos em recesso nos próximos dias. Organize-se e aproveite o descanso merecido!",
-    type: "sistema",
-  },
-  {
-    label: "Prova/Avaliação",
-    title: "Semana de Avaliações 📝",
-    message: "Preparem-se! Nossa semana de provas e avaliações começará em breve. Estudem e tirem todas as suas dúvidas com os professores.",
     type: "sistema",
   },
   {
@@ -148,23 +137,36 @@ export default function NotificationsManager() {
 
     setGenerating(true);
     try {
-      const resp = await fetch("/api/ai/generate-notification", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ promptText: promptAi }),
+      const gKey = process.env.GEMINI_API_KEY;
+      if (!gKey) throw new Error("A chave GEMINI_API_KEY não foi configurada.");
+
+      const ai = new GoogleGenAI({ apiKey: gKey });
+      const prompt = `Você é um excelente comunicador responsável por avisos para alunos de um instituto de teologia.
+Escreva um título curto (até 50 caracteres, podendo ter um emoji no final) e uma mensagem clara, objetiva, engajadora e diversificada (evite clichês e use vocabulário rico, variando o tom, até 250 caracteres) para a seguinte ideia de notificação:
+
+IDEIA DO AVISO: "${promptAi}"
+
+Retorne o resultado estritamente em um JSON com os campos 'title' (o título) e 'message' (a mensagem completa). Crie algo amigável, caloroso e com linguagem diversificada.`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-1.5-flash",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              title: { type: Type.STRING },
+              message: { type: Type.STRING }
+            },
+            required: ["title", "message"]
+          }
+        }
       });
 
-      if (!resp.ok) {
-        let errMsg = "Erro interno";
-        try {
-          const errData = await resp.json();
-          errMsg = errData.error || errMsg;
-        } catch (_) {}
-        throw new Error(errMsg);
-      }
-
-      const jsonContent = await resp.json();
-      if (jsonContent) {
+      const responseText = response.text;
+      if (responseText) {
+        const jsonContent = JSON.parse(responseText);
         setTitle(jsonContent.title || "");
         setMessage(jsonContent.message || "");
         setShowAiModal(false);
@@ -172,7 +174,7 @@ export default function NotificationsManager() {
       }
     } catch (error: any) {
       console.error("Erro ao gerar texto com IA", error);
-      showAlert("Não foi possível gerar a notificação pela IA: " + error.message, { type: "error" });
+      showAlert("Não foi possível gerar a notificação pela IA. Verifique sua chave da API do Gemini.", { type: "error" });
     } finally {
       setGenerating(false);
     }

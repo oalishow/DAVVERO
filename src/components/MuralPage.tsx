@@ -3,7 +3,7 @@ import { createPortal } from "react-dom";
 import { motion, AnimatePresence, Reorder, useDragControls } from "motion/react";
 import { GraduationCap, Landmark, Image as ImageIcon, FileText, CheckCircle, Trash2, Pin, MessageSquare, BarChart2, Check, ExternalLink, X, Pencil, GripVertical, Heart, Send, MessageCircle } from "lucide-react";
 import { collection, query, where, orderBy, onSnapshot, addDoc, serverTimestamp, updateDoc, doc, deleteDoc, getDoc, getDocs, limit, arrayUnion, arrayRemove } from "firebase/firestore";
-import { ref, uploadBytesResumable, getDownloadURL } from "firebase/storage";
+import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { signInAnonymously } from "firebase/auth";
 import { db, storage, auth, appId, handleFirestoreError, OperationType } from "../lib/firebase";
 import { MuralPost, Member, MuralComment } from "../types";
@@ -232,166 +232,22 @@ export default function MuralPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    // 1. Verificação de tamanho (Limite 50MB)
-    const MAX_MB = 50;
-    if (file.size > MAX_MB * 1024 * 1024) {
-      alert(`⚠️ Arquivo muito grande (${(file.size / 1024 / 1024).toFixed(1)}MB).\n\nO limite é de ${MAX_MB}MB. Por favor, envie um arquivo menor ou utilize link do Google Drive.`);
-      return;
-    }
-
-    console.log("Preparando upload:", file.name, file.type, file.size);
-    setIsUploading(true);
-    setUploadProgress(0);
-
-    const uploadToStorage = async (fileOrBlob: File | Blob, originalFileName: string, fileType: string) => {
-      try {
-        if (!auth.currentUser) {
-          try {
-            await signInAnonymously(auth);
-          } catch (authErr) {
-            console.log("Login anônimo falhou, prosseguindo com upload...", authErr);
-          }
-        }
-
-        const fileExt = originalFileName.split('.').pop() || 'bin';
-        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
-        const storageRef = ref(storage, `artifacts/${appId}/mural_uploads/${fileName}`);
-        
-        console.log("Fazendo upload para:", storageRef.fullPath);
-        
-        const uploadTask = uploadBytesResumable(storageRef, fileOrBlob, {
-          cacheControl: 'public,max-age=31536000',
-          contentType: fileType || 'application/octet-stream'
-        });
-
-        uploadTask.on('state_changed', 
-          (snapshot) => {
-            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-            setUploadProgress(progress);
-          }, 
-          (error) => {
-            console.error("Erro no uploadTask:", error);
-            
-            // Tenta fallback para base64 se for imagem ou arquivo pequeno
-            if (fileOrBlob.size < 900000) { // Menos de 900KB, pode ir pro Firestore via Base64
-              console.log("Tentando fallback para Base64 devido a erro no Storage...");
-              const reader = new FileReader();
-              reader.onload = (e) => {
-                const dataUrl = e.target?.result as string;
-                if (dataUrl) {
-                  setExternalLink(dataUrl);
-                  if (fileType.startsWith('image/')) setExternalLinkType('image');
-                  else if (fileType === 'application/pdf') setExternalLinkType('document');
-                  else setExternalLinkType('link');
-                  setUploadProgress(100);
-                  setTimeout(() => setIsUploading(false), 500);
-                }
-              };
-              reader.readAsDataURL(fileOrBlob);
-              return;
-            }
-
-            if (error.code === "storage/retry-limit-exceeded" || error.message?.includes("CORS") || error.code === "storage/unknown") {
-              console.log("Tentando fallback via proxy do backend para contornar CORS...");
-              const sendViaProxy = async () => {
-                try {
-                  const idToken = auth.currentUser ? await auth.currentUser.getIdToken() : undefined;
-                  const bucket = storage.app.options.storageBucket || `${appId}.appspot.com`;
-                  
-                  const params = new URLSearchParams();
-                  params.append("bucket", bucket);
-                  params.append("path", storageRef.fullPath);
-                  params.append("mimeType", fileType);
-                  if (idToken) params.append("idToken", idToken);
-
-                  const res = await fetch(`/api/proxy-upload-raw?${params.toString()}`, {
-                    method: "POST",
-                    body: fileOrBlob,
-                    headers: {
-                      "Content-Type": fileType
-                    }
-                  });
-
-                  const resData = await res.json();
-                  if (!res.ok) {
-                    throw new Error(resData.error || "Erro no proxy backend.");
-                  }
-
-                  setExternalLink(resData.downloadUrl);
-                  
-                  if (fileType.startsWith('image/')) {
-                    setExternalLinkType('image');
-                  } else if (fileType === 'application/pdf' || fileType.toLowerCase().includes('word') || originalFileName.toLowerCase().endsWith('.pdf') || originalFileName.toLowerCase().endsWith('.doc') || originalFileName.toLowerCase().endsWith('.docx')) {
-                    setExternalLinkType('document');
-                  } else {
-                    setExternalLinkType('link');
-                  }
-                  
-                  setUploadProgress(100);
-                  setTimeout(() => setIsUploading(false), 500);
-                } catch (proxyError: any) {
-                  console.error("Proxy error:", proxyError);
-                  alert(`⚠️ FALHA NO UPLOAD:\n\nUm erro ocorreu ao tentar enviar pelo proxy: ${proxyError.message}\n\nPara consertar a versão padrão, configure as regras de CORS no seu Firebase.`);
-                  setIsUploading(false);
-                  setUploadProgress(0);
-                }
-              };
-              
-              sendViaProxy();
-              return;
-            }
-
-            let msg = "Erro ao enviar arquivo.";
-            if (error.code === "storage/unauthorized") {
-              msg = "Sem permissão no Firebase Storage. O Login anônimo pode estar desativado ou as regras bloqueiam.";
-            }
-            alert(`⚠️ FALHA NO UPLOAD:\n\n${msg}\n\nDetalhes Técnicos: ${error.code || 'erro_desconhecido'}\n${error.message}`);
-            setIsUploading(false);
-            setUploadProgress(0);
-          }, 
-          async () => {
-            console.log("Upload concluído!");
-            try {
-              const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
-              setExternalLink(downloadUrl);
-              
-              if (fileType.startsWith('image/')) {
-                setExternalLinkType('image');
-              } else if (fileType === 'application/pdf' || fileType.toLowerCase().includes('word') || originalFileName.toLowerCase().endsWith('.pdf') || originalFileName.toLowerCase().endsWith('.doc') || originalFileName.toLowerCase().endsWith('.docx')) {
-                setExternalLinkType('document');
-              } else {
-                setExternalLinkType('link');
-              }
-              
-              setUploadProgress(100);
-              setTimeout(() => setIsUploading(false), 500);
-            } catch (err) {
-              console.error("Erro ao obter link:", err);
-              alert("Upload concluído, mas não foi possível gerar o link público.");
-              setIsUploading(false);
-              setUploadProgress(0);
-            }
-          }
-        );
-      } catch (err: any) {
-        console.error("Erro crítico no setup do upload:", err);
-        alert(`⚠️ ERRO INESPERADO:\n\n${err.message}`);
-        setIsUploading(false);
-        setUploadProgress(0);
-      }
-    };
-
-    // Compressão de imagens
+    // Se for imagem, vamos converter para Base64 comprimido para evitar erros de CORS no Storage
     if (file.type.startsWith('image/')) {
+      setIsUploading(true);
+      setUploadProgress(20);
+      
       const reader = new FileReader();
       reader.onload = (event) => {
         const img = new Image();
         img.onload = () => {
+          setUploadProgress(50);
           const canvas = document.createElement('canvas');
           let width = img.width;
           let height = img.height;
           
-          const MAX_SIZE = 1200;
+          // Redimensionar mantendo proporção (max 800px para evitar travamentos)
+          const MAX_SIZE = 800;
           if (width > height && width > MAX_SIZE) {
             height *= MAX_SIZE / width;
             width = MAX_SIZE;
@@ -405,24 +261,137 @@ export default function MuralPage() {
           const ctx = canvas.getContext('2d');
           ctx?.drawImage(img, 0, 0, width, height);
           
-          canvas.toBlob((blob) => {
-            if (blob) {
-              uploadToStorage(blob, file.name, file.type);
-            } else {
-              uploadToStorage(file, file.name, file.type);
-            }
-          }, file.type === 'image/png' ? 'image/png' : 'image/jpeg', 0.8);
+          // Comprimir para JPEG mais agressivamente para não sobrecarregar Firebase/Navegador
+          let dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+          
+          // Verificar tamanho (Firestore tem limite de 1MB por documento, mas mantermos bem abaixo para performance)
+          if (dataUrl.length > 2000000) { 
+             dataUrl = canvas.toDataURL('image/jpeg', 0.3);
+          }
+          
+          if (dataUrl.length > 3000000) {
+             alert("⚠️ A imagem é muito grande mesmo após a compressão.\n\nPara enviar arquivos pesados, você precisa configurar o CORS do Firebase Storage (leia REGRAS_CORS_FIREBASE.md).");
+             setIsUploading(false);
+             setUploadProgress(0);
+             return;
+          }
+          
+          setExternalLink(dataUrl);
+          setExternalLinkType('image');
+          setUploadProgress(100);
+          setTimeout(() => setIsUploading(false), 500);
         };
         img.src = event.target?.result as string;
       };
       reader.readAsDataURL(file);
-    } else if (file.type === 'application/pdf' && file.size > 15 * 1024 * 1024) {
-      // PDF muito grande: Avisamos para o usuário comprimir melhor
-      alert("💡 Dica: Este documento PDF é bastante grande (+" + (file.size / 1024 / 1024).toFixed(0) + "MB). Ele será enviado normalmente com progresso real (o congelamento em 90% foi corrigido), mas pode demorar a carregar para os alunos na rede móvel. Tente usar uma ferramenta de compressão gratuita na internet da próxima vez.");
-      uploadToStorage(file, file.name, file.type);
-    } else {
-      // Para PDF, Word e outros
-      uploadToStorage(file, file.name, file.type);
+      return;
+    }
+
+    // Se for PDF pequeno (< 600KB), também converte para Base64 para evitar erro de CORS
+    if (file.type === 'application/pdf' && file.size < 600000) {
+      setIsUploading(true);
+      setUploadProgress(50);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+         const dataUrl = event.target?.result as string;
+         // Segurança: limite do firestore é 1MB. 600KB de arquivo ~ 800KB em Base64
+         if (dataUrl.length < 900000) {
+            setExternalLink(dataUrl);
+            setExternalLinkType('document');
+            setUploadProgress(100);
+            setTimeout(() => setIsUploading(false), 500);
+         } else {
+            alert("O PDF ficou muito grande após conversão. Para enviar este arquivo, configure o CORS do Firebase Storage.");
+            setIsUploading(false);
+            setUploadProgress(0);
+         }
+      };
+      reader.readAsDataURL(file);
+      return;
+    }
+
+    // Check size (max 5MB via Storage devido ao CORS)
+    if (file.size > 5 * 1024 * 1024) {
+      alert("⚠️ Arquivo maior que 5MB.\n\nPor favor, envie um arquivo menor ou utilize o Google Drive colando o link no chat.");
+      return;
+    }
+
+    console.log("Preparando upload:", file.name, file.type, file.size);
+    setIsUploading(true);
+    setUploadProgress(10);
+    
+    // Remover maxUploadRetryTime curto para não quebrar uploads lentos com CORS habilitado.
+    
+    try {
+      // Ensure we have an auth session (or ignore if it fails, fallback to rules)
+      if (!auth.currentUser) {
+        try {
+          console.log("Nenhum usuário detectado, tentando login anônimo...");
+          setUploadProgress(20);
+          await signInAnonymously(auth);
+          console.log("Login anônimo realizado com sucesso.");
+        } catch (authErr) {
+          console.log("Login anônimo falhou (pode estar desabilitado), prosseguindo com upload...", authErr);
+        }
+      }
+
+      setUploadProgress(40);
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${fileExt}`;
+      // Usar o caminho correto conforme definido nas rules
+      const storageRef = ref(storage, `artifacts/${appId}/mural_uploads/${fileName}`);
+      
+      console.log("Fazendo upload para:", storageRef.fullPath);
+      
+      const uploadPromise = uploadBytes(storageRef, file, {
+        cacheControl: 'public,max-age=31536000',
+        contentType: file.type || 'application/octet-stream'
+      });
+
+      const progressInterval = setInterval(() => {
+        setUploadProgress(prev => (prev < 90 ? prev + 10 : prev));
+      }, 500);
+
+      try {
+        const uploadResult = await uploadPromise;
+        clearInterval(progressInterval);
+        
+        console.log("Upload bem sucedido!");
+        setUploadProgress(95);
+        
+        const downloadUrl = await getDownloadURL(uploadResult.ref);
+        setExternalLink(downloadUrl);
+        
+        if (file.type.startsWith('image/')) {
+          setExternalLinkType('image');
+        } else if (file.type === 'application/pdf' || file.type.toLowerCase().includes('word') || file.name.toLowerCase().endsWith('.pdf') || file.name.toLowerCase().endsWith('.doc') || file.name.toLowerCase().endsWith('.docx')) {
+          setExternalLinkType('document');
+        } else {
+          setExternalLinkType('link');
+        }
+
+        setUploadProgress(100);
+        console.log("URL de download obtida:", downloadUrl);
+        setTimeout(() => setIsUploading(false), 500);
+      } catch (uploadErr) {
+        clearInterval(progressInterval);
+        throw uploadErr;
+      }
+    } catch (err: any) {
+      console.error("Erro crítico no upload:", err);
+      let msg = "Erro ao enviar arquivo.";
+      
+      if (err.code === "auth/operation-not-allowed") {
+         msg = "Login anônimo não está habilitado no Firebase Authentication.";
+      } else if (err.code === "storage/unauthorized") {
+        msg = "Sem permissão no Firebase Storage. Verifique as regras de segurança.";
+      } else if (err.code === "storage/retry-limit-exceeded" || err.message?.includes("CORS")) {
+        msg = "Não foi possível conectar ao Storage (Tempo Limite/CORS).\n\nPara consertar isso, você precisa configurar o CORS no seu Firebase Storage, autorizando os dominíos da sua aplicação web.";
+      }
+      
+      alert(`⚠️ FALHA NO UPLOAD:\n\n${msg}\n\nDetalhes Técnicos: ${err.code || 'erro_desconhecido'}\n${err.message}`);
+      setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -491,7 +460,6 @@ export default function MuralPage() {
       setExpiresIn(getDefaultSemester());
       setPostAsAnonymousAdmin(false);
       setIsComposing(false);
-      setIsSubmitting(false);
 
       if (!isAdmin) {
         alert("Sua publicação foi enviada para aprovação! Ela aparecerá no mural para os outros alunos assim que um administrador aprovar.");
