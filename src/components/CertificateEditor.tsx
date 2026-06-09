@@ -6,7 +6,6 @@ import { updateEvent, db, appId } from "../lib/firebase";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { ASSETS_DOC_PATH } from "../lib/constants";
 import { CertificateRenderer } from "./CertificateRenderer";
-import { GoogleGenAI } from "@google/genai";
 import { resizeAndConvertToBase64 } from "../lib/imageUtils";
 import { useSettings } from "../context/SettingsContext";
 import { useDialog } from "../context/DialogContext";
@@ -96,7 +95,6 @@ export default function CertificateEditor({
   const handleGenerateText = async () => {
     setIsGenerating(true);
     try {
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const themeLabel = TEMPLATE_STYLES.find(t => t.bg === template.bgStyle)?.name || "Clássico";
       const certRole = type === "organizer" ? "Membro da Equipe de Organização" : "Participação";
       const certHours = type === "organizer" && event.organizationHours ? event.organizationHours : event.hours;
@@ -117,12 +115,22 @@ Instruções RIGOROSAS:
 3. Não inclua assinaturas ou cabeçalhos. Apenas o parágrafo central.
 4. Mencione a carga horária e de forma elegante o nome do evento.`;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt,
+      const response = await fetch("/api/ai/generate-certificate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ promptText: prompt })
       });
 
-      const text = response.text || "";
+      if (!response.ok) {
+        let errMsg = "Erro interno";
+        try {
+          errMsg = (await response.json()).error || errMsg;
+        } catch (_) {}
+        throw new Error(errMsg);
+      }
+
+      const responseData = await response.json();
+      const text = responseData.text || "";
       setTemplate({ ...template, bodyText: text.trim().replace(/^"|"$/g, '') });
     } catch (e: any) {
       console.error(e);

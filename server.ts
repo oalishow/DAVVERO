@@ -155,7 +155,104 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  app.use(express.json());
+  app.use(express.json({ limit: '200mb' }));
+  app.use(express.urlencoded({ limit: '200mb', extended: true }));
+
+  app.post("/api/proxy-upload-raw", express.raw({ type: '*/*', limit: '200mb' }), async (req, res) => {
+    try {
+      const bucket = req.query.bucket as string;
+      const path = req.query.path as string;
+      const mimeType = req.query.mimeType as string || "application/octet-stream";
+      const idToken = req.query.idToken as string;
+
+      if (!bucket || !path) {
+        return res.status(400).json({ error: "Missing bucket or path" });
+      }
+      
+      const buffer = req.body;
+      if (!buffer || !Buffer.isBuffer(buffer)) {
+        return res.status(400).json({ error: "No raw body buffer" });
+      }
+      
+      const headers: any = {
+        "Content-Type": mimeType,
+        "Content-Length": buffer.length.toString()
+      };
+      
+      // se houver token, adiciona o header
+      if (idToken) {
+        headers["Authorization"] = `Firebase ${idToken}`;
+      }
+
+      const uploadUrl = `https://firebasestorage.googleapis.com/v0/b/${encodeURIComponent(bucket)}/o?name=${encodeURIComponent(path)}`;
+
+      const response = await fetch(uploadUrl, {
+        method: "POST",
+        headers,
+        body: buffer
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        console.error("Firebase Storage error:", responseData);
+        return res.status(response.status).json({ error: responseData.error?.message || "Storage error" });
+      }
+
+      const downloadToken = responseData.downloadTokens;
+      const downloadUrl = `https://firebasestorage.googleapis.com/v0/b/${encodeURIComponent(bucket)}/o/${encodeURIComponent(path)}?alt=media${downloadToken ? '&token=' + downloadToken : ''}`;
+      
+      res.status(200).json({ downloadUrl });
+    } catch (err: any) {
+      console.error("Fatal raw proxy upload error:", err);
+      res.status(500).json({ error: err.message });
+    }
+  });
+
+  app.post("/api/proxy-upload", async (req, res) => {
+    try {
+      const { bucket, path, mimeType, base64Data, idToken } = req.body;
+      if (!bucket || !path || !base64Data) {
+        return res.status(400).json({ error: "Missing required parameters" });
+      }
+
+      // Convert base64 back to buffer
+      const buffer = Buffer.from(base64Data, "base64");
+      
+      const headers: any = {
+        "Content-Type": mimeType || "application/octet-stream",
+        "Content-Length": buffer.length.toString()
+      };
+      
+      if (idToken) {
+        headers["Authorization"] = `Firebase ${idToken}`;
+      }
+
+      const uploadUrl = `https://firebasestorage.googleapis.com/v0/b/${encodeURIComponent(bucket)}/o?name=${encodeURIComponent(path)}`;
+
+      const response = await fetch(uploadUrl, {
+        method: "POST",
+        headers,
+        body: buffer
+      });
+
+      const responseData = await response.json();
+
+      if (!response.ok) {
+        console.error("Firebase Storage error:", responseData);
+        return res.status(response.status).json({ error: responseData.error?.message || "Storage error" });
+      }
+
+      // Construct public URL
+      const downloadToken = responseData.downloadTokens;
+      const downloadUrl = `https://firebasestorage.googleapis.com/v0/b/${encodeURIComponent(bucket)}/o/${encodeURIComponent(path)}?alt=media${downloadToken ? '&token=' + downloadToken : ''}`;
+      
+      res.status(200).json({ downloadUrl });
+    } catch (err: any) {
+      console.error("Fatal proxy upload error:", err);
+      res.status(500).json({ error: err.message });
+    }
+  });
 
   // Routes for Push Notifications
   app.get("/api/push/public-key", (req, res) => {
@@ -250,6 +347,79 @@ Retorne o resultado estritamente em um JSON com os campos 'title' (o título) e 
     } catch (error: any) {
       console.error("Erro ao gerar notificação com IA", error);
       res.status(500).json({ error: "Não foi possível gerar a notificação pela IA. Verifique sua chave da API do Gemini." });
+    }
+  });
+
+  app.post("/api/ai/generate-certificate", async (req, res) => {
+    const { promptText } = req.body;
+    try {
+      const gKey = process.env.GEMINI_API_KEY;
+      if (!gKey) {
+        return res.status(500).json({ error: "A chave GEMINI_API_KEY não foi configurada." });
+      }
+
+      const { GoogleGenAI } = await import("@google/genai");
+      const ai = new GoogleGenAI({ apiKey: gKey });
+
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: promptText,
+      });
+
+      res.status(200).json({ text: response.text });
+    } catch (error: any) {
+      console.error("Erro ao gerar certificado com IA", error);
+      res.status(500).json({ error: "Erro ao gerar texto: " + error.message });
+    }
+  });
+
+  app.post("/api/ai/analyze-logo", async (req, res) => {
+    const { base64Data, mimeType, promptText } = req.body;
+    try {
+      const gKey = process.env.GEMINI_API_KEY;
+      if (!gKey) {
+        return res.status(500).json({ error: "A chave GEMINI_API_KEY não foi configurada." });
+      }
+
+      const { GoogleGenAI, Type } = await import("@google/genai");
+      const ai = new GoogleGenAI({ apiKey: gKey });
+
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: {
+          parts: [
+            { inlineData: { data: base64Data, mimeType: mimeType } },
+            { text: promptText },
+          ],
+        },
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+             type: Type.ARRAY,
+             items: {
+               type: Type.OBJECT,
+               properties: {
+                 name: { type: Type.STRING },
+                 primary: { type: Type.STRING, description: "Hex code including #" },
+                 secondary: { type: Type.STRING, description: "Hex code including #" },
+                 accent: { type: Type.STRING, description: "Hex code including #" },
+                 description: { type: Type.STRING },
+               },
+               required: ["name", "primary", "secondary", "accent", "description"]
+             }
+          }
+        }
+      });
+
+      const responseText = response.text;
+      if (responseText) {
+        res.status(200).json(JSON.parse(responseText));
+      } else {
+        res.status(500).json({ error: "Empty response from AI" });
+      }
+    } catch (error: any) {
+      console.error("Erro ao analisar logo com IA", error);
+      res.status(500).json({ error: "Erro ao gerar paletas: " + error.message });
     }
   });
 
