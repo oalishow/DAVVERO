@@ -68,27 +68,15 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    // Verificação de versão "Direta" conforme solicitado pelo usuário
-    const storedVersion = localStorage.getItem("app_version");
+    // Verificação de versão para mostrar o painel de novidades
+    const lastSeenVersion = localStorage.getItem("last_seen_app_version");
     
-    // Se existir uma versão salva e for diferente da atual, atualizamos silenciosamente
-    if (storedVersion && storedVersion !== APP_VERSION) {
-      setIsUpdating(true);
-      console.log("Nova versão detectada: Atualizando diretamente...");
-      localStorage.setItem("app_version", APP_VERSION);
+    // Se existir uma versão salva e for diferente da atual, mostra o modal
+    if (lastSeenVersion && lastSeenVersion !== APP_VERSION) {
+      setShowUpdateModal(true);
+    } else if (!lastSeenVersion) {
+      // Se for a primeira vez no app, apenas registra a versão e não mostra modal
       localStorage.setItem("last_seen_app_version", APP_VERSION);
-      
-      // Força o recarregamento limpando cache (conforme possível no navegador)
-      setTimeout(() => {
-        window.location.reload();
-      }, 800);
-      return;
-    }
-
-    // Se é a primeira vez ou já atualizou, garantimos que os registros estão em dia
-    localStorage.setItem("app_version", APP_VERSION);
-    if (!localStorage.getItem("last_seen_app_version")) {
-       localStorage.setItem("last_seen_app_version", APP_VERSION);
     }
   }, []);
 
@@ -229,7 +217,7 @@ export default function App() {
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
               className="fixed top-0 left-0 w-full h-[100dvh] z-[100] flex flex-col items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md no-print"
             >
-              <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl shadow-2xl p-5 border border-sky-100 dark:border-sky-500/20 text-center relative max-h-[85vh] overflow-y-auto">
+              <div className="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl shadow-2xl p-5 border border-sky-100 dark:border-sky-500/20 text-center relative">
                 <div className="absolute top-0 right-0 p-3">
                   <button
                     onClick={handleCloseUpdate}
@@ -264,7 +252,7 @@ export default function App() {
                 ) : (
                   <>
                     <div className="text-left space-y-1.5 mb-5">
-                      {CHANGELOG.map((item, i) => (
+                      {CHANGELOG.slice(0, 2).map((item, i) => (
                         <div key={i} className="flex gap-2 items-start group">
                           <div className="w-1 h-1 rounded-full bg-sky-500 mt-1.5 shrink-0 group-hover:scale-150 transition-transform" />
                           <span className="text-[10px] leading-tight text-slate-600 dark:text-slate-300 font-medium">

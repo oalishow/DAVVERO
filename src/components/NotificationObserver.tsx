@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 import { useNotifications } from '../hooks/useNotifications';
+import { usePushNotifications } from '../hooks/usePushNotifications';
 
 const STUDENT_BOND_KEY = 'davveroId_student_identity';
 const STUDENT_TRACK_KEY = 'davveroId_student_track_ra';
@@ -12,13 +13,24 @@ export default function NotificationObserver() {
   const recipientId = isMasterLogged ? "admin" : bondedId ? bondedId : null;
 
   // Use the central hook that reads the 'notifications' collection and sets PWA Badge
-  const { notifications, unreadCount } = useNotifications(recipientId);
+  const { unreadCount } = useNotifications(recipientId);
+  const { subscribe, permission, isSupported, subscription } = usePushNotifications();
 
-  // Auto-request removed to prevent annoying prompts on first load and QR scanning
-  // Users will have to accept via the Bell icon or settings.
   useEffect(() => {
-    // Only syncing PWA Badge now
-  }, []);
+    // Auto-subscribe to push notifications if supported and not already subscribed
+    // Only attempt if permission is not explicitly denied
+    const initPush = async () => {
+      if (isSupported && permission !== "denied" && !subscription) {
+        try {
+          await subscribe();
+        } catch (error) {
+          console.error("Falha ao inicializar notificações push automaticamente:", error);
+        }
+      }
+    };
+    
+    initPush();
+  }, [isSupported, permission, subscription]);
 
   // For PWA Push / Badge sync
   useEffect(() => {
