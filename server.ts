@@ -207,6 +207,52 @@ async function startServer() {
     }
   });
 
+  app.post("/api/ai/generate-notification", async (req, res) => {
+    const { promptText } = req.body;
+    try {
+      const gKey = process.env.GEMINI_API_KEY;
+      if (!gKey) {
+        return res.status(500).json({ error: "A chave GEMINI_API_KEY não foi configurada." });
+      }
+
+      const { GoogleGenAI, Type } = await import("@google/genai");
+      const ai = new GoogleGenAI({ apiKey: gKey });
+      
+      const prompt = `Você é um excelente comunicador responsável por avisos para alunos de um instituto de teologia.
+Escreva um título curto (até 50 caracteres, podendo ter um emoji no final) e uma mensagem clara, objetiva, engajadora e diversificada (evite clichês e use vocabulário rico, variando o tom, até 250 caracteres) para a seguinte ideia de notificação:
+
+IDEIA DO AVISO: "${promptText}"
+
+Retorne o resultado estritamente em um JSON com os campos 'title' (o título) e 'message' (a mensagem completa). Crie algo amigável, caloroso e com linguagem diversificada.`;
+
+      const response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: prompt,
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+               title: { type: Type.STRING },
+               message: { type: Type.STRING }
+            },
+            required: ["title", "message"]
+          }
+        }
+      });
+      
+      const responseText = response.text;
+      if (responseText) {
+        res.status(200).json(JSON.parse(responseText));
+      } else {
+        res.status(500).json({ error: "Empty response from AI" });
+      }
+    } catch (error: any) {
+      console.error("Erro ao gerar notificação com IA", error);
+      res.status(500).json({ error: "Não foi possível gerar a notificação pela IA. Verifique sua chave da API do Gemini." });
+    }
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

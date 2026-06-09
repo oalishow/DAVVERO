@@ -22,7 +22,7 @@ export default function NotificationObserver() {
     const initPush = async () => {
       if (isSupported && permission !== "denied" && !subscription) {
         try {
-          await subscribe();
+          await subscribe(true);
         } catch (error) {
           console.error("Falha ao inicializar notificações push automaticamente:", error);
         }
