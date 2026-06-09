@@ -81,6 +81,7 @@ export default function MuralPage() {
   const [localOrder, setLocalOrder] = useState<MuralPost[]>([]);
   const getDefaultSemester = () => new Date().getMonth() <= 6 ? -1 : -2;
   const [expiresIn, setExpiresIn] = useState<number | null>(getDefaultSemester()); // Admin auto-delete
+  const [postAsAnonymousAdmin, setPostAsAnonymousAdmin] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -406,9 +407,9 @@ export default function MuralPage() {
 
       const newPost = {
         tabFn: activeTab,
-        authorId: currentUserData?.id || (isAdmin ? "admin" : myUserId),
-        authorName: currentUserData?.name || (isAdmin ? "Administração" : "Estudante"),
-        authorPhotoUrl: currentUserData?.photoUrl || null,
+        authorId: postAsAnonymousAdmin ? "admin" : (currentUserData?.id || (isAdmin ? "admin" : myUserId)),
+        authorName: postAsAnonymousAdmin ? "Administração" : (currentUserData?.name || (isAdmin ? "Administração" : "Estudante")),
+        authorPhotoUrl: postAsAnonymousAdmin ? null : (currentUserData?.photoUrl || null),
         text: postText.trim(),
         type: postType,
         mediaUrl: externalLink.trim() ? (
@@ -457,6 +458,7 @@ export default function MuralPage() {
       setPollOptions(["", ""]);
       setIsAnonymousPoll(true);
       setExpiresIn(getDefaultSemester());
+      setPostAsAnonymousAdmin(false);
       setIsComposing(false);
 
       if (!isAdmin) {
@@ -728,21 +730,43 @@ export default function MuralPage() {
              )}
 
              {isAdmin && (
-                <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-xl flex items-center justify-between">
-                   <p className="text-xs font-bold uppercase text-slate-500">Apagar Automaticamente</p>
-                   <select 
-                      value={expiresIn === null ? "" : expiresIn} 
-                      onChange={e => setExpiresIn(e.target.value ? Number(e.target.value) : null)}
-                      className="p-2 bg-white dark:bg-slate-800 rounded-lg text-sm border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700 dark:text-slate-300"
-                   >
-                     <option value="">Nunca (Fixo)</option>
-                     <option value="-1">Fim do 1º Semestre (Julho)</option>
-                     <option value="-2">Fim do 2º Semestre (Dezembro)</option>
-                     <option value="15">Em 15 dias</option>
-                     <option value="30">Em 30 dias</option>
-                     <option value="60">Em 60 dias</option>
-                     <option value="150">Em 5 meses</option>
-                   </select>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl">
+                   <div className="flex flex-col gap-1.5 justify-center">
+                      <p className="text-xs font-bold uppercase text-slate-500 text-left">Publicar Como</p>
+                      <div className="flex bg-white dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 h-9">
+                         <button
+                            type="button"
+                            onClick={() => setPostAsAnonymousAdmin(false)}
+                            className={`flex-1 py-1 px-3 rounded-lg text-[11px] font-bold transition-all text-center cursor-pointer ${!postAsAnonymousAdmin ? 'bg-indigo-600 text-white shadow-sm font-black' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                         >
+                            Meu Nome
+                         </button>
+                         <button
+                            type="button"
+                            onClick={() => setPostAsAnonymousAdmin(true)}
+                            className={`flex-1 py-1 px-3 rounded-lg text-[11px] font-bold transition-all text-center cursor-pointer ${postAsAnonymousAdmin ? 'bg-indigo-600 text-white shadow-sm font-black' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
+                         >
+                            Administração
+                         </button>
+                      </div>
+                   </div>
+
+                   <div className="flex flex-col gap-1.5 justify-center">
+                      <p className="text-xs font-bold uppercase text-slate-500 text-left font-sans">Apagar Automaticamente</p>
+                      <select 
+                         value={expiresIn === null ? "" : expiresIn} 
+                         onChange={e => setExpiresIn(e.target.value ? Number(e.target.value) : null)}
+                         className="p-2 bg-white dark:bg-slate-800 rounded-xl text-xs border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700 dark:text-slate-300 h-9"
+                      >
+                        <option value="">Nunca (Fixo)</option>
+                        <option value="-1">Fim do 1º Semestre (Julho)</option>
+                        <option value="-2">Fim do 2º Semestre (Dezembro)</option>
+                        <option value="15">Em 15 dias</option>
+                        <option value="30">Em 30 dias</option>
+                        <option value="60">Em 60 dias</option>
+                        <option value="150">Em 5 meses</option>
+                      </select>
+                   </div>
                 </div>
              )}
 

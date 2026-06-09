@@ -293,7 +293,6 @@ export default function EventManagement({ adminAccessLevel = "ADMIN" }: { adminA
             setImageUrl(croppedBase64);
             setCropImageSrc(null);
           }}
-          aspect={16 / 9}
           cropShape="rect"
         />
       )}
@@ -443,8 +442,8 @@ export default function EventManagement({ adminAccessLevel = "ADMIN" }: { adminA
               </label>
             </div>
             {imageUrl ? (
-              <div className="mt-3 relative w-full max-w-sm rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm aspect-video">
-                <img src={imageUrl} alt="Preview" className="w-full h-full object-cover" />
+              <div className="mt-3 relative w-full max-w-sm rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm bg-slate-50 dark:bg-slate-900/40">
+                <img src={imageUrl} alt="Preview" className="w-full h-auto max-h-[300px] object-contain mx-auto" />
                 <button
                   type="button"
                   onClick={() => setImageUrl("")}

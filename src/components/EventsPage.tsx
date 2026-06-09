@@ -507,11 +507,12 @@ END:VCALENDAR`;
                   {/* Center Column - Details */}
                   <div className="flex-1">
                     {event.imageUrl && (
-                      <div className="mb-4 rounded-xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-700/50 aspect-video w-full max-w-sm">
+                      <div className="mb-4 rounded-xl overflow-hidden shadow-sm border border-slate-200 dark:border-slate-700/50 w-full max-w-sm bg-slate-50 dark:bg-slate-900/40">
                         <img
                           src={event.imageUrl}
                           alt={event.title}
-                          className="w-full h-full object-cover"
+                          className="w-full h-auto max-h-[380px] object-contain mx-auto"
+                          referrerPolicy="no-referrer"
                         />
                       </div>
                     )}
