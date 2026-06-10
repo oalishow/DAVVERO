@@ -287,26 +287,74 @@ export default function MuralPage() {
       return;
     }
 
-    // Se for PDF pequeno (< 600KB), também converte para Base64 para evitar erro de CORS
-    if (file.type === 'application/pdf' && file.size < 600000) {
+    // Se for PDF (grande ou pequeno), vamos extrair a primeira página como imagem base64 usando pdf.js para contornar o CORS
+    if (file.type === 'application/pdf') {
       setIsUploading(true);
-      setUploadProgress(50);
-      const reader = new FileReader();
-      reader.onload = (event) => {
-         const dataUrl = event.target?.result as string;
-         // Segurança: limite do firestore é 1MB. 600KB de arquivo ~ 800KB em Base64
-         if (dataUrl.length < 900000) {
-            setExternalLink(dataUrl);
-            setExternalLinkType('document');
-            setUploadProgress(100);
-            setTimeout(() => setIsUploading(false), 500);
-         } else {
-            alert("O PDF ficou muito grande após conversão. Para enviar este arquivo, configure o CORS do Firebase Storage.");
-            setIsUploading(false);
-            setUploadProgress(0);
-         }
-      };
-      reader.readAsDataURL(file);
+      setUploadProgress(20);
+      try {
+        const pdfjsLib = await import('pdfjs-dist');
+        // Define o caminho do worker de uma CDN pública compatível com a versão instalada
+        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+
+        const arrayBuffer = await file.arrayBuffer();
+        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
+        const pdf = await loadingTask.promise;
+        
+        setUploadProgress(40);
+        
+        const page = await pdf.getPage(1);
+        const viewport = page.getViewport({ scale: 1.5 });
+        
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        
+        if (!context) throw new Error("Não foi possível criar o contexto do canvas");
+        
+        const MAX_SIZE = 1200;
+        let scale = 1;
+        if (viewport.width > viewport.height && viewport.width > MAX_SIZE) {
+            scale = MAX_SIZE / viewport.width;
+        } else if (viewport.height > MAX_SIZE) {
+            scale = MAX_SIZE / viewport.height;
+        }
+        
+        const scaledViewport = page.getViewport({ scale: 1.5 * scale });
+        canvas.width = scaledViewport.width;
+        canvas.height = scaledViewport.height;
+        
+        setUploadProgress(60);
+        
+        const renderContext = {
+            canvasContext: context,
+            viewport: scaledViewport
+        };
+        
+        await page.render(renderContext).promise;
+        setUploadProgress(80);
+        
+        // Comprimir agressivamente para Base64 JPEG (Evita Firestore "payload too large")
+        let dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+        if (dataUrl.length > 900000) {
+            dataUrl = canvas.toDataURL('image/jpeg', 0.3);
+        }
+        
+        if (dataUrl.length > 2000000) {
+           alert("⚠️ A conversão da primeira página do PDF para imagem resultou em um arquivo ainda muito grande.\n\nPara consertar a funcionalidade normal, você precisa configurar o CORS do Firebase Storage (leia REGRAS_CORS_FIREBASE.md) ou enviar um arquivo menor.");
+           setIsUploading(false);
+           setUploadProgress(0);
+           return;
+        }
+        
+        setExternalLink(dataUrl);
+        setExternalLinkType('document'); // Exibe formatado como documento no mural
+        setUploadProgress(100);
+        setTimeout(() => setIsUploading(false), 500);
+      } catch (err) {
+        console.error("Erro na conversão PDF->IMG:", err);
+        alert("Ocorreu um erro ao tentar extrair a imagem do PDF. Se a conversão falhou, a causa raiz (CORS não configurado no bucket Storage) precisará ser resolvida.");
+        setIsUploading(false);
+        setUploadProgress(0);
+      }
       return;
     }
 
