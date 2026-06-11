@@ -7,26 +7,6 @@ export function usePushNotifications() {
   const [subscription, setSubscription] = useState<PushSubscription | null>(null);
   const [permission, setPermission] = useState<NotificationPermission>("default");
 
-  const syncSubscriptionToFirestore = async (sub: PushSubscription) => {
-    try {
-      const subJson = JSON.parse(JSON.stringify(sub));
-      const subId = btoa(sub.endpoint).replace(/\+/g, '-').replace(/\//g, '_').substring(0, 100);
-      
-      const bondedId = localStorage.getItem("davveroId_student_identity") || localStorage.getItem("davveroId_student_track_ra");
-      const isMasterLogged = localStorage.getItem("adminMasterLogged") === "true";
-
-      await setDoc(doc(db, "push_subscriptions", subId), {
-        ...subJson,
-        userId: auth.currentUser?.uid || "anonymous",
-        studentId: bondedId || null,
-        isAdmin: isMasterLogged,
-        updatedAt: new Date().toISOString()
-      }, { merge: true });
-    } catch (err) {
-      console.error("Error auto-syncing push subscription:", err);
-    }
-  };
-
   useEffect(() => {
     if ("serviceWorker" in navigator && "PushManager" in window) {
       setIsSupported(true);
@@ -39,20 +19,6 @@ export function usePushNotifications() {
       });
     }
   }, []);
-
-  // Sync whenever subscription loads or auth changes
-  useEffect(() => {
-    if (subscription) {
-      syncSubscriptionToFirestore(subscription);
-    }
-    
-    const unsub = auth.onAuthStateChanged(() => {
-      if (subscription) {
-        syncSubscriptionToFirestore(subscription);
-      }
-    });
-    return () => unsub();
-  }, [subscription]);
 
   const subscribe = async () => {
     try {
@@ -82,7 +48,17 @@ export function usePushNotifications() {
         applicationServerKey: urlBase64ToUint8Array(publicKey),
       });
 
-      await syncSubscriptionToFirestore(sub);
+      // Save to backend via Firestore Client SDK
+      // Using btoa securely for subscription id
+      const subJson = JSON.parse(JSON.stringify(sub));
+      const subId = btoa(sub.endpoint).replace(/\+/g, '-').replace(/\//g, '_').substring(0, 100);
+      
+      // Use the root structure
+      await setDoc(doc(db, "push_subscriptions", subId), {
+        ...subJson,
+        userId: auth.currentUser?.uid || "anonymous",
+        updatedAt: new Date().toISOString()
+      }, { merge: true });
 
       setSubscription(sub);
       setPermission(Notification.permission);

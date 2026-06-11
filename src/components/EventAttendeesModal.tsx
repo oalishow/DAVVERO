@@ -122,17 +122,6 @@ export default function EventAttendeesModal({
     }
   };
 
-  const handleTogglePayment = async (studentId: string, currentStatus?: string) => {
-    try {
-      const newStatus = currentStatus === "pago" ? "pendente" : "pago";
-      await updateAttendanceDetails(event.id, studentId, { paymentStatus: newStatus });
-      loadData();
-      showAlert(`Status de pagamento atualizado para ${newStatus === "pago" ? "Pago" : "Pendente"}.`, { type: 'success' });
-    } catch (err) {
-      showAlert("Erro ao atualizar status de pagamento.", { type: 'error' });
-    }
-  };
-
   const handlePrint = (filterType: "all" | "alunos" | "visitantes") => {
     let toPrint = attendees;
     let titleAddon = "Geral";
@@ -552,26 +541,6 @@ export default function EventAttendeesModal({
                     </div>
                   </div>
                   <div className="flex items-center justify-end gap-2 mt-2 sm:mt-0">
-                    {event.isPaid && (
-                      <div className="flex flex-col items-center sm:items-end gap-0.5">
-                        <button
-                          onClick={() => handleTogglePayment(a.studentId, a.paymentStatus)}
-                          className={`inline-flex items-center gap-1 px-2 py-1 text-[10px] font-black uppercase tracking-wider rounded-lg border cursor-pointer transition-colors ${
-                            a.paymentStatus === "pago"
-                              ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20 hover:bg-emerald-100 dark:hover:bg-emerald-500/20"
-                              : "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/20 hover:bg-amber-100 dark:hover:bg-amber-500/20 animate-pulse"
-                          }`}
-                          title="Clique para alternar o status do pagamento"
-                        >
-                          {a.paymentStatus === "pago" ? "✓ Pago" : "⌛ Pendente"}
-                        </button>
-                        {a.transactionId && (
-                          <span className="text-[9px] text-slate-500 dark:text-slate-400 font-bold font-mono">
-                            Ref: {a.transactionId}
-                          </span>
-                        )}
-                      </div>
-                    )}
                     <button
                       onClick={() => handleToggleOrganizer(event.id, a.studentId, !!a.isOrganizer)}
                       className={`p-1.5 rounded-lg border transition-colors flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-bold ${

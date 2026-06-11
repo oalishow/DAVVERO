@@ -85,8 +85,13 @@ export default function EventManagement({ adminAccessLevel = "ADMIN" }: { adminA
   const [seminaryId, setSeminaryId] = useState(AVAILABLE_SEMINARIES[0]);
   const [isPaid, setIsPaid] = useState(false);
   const [price, setPrice] = useState("");
-  const [paymentLink, setPaymentLink] = useState("");
-  const [googleFormUrl, setGoogleFormUrl] = useState("");
+  const [googleFormsLink, setGoogleFormsLink] = useState("");
+  const [hotmartLink, setHotmartLink] = useState("");
+  const [presenceConfigEnabled, setPresenceConfigEnabled] = useState(false);
+  const [presenceOpenMode, setPresenceOpenMode] = useState<"default_30min" | "custom">("default_30min");
+  const [presenceCustomOpenTime, setPresenceCustomOpenTime] = useState("");
+  const [presenceCloseMode, setPresenceCloseMode] = useState<"24h_after" | "1h_after" | "custom" | "manual">("24h_after");
+  const [presenceCustomCloseTime, setPresenceCustomCloseTime] = useState("");
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
   const [eventSearchQuery, setEventSearchQuery] = useState("");
   const [statusMsg, setStatusMsg] = useState<{
@@ -158,8 +163,21 @@ export default function EventManagement({ adminAccessLevel = "ADMIN" }: { adminA
     setSeminaryId(event.seminaryId || "");
     setIsPaid(event.isPaid || false);
     setPrice(event.price ? event.price.toString() : "");
-    setPaymentLink(event.paymentLink || "");
-    setGoogleFormUrl(event.googleFormUrl || "");
+    setGoogleFormsLink(event.googleFormsLink || "");
+    setHotmartLink(event.hotmartLink || "");
+    if (event.presenceConfig) {
+      setPresenceConfigEnabled(event.presenceConfig.enabled);
+      setPresenceOpenMode(event.presenceConfig.openMode);
+      setPresenceCustomOpenTime(event.presenceConfig.customOpenTime || "");
+      setPresenceCloseMode(event.presenceConfig.closeMode);
+      setPresenceCustomCloseTime(event.presenceConfig.customCloseTime || "");
+    } else {
+      setPresenceConfigEnabled(false);
+      setPresenceOpenMode("default_30min");
+      setPresenceCustomOpenTime("");
+      setPresenceCloseMode("24h_after");
+      setPresenceCustomCloseTime("");
+    }
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
@@ -183,8 +201,13 @@ export default function EventManagement({ adminAccessLevel = "ADMIN" }: { adminA
     setSeminaryId(AVAILABLE_SEMINARIES[0]);
     setIsPaid(false);
     setPrice("");
-    setPaymentLink("");
-    setGoogleFormUrl("");
+    setGoogleFormsLink("");
+    setHotmartLink("");
+    setPresenceConfigEnabled(false);
+    setPresenceOpenMode("default_30min");
+    setPresenceCustomOpenTime("");
+    setPresenceCloseMode("24h_after");
+    setPresenceCustomCloseTime("");
   };
 
   const handleSaveEvent = async () => {
@@ -223,8 +246,15 @@ export default function EventManagement({ adminAccessLevel = "ADMIN" }: { adminA
         seminaryId: isSeminary ? seminaryId : null,
         isPaid,
         price: isPaid && price ? Number(price) : null,
-        paymentLink: isPaid && paymentLink ? paymentLink : null,
-        googleFormUrl: googleFormUrl || null,
+        googleFormsLink: googleFormsLink || null,
+        hotmartLink: isPaid && hotmartLink ? hotmartLink : null,
+        presenceConfig: {
+          enabled: presenceConfigEnabled,
+          openMode: presenceOpenMode,
+          customOpenTime: presenceCustomOpenTime || null,
+          closeMode: presenceCloseMode,
+          customCloseTime: presenceCustomCloseTime || null,
+        }
       };
       if (hours) {
         payload.hours = Number(hours);
@@ -293,6 +323,7 @@ export default function EventManagement({ adminAccessLevel = "ADMIN" }: { adminA
             setImageUrl(croppedBase64);
             setCropImageSrc(null);
           }}
+          aspect={16 / 9}
           cropShape="rect"
         />
       )}
@@ -392,14 +423,26 @@ export default function EventManagement({ adminAccessLevel = "ADMIN" }: { adminA
           </div>
           <div className="space-y-1">
             <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
-              Link do Evento / Conteúdo
+              Link do Evento / Transmissão / Materiais
             </label>
             <input
               type="text"
               value={link}
               onChange={(e) => setLink(e.target.value)}
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm outline-none focus:border-sky-500 dark:focus:border-sky-500"
-              placeholder="Ex: https://zoom.us/... ou URL Formulário"
+              placeholder="Ex: https://zoom.us/..."
+            />
+          </div>
+          <div className="space-y-1">
+            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
+              Link do Google Forms (Inscrição)
+            </label>
+            <input
+              type="text"
+              value={googleFormsLink}
+              onChange={(e) => setGoogleFormsLink(e.target.value)}
+              className="w-full bg-slate-50 dark:bg-slate-800 border border-emerald-200 dark:border-emerald-700/50 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm outline-none focus:border-emerald-500 dark:focus:border-emerald-500"
+              placeholder="Ex: https://forms.gle/..."
             />
           </div>
           <div className="space-y-1 md:col-span-2">
@@ -434,16 +477,50 @@ export default function EventManagement({ adminAccessLevel = "ADMIN" }: { adminA
                   accept="image/*"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
-                    if (file) setCropImageSrc(URL.createObjectURL(file));
-                    e.target.value = "";
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = (evt) => {
+                      const img = new Image();
+                      img.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        let width = img.width;
+                        let height = img.height;
+                        const MAX_SIZE = 1600;
+                        if (width > height && width > MAX_SIZE) {
+                          height *= MAX_SIZE / width;
+                          width = MAX_SIZE;
+                        } else if (height > MAX_SIZE) {
+                          width *= MAX_SIZE / height;
+                          height = MAX_SIZE;
+                        }
+                        canvas.width = width;
+                        canvas.height = height;
+                        const ctx = canvas.getContext('2d');
+                        ctx?.drawImage(img, 0, 0, width, height);
+                        
+                        let dataUrl = canvas.toDataURL('image/jpeg', 0.85);
+                        if (dataUrl.length > 1000000) dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                        if (dataUrl.length > 1000000) dataUrl = canvas.toDataURL('image/jpeg', 0.4);
+                        
+                        if (dataUrl.length > 1000000) {
+                           alert("⚠️ Imagem muito grande. Tente outra.");
+                           e.target.value = "";
+                           return;
+                        }
+                        setImageUrl(dataUrl);
+                        e.target.value = "";
+                      };
+                      img.src = evt.target?.result as string;
+                    };
+                    reader.readAsDataURL(file);
                   }}
                   className="hidden"
                 />
               </label>
             </div>
             {imageUrl ? (
-              <div className="mt-3 relative w-full max-w-sm rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm bg-slate-50 dark:bg-slate-900/40">
-                <img src={imageUrl} alt="Preview" className="w-full h-auto max-h-[300px] object-contain mx-auto" />
+              <div className="mt-3 relative w-full max-w-sm rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-sm">
+                <img src={imageUrl} alt="Preview" className="w-full h-auto max-h-64 object-contain" />
                 <button
                   type="button"
                   onClick={() => setImageUrl("")}
@@ -476,18 +553,6 @@ export default function EventManagement({ adminAccessLevel = "ADMIN" }: { adminA
               onChange={(e) => setSchedulePdfUrl(e.target.value)}
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm outline-none focus:border-sky-500 dark:focus:border-sky-500"
               placeholder="https://drive.google.com/..."
-            />
-          </div>
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
-              Link do Google Forms (Inscrição Obrigatória) (Opcional)
-            </label>
-            <input
-              type="text"
-              value={googleFormUrl}
-              onChange={(e) => setGoogleFormUrl(e.target.value)}
-              className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm outline-none focus:border-sky-500 dark:focus:border-sky-500"
-              placeholder="https://docs.google.com/forms/..."
             />
           </div>
           <div className="space-y-1">
@@ -554,8 +619,8 @@ export default function EventManagement({ adminAccessLevel = "ADMIN" }: { adminA
           </label>
 
           {isPaid && (
-            <div className="mt-3 space-y-3">
-              <div>
+            <div className="mt-3 flex flex-col sm:flex-row gap-4">
+              <div className="flex-1">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
                   Valor do Ingresso (R$) <span className="text-red-500">*</span>
                 </label>
@@ -565,21 +630,100 @@ export default function EventManagement({ adminAccessLevel = "ADMIN" }: { adminA
                   step="0.01"
                   value={price}
                   onChange={(e) => setPrice(e.target.value)}
-                  className="w-full sm:max-w-[200px] mt-1 bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-700 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm outline-none focus:border-emerald-500 dark:focus:border-emerald-500"
+                  className="w-full mt-1 bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-700 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm outline-none focus:border-emerald-500 dark:focus:border-emerald-500"
                   placeholder="Ex: 50.00"
                 />
               </div>
-              <div>
+              <div className="flex-[2]">
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
-                  Link do Evento / Página de Pagamento (Hotmart) <span className="text-[10px] text-slate-400 font-normal normal-case">(Opcional)</span>
+                  Link do Hotmart (Pagamento/Inscrição)
                 </label>
                 <input
                   type="text"
-                  value={paymentLink}
-                  onChange={(e) => setPaymentLink(e.target.value)}
+                  value={hotmartLink}
+                  onChange={(e) => setHotmartLink(e.target.value)}
                   className="w-full mt-1 bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-700 rounded-xl px-3 sm:px-4 py-2 sm:py-2.5 text-sm outline-none focus:border-emerald-500 dark:focus:border-emerald-500"
-                  placeholder="Ex: https://hotmart.com/... ou link onde o evento será realizado"
+                  placeholder="Ex: https://pay.hotmart.com/..."
                 />
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Configuração de Presença Automática */}
+        <div className="mt-4 p-4 rounded-xl border border-indigo-200 dark:border-indigo-800/50 bg-indigo-50 dark:bg-indigo-900/10">
+          <label className="flex items-center gap-3 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={presenceConfigEnabled}
+              onChange={(e) => setPresenceConfigEnabled(e.target.checked)}
+              className="w-5 h-5 text-indigo-600 focus:ring-indigo-500 rounded border-indigo-300 dark:border-indigo-700 bg-white dark:bg-slate-900 focus:ring-2"
+            />
+            <span className="text-sm font-bold text-indigo-700 dark:text-indigo-400 uppercase tracking-wider">
+              Registro de Presença Automático
+            </span>
+          </label>
+
+          {presenceConfigEnabled && (
+            <div className="mt-4 flex flex-col gap-4 pl-1 sm:pl-8">
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1 space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
+                    Liberar a lista de presença:
+                  </label>
+                  <select
+                    value={presenceOpenMode}
+                    onChange={(e) => setPresenceOpenMode(e.target.value as any)}
+                    className="w-full bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-700 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-indigo-500"
+                  >
+                    <option value="default_30min">30min antes do encerramento</option>
+                    <option value="custom">Em data/horário específico</option>
+                  </select>
+                </div>
+                {presenceOpenMode === "custom" && (
+                  <div className="flex-1 space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
+                      Data/Hora Específica
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={presenceCustomOpenTime}
+                      onChange={(e) => setPresenceCustomOpenTime(e.target.value)}
+                      className="w-full bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-700 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                )}
+              </div>
+
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1 space-y-1">
+                  <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
+                    Encerrar a lista de presença:
+                  </label>
+                  <select
+                    value={presenceCloseMode}
+                    onChange={(e) => setPresenceCloseMode(e.target.value as any)}
+                    className="w-full bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-700 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-indigo-500"
+                  >
+                    <option value="24h_after">24 horas pós-evento</option>
+                    <option value="1h_after">1 hora pós-evento</option>
+                    <option value="custom">Em data/horário específico</option>
+                    <option value="manual">Apenas manualmente</option>
+                  </select>
+                </div>
+                {presenceCloseMode === "custom" && (
+                  <div className="flex-1 space-y-1">
+                    <label className="text-xs font-bold text-slate-500 uppercase tracking-widest pl-1">
+                      Data/Hora Específica
+                    </label>
+                    <input
+                      type="datetime-local"
+                      value={presenceCustomCloseTime}
+                      onChange={(e) => setPresenceCustomCloseTime(e.target.value)}
+                      className="w-full bg-white dark:bg-slate-800 border border-indigo-200 dark:border-indigo-700 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-indigo-500"
+                    />
+                  </div>
+                )}
               </div>
             </div>
           )}

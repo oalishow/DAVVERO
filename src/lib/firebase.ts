@@ -42,7 +42,6 @@ let dbInstance;
 try {
   dbInstance = initializeFirestore(app, {
     ignoreUndefinedProperties: true,
-    experimentalForceLongPolling: true,
     localCache:
       typeof window !== "undefined"
         ? persistentLocalCache({ tabManager: persistentMultipleTabManager() })

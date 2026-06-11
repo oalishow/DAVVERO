@@ -59,7 +59,13 @@ export default function InstallPWA() {
   }, []);
 
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
+    if (!deferredPrompt) {
+      // Fallback navigation if prompt isn't ready
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.set('install', 'true');
+      window.location.href = newUrl.toString();
+      return;
+    }
     try {
       await deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
@@ -74,6 +80,13 @@ export default function InstallPWA() {
       setShowInstallBtn(false);
     }
   };
+
+  useEffect(() => {
+    (window as any).triggerPWAInstall = handleInstallClick;
+    return () => {
+      delete (window as any).triggerPWAInstall;
+    };
+  }, [deferredPrompt, handleInstallClick]);
 
   if (isLandingMode && !window.matchMedia('(display-mode: standalone)').matches && !isInstalled) {
     return createPortal(

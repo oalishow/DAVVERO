@@ -87,8 +87,15 @@ export interface Event {
   seminaryId?: string; // SPSCJ, Marília, Bauru, or ALL
   isPaid?: boolean; // Pagamento: true se for evento pago
   price?: number;   // Pagamento: valor do evento
-  paymentLink?: string; // Link da página onde será feito / Compra do ingresso (hotmart)
-  googleFormUrl?: string; // Google Forms form link (Optional)
+  googleFormsLink?: string; // Link externo para Forms
+  hotmartLink?: string;     // Link externo para Hotmart
+  presenceConfig?: {
+    enabled: boolean;
+    openMode: "default_30min" | "custom";
+    customOpenTime?: string; 
+    closeMode: "24h_after" | "1h_after" | "custom" | "manual";
+    customCloseTime?: string;
+  };
 }
 
 export interface Attendance {

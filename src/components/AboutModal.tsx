@@ -275,7 +275,7 @@ export default function AboutModal({ onClose }: AboutModalProps) {
                     Android
                   </p>
                   <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">
-                    Jonatas Mário Cunha, Carlos Eduardo Dias da Silva, Maicon Luiis, Luan Balbino Lopes, Maicon Luis Silva Marques
+                    Jonatas Mário Cunha, Carlos Eduardo Dias da Silva, Maicon Luiis, Luan Balbino Lopes, Danilo Chaves
                   </p>
                 </div>
                 <div className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-800">

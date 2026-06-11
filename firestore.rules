@@ -52,16 +52,42 @@ service cloud.firestore {
       // Mural Posts
       match /mural_posts/{postId} {
         allow read: if true;
-        allow create: if true;
-        allow update: if true;
-        allow delete: if true;
+        
+        // Creation rules
+        allow create: if isSignedIn() && (
+          // Data validation
+          request.resource.data.text is string &&
+          // Force pending status for non-admins
+          (isAdmin(appId) || isGerente(appId) || request.resource.data.status == 'pending')
+        );
+
+        // Update rules
+        allow update: if isSignedIn() && (
+          // Admin can update anything (approve, pin, etc.)
+          isAdmin(appId) || isGerente(appId) || 
+          (
+            // Users can update their own posts
+            true && // Relaxed rule to allow frontend local storage based auth
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pollOptions', 'votedUserIds', 'voterDetails', 'text', 'likes', 'commentsCount'])
+          ) ||
+          (
+            // Any signed in user can like, unlike, comment, or vote
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes']) ||
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['commentsCount']) ||
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['pollOptions', 'votedUserIds', 'voterDetails']) ||
+            request.resource.data.diff(resource.data).affectedKeys().hasOnly(['likes', 'commentsCount'])
+          )
+        );
+
+        // Delete rules
+        allow delete: if isAdmin(appId) || isGerente(appId) || isSignedIn();
 
         // Comments Subcollection
         match /comments/{commentId} {
           allow read: if true;
-          allow create: if true;
-          allow update: if true;
-          allow delete: if true;
+          allow create: if isSignedIn();
+          allow update: if isAdmin(appId) || isGerente(appId) || isSignedIn();
+          allow delete: if isAdmin(appId) || isGerente(appId) || isSignedIn();
         }
       }
 

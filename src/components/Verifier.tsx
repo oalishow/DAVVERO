@@ -188,21 +188,24 @@ export default function Verifier({
           .filter((d: any) => !d.id.startsWith("_"))
           .map((m: any) => {
             // Strip sensitive PII per LGPD
-            const { cpf, birthDate, phone, address, email, ...safeMember } = m;
+            const { cpf, birthDate, phone, address, email, photoUrl, ...safeMember } = m;
             return safeMember as Member;
           });
 
         const eList = eventSnap.docs.map(d => {
           const e = d.data() as Event;
+          const { imageUrl, certificateTemplate, ...safeEvent } = e;
+          const eProcessed = safeEvent as Event;
+          
           const now = new Date().getTime();
-          if (e.status === "aberto") {
-            const checkDate = e.endDate ? new Date(e.endDate).getTime() : new Date(e.startDate).getTime();
+          if (eProcessed.status === "aberto") {
+            const checkDate = eProcessed.endDate ? new Date(eProcessed.endDate).getTime() : new Date(eProcessed.startDate).getTime();
             const GRACE_PERIOD = 24 * 60 * 60 * 1000; // 1 day
             if (checkDate + GRACE_PERIOD < now) {
-               return { ...e, status: "encerrado" as any };
+               return { ...eProcessed, status: "encerrado" as any };
             }
           }
-          return e;
+          return eProcessed;
         });
         const aList = attSnap.docs.map(d => d.data() as Attendance);
 
@@ -210,15 +213,13 @@ export default function Verifier({
         setEventsCache(eList);
         setAttendancesCache(aList);
 
-        localStorage.setItem(
-          "davveroId_offline_members",
-          JSON.stringify(mList),
-        );
-        localStorage.setItem("davveroId_offline_events", JSON.stringify(eList));
-        localStorage.setItem(
-          "davveroId_offline_attendances",
-          JSON.stringify(aList),
-        );
+        try {
+          localStorage.setItem("davveroId_offline_members", JSON.stringify(mList));
+          localStorage.setItem("davveroId_offline_events", JSON.stringify(eList));
+          localStorage.setItem("davveroId_offline_attendances", JSON.stringify(aList));
+        } catch (storageError) {
+          console.warn("Storage quota exceeded, could not save offline cache:", storageError);
+        }
 
         setCacheLoaded(true);
       } catch (e) {

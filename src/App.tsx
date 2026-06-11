@@ -32,10 +32,14 @@ const StudentPortal = lazy(() => import("./components/StudentPortal"));
 const EventsPage = lazy(() => import("./components/EventsPage"));
 const MuralPage = lazy(() => import("./components/MuralPage"));
 const ToolsPanel = lazy(() => import("./components/ToolsPanel"));
+const WelcomeModal = lazy(() => import("./components/WelcomeModal"));
 
 export default function App() {
   const { settings } = useSettings();
   const { showAlert } = useDialog();
+  const [showWelcomeModal, setShowWelcomeModal] = useState(() => {
+    return localStorage.getItem("has_seen_welcome") !== "true";
+  });
   const [activeTab, setActiveTab] = useState<
     "verifier" | "admin" | "student" | "events" | "liturgy" | "mural" | "tools"
   >(() => {
@@ -68,15 +72,27 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    // Verificação de versão para mostrar o painel de novidades
-    const lastSeenVersion = localStorage.getItem("last_seen_app_version");
+    // Verificação de versão "Direta" conforme solicitado pelo usuário
+    const storedVersion = localStorage.getItem("app_version");
     
-    // Se existir uma versão salva e for diferente da atual, mostra o modal
-    if (lastSeenVersion && lastSeenVersion !== APP_VERSION) {
-      setShowUpdateModal(true);
-    } else if (!lastSeenVersion) {
-      // Se for a primeira vez no app, apenas registra a versão e não mostra modal
+    // Se existir uma versão salva e for diferente da atual, atualizamos silenciosamente
+    if (storedVersion && storedVersion !== APP_VERSION) {
+      setIsUpdating(true);
+      console.log("Nova versão detectada: Atualizando diretamente...");
+      localStorage.setItem("app_version", APP_VERSION);
       localStorage.setItem("last_seen_app_version", APP_VERSION);
+      
+      // Força o recarregamento limpando cache (conforme possível no navegador)
+      setTimeout(() => {
+        window.location.reload();
+      }, 800);
+      return;
+    }
+
+    // Se é a primeira vez ou já atualizou, garantimos que os registros estão em dia
+    localStorage.setItem("app_version", APP_VERSION);
+    if (!localStorage.getItem("last_seen_app_version")) {
+       localStorage.setItem("last_seen_app_version", APP_VERSION);
     }
   }, []);
 
@@ -116,6 +132,7 @@ export default function App() {
     (window as any).triggerVerification = handleGlobalVerify;
     (window as any).triggerAdminForceView = handleAdminForceView;
     (window as any).triggerTab = (tab: any) => setActiveTab(tab);
+    (window as any).triggerWelcomeModal = () => setShowWelcomeModal(true);
   }, []);
 
   useEffect(() => {
@@ -210,6 +227,15 @@ export default function App() {
         <div className="absolute -bottom-32 -right-32 w-64 h-64 bg-emerald-300 dark:bg-emerald-600 rounded-full mix-blend-multiply dark:mix-blend-screen blur-[90px] opacity-30 pointer-events-none print:hidden" />
 
         <AnimatePresence>
+            <Suspense fallback={null}>
+              <WelcomeModal 
+                isOpen={showWelcomeModal}
+                onClose={() => {
+                  localStorage.setItem("has_seen_welcome", "true");
+                  setShowWelcomeModal(false);
+                }} 
+              />
+            </Suspense>
           {showUpdateModal && (
             <motion.div
               initial={{ opacity: 0, scale: 0.9, y: 20 }}

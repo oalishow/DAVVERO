@@ -26,6 +26,7 @@ import {
   Type,
   Plus,
   Database,
+  Sparkles,
 } from "lucide-react";
 import { GoogleGenAI } from "@google/genai";
 import FajopaIDCard from "./FajopaIDCard";
@@ -1566,6 +1567,27 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                         </span>
                       </button>
                     </div>
+                  </div>
+
+                  <div className="bg-fuchsia-50 dark:bg-fuchsia-900/10 p-5 rounded-2xl border border-fuchsia-200 dark:border-fuchsia-500/20">
+                    <h3 className="text-sm font-bold flex items-center gap-2 mb-4 text-fuchsia-700 dark:text-fuchsia-300 uppercase tracking-widest text-[10px]">
+                      <Sparkles className="w-4 h-4" /> Modal de Boas-vindas
+                    </h3>
+                    <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
+                      Reexibir a tela de boas-vindas como se fosse sua primeira vez acessando a nova versão do aplicativo.
+                    </p>
+                    <button
+                      onClick={() => {
+                        onClose();
+                        // Delay slight to allow closing modal before opening new one
+                        setTimeout(() => {
+                           (window as any).triggerWelcomeModal?.();
+                        }, 50);
+                      }}
+                      className="w-full py-2.5 bg-fuchsia-600 hover:bg-fuchsia-500 text-white rounded-xl text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-colors shadow-sm"
+                    >
+                      Testar Modal
+                    </button>
                   </div>
 
                   <div className="bg-sky-50 dark:bg-sky-900/10 p-5 rounded-2xl border border-sky-200 dark:border-sky-500/20">

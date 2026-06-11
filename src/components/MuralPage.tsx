@@ -7,22 +7,6 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { signInAnonymously } from "firebase/auth";
 import { db, storage, auth, appId, handleFirestoreError, OperationType } from "../lib/firebase";
 import { MuralPost, Member, MuralComment } from "../types";
-import Modal from "./Modal";
-
-const checkIsAdminRole = (roles?: string[]) => {
-  if (!roles) return false;
-  const adminRoles = [
-    'admin', 'coordenador', 'coordenadora', 'gerente', 'reitor', 'vice-reitor', 
-    'padre', 'diretor espiritual', 'diretora espiritual', 'diretoria', 'gestão', 
-    'gestao', 'comunicação', 'comunicacao', 'secretaria', 'secretária'
-  ];
-  return roles.some(r => {
-    const roleClean = r.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim();
-    return adminRoles.some(adm => 
-      adm.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim() === roleClean
-    );
-  });
-};
 
 export default function MuralPage() {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
@@ -45,7 +29,7 @@ export default function MuralPage() {
     if (cachedMemberStr) {
       try {
         const m = JSON.parse(cachedMemberStr) as Member;
-        if (checkIsAdminRole(m.roles)) {
+        if (m.roles && m.roles.some(r => ['admin', 'diretoria', 'gestão', 'comunicação', 'secretaria'].includes(r.toLowerCase()))) {
           return true;
         }
       } catch(e) {}
@@ -81,7 +65,7 @@ export default function MuralPage() {
   const [localOrder, setLocalOrder] = useState<MuralPost[]>([]);
   const getDefaultSemester = () => new Date().getMonth() <= 6 ? -1 : -2;
   const [expiresIn, setExpiresIn] = useState<number | null>(getDefaultSemester()); // Admin auto-delete
-  const [postAsAnonymousAdmin, setPostAsAnonymousAdmin] = useState(false);
+  const [postAsAdmin, setPostAsAdmin] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -147,7 +131,7 @@ export default function MuralPage() {
           try {
              const m = JSON.parse(cachedMemberStr) as Member;
              setCurrentUserData({ id: m.id, name: m.name, photoUrl: m.photoUrl, roles: m.roles });
-             if (checkIsAdminRole(m.roles)) {
+             if (m.roles && m.roles.some(r => ['admin', 'diretoria', 'gestão', 'comunicação', 'secretaria'].includes(r.toLowerCase()))) {
                setIsAdmin(true);
              }
           } catch(e) {}
@@ -163,7 +147,7 @@ export default function MuralPage() {
             if (!snap.empty) {
               const m = snap.docs[0].data() as Member;
               setCurrentUserData({ id: snap.docs[0].id, name: m.name, photoUrl: m.photoUrl, roles: m.roles });
-              if (checkIsAdminRole(m.roles)) {
+              if (m.roles && m.roles.some(r => ['admin', 'diretoria', 'gestão', 'comunicação', 'secretaria'].includes(r.toLowerCase()))) {
                 setIsAdmin(true);
               }
             }
@@ -246,8 +230,8 @@ export default function MuralPage() {
           let width = img.width;
           let height = img.height;
           
-          // Redimensionar mantendo proporção (max 800px para evitar travamentos)
-          const MAX_SIZE = 800;
+          // Redimensionar mantendo proporção (max 1600px para qualidade superior)
+          const MAX_SIZE = 1600;
           if (width > height && width > MAX_SIZE) {
             height *= MAX_SIZE / width;
             width = MAX_SIZE;
@@ -261,16 +245,20 @@ export default function MuralPage() {
           const ctx = canvas.getContext('2d');
           ctx?.drawImage(img, 0, 0, width, height);
           
-          // Comprimir para JPEG mais agressivamente para não sobrecarregar Firebase/Navegador
-          let dataUrl = canvas.toDataURL('image/jpeg', 0.5);
+          // Comprimir para JPEG (qualidade 0.85 para evitar embaçado)
+          let dataUrl = canvas.toDataURL('image/jpeg', 0.85);
           
-          // Verificar tamanho (Firestore tem limite de 1MB por documento, mas mantermos bem abaixo para performance)
-          if (dataUrl.length > 2000000) { 
-             dataUrl = canvas.toDataURL('image/jpeg', 0.3);
+          // Verificar tamanho (Firestore tem limite de 1MB por documento)
+          // Em Base64, 1 caracter = 1 byte (aproximadamente). O limite rígido é 1,048,576 bytes.
+          if (dataUrl.length > 1000000) { 
+             dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+          }
+          if (dataUrl.length > 1000000) { 
+             dataUrl = canvas.toDataURL('image/jpeg', 0.4);
           }
           
-          if (dataUrl.length > 3000000) {
-             alert("⚠️ A imagem é muito grande mesmo após a compressão.\n\nPara enviar arquivos pesados, você precisa configurar o CORS do Firebase Storage (leia REGRAS_CORS_FIREBASE.md).");
+          if (dataUrl.length > 1000000) {
+             alert("⚠️ A imagem é muito grande para salvar diretamente.\n\nTente uma imagem menor.");
              setIsUploading(false);
              setUploadProgress(0);
              return;
@@ -287,74 +275,26 @@ export default function MuralPage() {
       return;
     }
 
-    // Se for PDF (grande ou pequeno), vamos extrair a primeira página como imagem base64 usando pdf.js para contornar o CORS
-    if (file.type === 'application/pdf') {
+    // Se for PDF pequeno (< 600KB), também converte para Base64 para evitar erro de CORS
+    if (file.type === 'application/pdf' && file.size < 600000) {
       setIsUploading(true);
-      setUploadProgress(20);
-      try {
-        const pdfjsLib = await import('pdfjs-dist');
-        // Define o caminho do worker de uma CDN pública compatível com a versão instalada
-        pdfjsLib.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
-
-        const arrayBuffer = await file.arrayBuffer();
-        const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-        const pdf = await loadingTask.promise;
-        
-        setUploadProgress(40);
-        
-        const page = await pdf.getPage(1);
-        const viewport = page.getViewport({ scale: 1.5 });
-        
-        const canvas = document.createElement('canvas');
-        const context = canvas.getContext('2d');
-        
-        if (!context) throw new Error("Não foi possível criar o contexto do canvas");
-        
-        const MAX_SIZE = 1200;
-        let scale = 1;
-        if (viewport.width > viewport.height && viewport.width > MAX_SIZE) {
-            scale = MAX_SIZE / viewport.width;
-        } else if (viewport.height > MAX_SIZE) {
-            scale = MAX_SIZE / viewport.height;
-        }
-        
-        const scaledViewport = page.getViewport({ scale: 1.5 * scale });
-        canvas.width = scaledViewport.width;
-        canvas.height = scaledViewport.height;
-        
-        setUploadProgress(60);
-        
-        const renderContext = {
-            canvasContext: context,
-            viewport: scaledViewport
-        };
-        
-        await page.render(renderContext).promise;
-        setUploadProgress(80);
-        
-        // Comprimir agressivamente para Base64 JPEG (Evita Firestore "payload too large")
-        let dataUrl = canvas.toDataURL('image/jpeg', 0.5);
-        if (dataUrl.length > 900000) {
-            dataUrl = canvas.toDataURL('image/jpeg', 0.3);
-        }
-        
-        if (dataUrl.length > 2000000) {
-           alert("⚠️ A conversão da primeira página do PDF para imagem resultou em um arquivo ainda muito grande.\n\nPara consertar a funcionalidade normal, você precisa configurar o CORS do Firebase Storage (leia REGRAS_CORS_FIREBASE.md) ou enviar um arquivo menor.");
-           setIsUploading(false);
-           setUploadProgress(0);
-           return;
-        }
-        
-        setExternalLink(dataUrl);
-        setExternalLinkType('document'); // Exibe formatado como documento no mural
-        setUploadProgress(100);
-        setTimeout(() => setIsUploading(false), 500);
-      } catch (err) {
-        console.error("Erro na conversão PDF->IMG:", err);
-        alert("Ocorreu um erro ao tentar extrair a imagem do PDF. Se a conversão falhou, a causa raiz (CORS não configurado no bucket Storage) precisará ser resolvida.");
-        setIsUploading(false);
-        setUploadProgress(0);
-      }
+      setUploadProgress(50);
+      const reader = new FileReader();
+      reader.onload = (event) => {
+         const dataUrl = event.target?.result as string;
+         // Segurança: limite do firestore é 1MB. 600KB de arquivo ~ 800KB em Base64
+         if (dataUrl.length < 900000) {
+            setExternalLink(dataUrl);
+            setExternalLinkType('document');
+            setUploadProgress(100);
+            setTimeout(() => setIsUploading(false), 500);
+         } else {
+            alert("O PDF ficou muito grande após conversão. Para enviar este arquivo, configure o CORS do Firebase Storage.");
+            setIsUploading(false);
+            setUploadProgress(0);
+         }
+      };
+      reader.readAsDataURL(file);
       return;
     }
 
@@ -455,9 +395,9 @@ export default function MuralPage() {
 
       const newPost = {
         tabFn: activeTab,
-        authorId: postAsAnonymousAdmin ? "admin" : (currentUserData?.id || (isAdmin ? "admin" : myUserId)),
-        authorName: postAsAnonymousAdmin ? "Administração" : (currentUserData?.name || (isAdmin ? "Administração" : "Estudante")),
-        authorPhotoUrl: postAsAnonymousAdmin ? null : (currentUserData?.photoUrl || null),
+        authorId: currentUserData?.id || (isAdmin ? "admin" : myUserId),
+        authorName: isAdmin && postAsAdmin ? "Administrador" : (currentUserData?.name || (isAdmin ? "Administrador" : "Estudante")),
+        authorPhotoUrl: isAdmin && postAsAdmin ? null : (currentUserData?.photoUrl || null),
         text: postText.trim(),
         type: postType,
         mediaUrl: externalLink.trim() ? (
@@ -506,7 +446,6 @@ export default function MuralPage() {
       setPollOptions(["", ""]);
       setIsAnonymousPoll(true);
       setExpiresIn(getDefaultSemester());
-      setPostAsAnonymousAdmin(false);
       setIsComposing(false);
 
       if (!isAdmin) {
@@ -569,9 +508,7 @@ export default function MuralPage() {
   const approvePost = async (id: string) => {
     try {
       await updateDoc(doc(db, `artifacts/${appId}/public/data/mural_posts`, id), { status: "approved" });
-    } catch (err: any) {
-      console.error("Erro ao aprovar publicação:", err);
-      alert("Não foi possível aprovar a publicação: " + (err.message || String(err)));
+    } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, `artifacts/${appId}/public/data/mural_posts`);
     }
   };
@@ -579,9 +516,7 @@ export default function MuralPage() {
   const togglePin = async (post: MuralPost) => {
     try {
       await updateDoc(doc(db, `artifacts/${appId}/public/data/mural_posts`, post.id), { isPinned: !post.isPinned });
-    } catch (err: any) {
-      console.error("Erro ao fixar publicação:", err);
-      alert("Não foi possível alterar a fixação da publicação: " + (err.message || String(err)));
+    } catch (err) {
       handleFirestoreError(err, OperationType.UPDATE, `artifacts/${appId}/public/data/mural_posts`);
     }
   };
@@ -590,9 +525,7 @@ export default function MuralPage() {
     try {
       await deleteDoc(doc(db, `artifacts/${appId}/public/data/mural_posts`, id));
       setDeleteConfirmId(null);
-    } catch (err: any) {
-      console.error("Erro ao excluir publicação:", err);
-      alert("Não foi possível excluir a publicação: " + (err.message || String(err)));
+    } catch (err) {
       handleFirestoreError(err, OperationType.DELETE, `artifacts/${appId}/public/data/mural_posts`);
     }
   };
@@ -778,43 +711,30 @@ export default function MuralPage() {
              )}
 
              {isAdmin && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl">
-                   <div className="flex flex-col gap-1.5 justify-center">
-                      <p className="text-xs font-bold uppercase text-slate-500 text-left">Publicar Como</p>
-                      <div className="flex bg-white dark:bg-slate-800 p-1 rounded-xl border border-slate-200 dark:border-slate-700 h-9">
-                         <button
-                            type="button"
-                            onClick={() => setPostAsAnonymousAdmin(false)}
-                            className={`flex-1 py-1 px-3 rounded-lg text-[11px] font-bold transition-all text-center cursor-pointer ${!postAsAnonymousAdmin ? 'bg-indigo-600 text-white shadow-sm font-black' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-                         >
-                            Meu Nome
-                         </button>
-                         <button
-                            type="button"
-                            onClick={() => setPostAsAnonymousAdmin(true)}
-                            className={`flex-1 py-1 px-3 rounded-lg text-[11px] font-bold transition-all text-center cursor-pointer ${postAsAnonymousAdmin ? 'bg-indigo-600 text-white shadow-sm font-black' : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'}`}
-                         >
-                            Administração
-                         </button>
-                      </div>
-                   </div>
-
-                   <div className="flex flex-col gap-1.5 justify-center">
-                      <p className="text-xs font-bold uppercase text-slate-500 text-left font-sans">Apagar Automaticamente</p>
-                      <select 
-                         value={expiresIn === null ? "" : expiresIn} 
-                         onChange={e => setExpiresIn(e.target.value ? Number(e.target.value) : null)}
-                         className="p-2 bg-white dark:bg-slate-800 rounded-xl text-xs border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700 dark:text-slate-300 h-9"
-                      >
-                        <option value="">Nunca (Fixo)</option>
-                        <option value="-1">Fim do 1º Semestre (Julho)</option>
-                        <option value="-2">Fim do 2º Semestre (Dezembro)</option>
-                        <option value="15">Em 15 dias</option>
-                        <option value="30">Em 30 dias</option>
-                        <option value="60">Em 60 dias</option>
-                        <option value="150">Em 5 meses</option>
-                      </select>
-                   </div>
+                <div className="space-y-2">
+                  <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-xl flex items-center justify-between">
+                     <p className="text-xs font-bold uppercase text-slate-500">Postar Como</p>
+                     <div className="flex bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-1">
+                       <button onClick={() => setPostAsAdmin(true)} className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${postAsAdmin ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>Administrador</button>
+                       <button onClick={() => setPostAsAdmin(false)} className={`px-3 py-1.5 text-xs font-bold rounded-md transition-all ${!postAsAdmin ? 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300' : 'text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700'}`}>Eu Mesmo</button>
+                     </div>
+                  </div>
+                  <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-xl flex items-center justify-between">
+                     <p className="text-xs font-bold uppercase text-slate-500">Apagar Automaticamente</p>
+                     <select 
+                        value={expiresIn === null ? "" : expiresIn} 
+                        onChange={e => setExpiresIn(e.target.value ? Number(e.target.value) : null)}
+                        className="p-2 bg-white dark:bg-slate-800 rounded-lg text-sm border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 font-bold text-slate-700 dark:text-slate-300"
+                     >
+                       <option value="">Nunca (Fixo)</option>
+                       <option value="-1">Fim do 1º Semestre (Julho)</option>
+                       <option value="-2">Fim do 2º Semestre (Dezembro)</option>
+                       <option value="15">Em 15 dias</option>
+                       <option value="30">Em 30 dias</option>
+                       <option value="60">Em 60 dias</option>
+                       <option value="150">Em 5 meses</option>
+                     </select>
+                  </div>
                 </div>
              )}
 
@@ -878,24 +798,39 @@ export default function MuralPage() {
      </div>
 
       {/* Delete Confirmation Modal */}
-      <Modal
-        isOpen={!!deleteConfirmId}
-        onClose={() => setDeleteConfirmId(null)}
-        title="Excluir Publicação?"
-        confirmLabel="Confirmar"
-        onConfirm={() => deleteConfirmId && deletePost(deleteConfirmId)}
-        confirmVariant="danger"
-      >
-        <div className="text-center py-4">
-          <div className="w-16 h-16 bg-rose-100 dark:bg-rose-900/30 text-rose-600 mx-auto rounded-full flex items-center justify-center mb-4">
-            <Trash2 className="w-8 h-8" />
+      {deleteConfirmId && createPortal(
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div 
+            onClick={() => setDeleteConfirmId(null)}
+            className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm"
+          />
+          <div 
+            className="relative w-full max-w-sm bg-white dark:bg-slate-800 rounded-3xl shadow-2xl p-8 border border-slate-200 dark:border-slate-700 text-center animate-in fade-in zoom-in duration-200"
+          >
+            <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 text-red-600 mx-auto rounded-full flex items-center justify-center mb-4">
+              <Trash2 className="w-8 h-8" />
+            </div>
+            <h3 className="text-lg font-black text-slate-800 dark:text-white uppercase tracking-tighter">Excluir Publicação?</h3>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">
+              Esta ação não poderá ser desfeita. O recado será removido permanentemente do mural.
+            </p>
+            <div className="grid grid-cols-2 gap-3 mt-8">
+              <button 
+                onClick={() => setDeleteConfirmId(null)}
+                className="py-3 rounded-xl text-xs font-black uppercase tracking-widest text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button 
+                onClick={() => deletePost(deleteConfirmId)}
+                className="py-3 rounded-xl text-xs font-black uppercase tracking-widest bg-red-600 text-white hover:bg-red-700 transition-colors shadow-lg shadow-red-600/20"
+              >
+                Confirmar
+              </button>
+            </div>
           </div>
-          <p className="text-sm text-slate-500 dark:text-slate-400 mt-2 leading-relaxed">
-            Esta ação não poderá ser desfeita. O recado será removido permanentemente do mural.
-          </p>
-        </div>
-      </Modal>
-
+        </div>, document.body
+      )}
     </div>
   );
 }
@@ -1131,12 +1066,12 @@ function MuralPostItem({
        {post.mediaUrl && (
           <div className="mt-4">
             {(post.mediaType === 'image' || post.mediaUrl.match(/\.(jpeg|jpg|gif|png|webp|svg)$/i) || post.mediaUrl.includes('drive.google.com/uc?export=view')) ? (
-               <div className="rounded-xl overflow-hidden cursor-pointer bg-slate-100 dark:bg-slate-900 flex justify-center" onClick={() => window.open(post.mediaUrl!, '_blank')}>
+               <div className="rounded-xl overflow-hidden cursor-pointer bg-transparent flex justify-center" onClick={() => window.open(post.mediaUrl!, '_blank')}>
                  <img 
                     src={post.mediaUrl} 
                     alt="Visualização" 
                     loading="lazy"
-                    className="max-w-full max-h-96 object-contain hover:opacity-95 transition-opacity" 
+                    className="w-full h-auto object-contain hover:opacity-95 transition-opacity rounded-xl" 
                     referrerPolicy="no-referrer"
                  />
                </div>
