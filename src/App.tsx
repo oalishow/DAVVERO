@@ -72,48 +72,32 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    // Verificação de versão "Direta" conforme solicitado pelo usuário
-    const storedVersion = localStorage.getItem("app_version");
+    const lastSeenVersion = localStorage.getItem("last_seen_app_version");
     
-    // Se existir uma versão salva e for diferente da atual, atualizamos silenciosamente
-    if (storedVersion && storedVersion !== APP_VERSION) {
-      setIsUpdating(true);
-      console.log("Nova versão detectada: Atualizando diretamente...");
-      localStorage.setItem("app_version", APP_VERSION);
+    // Mostra o modal de novidades se o app já estava instalado e agora é uma versão mais nova
+    if (!lastSeenVersion) {
       localStorage.setItem("last_seen_app_version", APP_VERSION);
-      
-      // Força o recarregamento limpando cache
-      setTimeout(async () => {
-        try {
-          if ('serviceWorker' in navigator) {
-            const registrations = await navigator.serviceWorker.getRegistrations();
-            for (let registration of registrations) {
-              await registration.unregister();
-            }
-          }
-          if ('caches' in window) {
-             const keys = await caches.keys();
-             for (const key of keys) {
-                 await caches.delete(key);
-             }
-          }
-        } catch (e) {
-          console.error('Failed to clear cache/SW:', e);
-        }
-        window.location.reload();
-      }, 800);
-      return;
+    } else if (lastSeenVersion !== APP_VERSION) {
+      setShowUpdateModal(true);
     }
 
-    // Server-side version check for aggressive PWA cache flush
+    localStorage.setItem("app_version", APP_VERSION);
+
+    // Verificação via servidor para forçar a limpeza de cache se estamos usando versão antiga
     fetch(`/api/version?t=${new Date().getTime()}`, { cache: 'no-store' })
       .then(res => res.json())
       .then(data => {
         if (data.version && data.version !== APP_VERSION) {
-          console.log(`Versão obsoleta (Local: ${APP_VERSION}, Server: ${data.version}). Forçando limpeza de cache.`);
+          const attemptKey = `update_attempted_${data.version}`;
+          // Para evitar loop infinito caso o cache persista teimosamente
+          if (localStorage.getItem(attemptKey)) {
+             console.log(`Atualização para ${data.version} já tentada. Ignorando auto-reload.`);
+             return;
+          }
+
+          console.log(`Versão obsoleta (Local: ${APP_VERSION}, Server: ${data.version}). Limpando cache e recarregando.`);
           setIsUpdating(true);
-          localStorage.setItem("app_version", data.version);
-          localStorage.setItem("last_seen_app_version", data.version);
+          localStorage.setItem(attemptKey, "true");
           
           setTimeout(async () => {
             try {
@@ -129,18 +113,14 @@ export default function App() {
                      await caches.delete(key);
                  }
               }
-            } catch (e) {}
-            window.location.href = window.location.pathname + '?updated=true';
+            } catch (e) {
+              console.error('Falha ao limpar caches', e);
+            }
+            window.location.href = window.location.pathname + '?v=' + new Date().getTime();
           }, 1500);
         }
       })
       .catch(() => console.log("Não foi possível verificar versão com servidor"));
-
-    // Se é a primeira vez ou já atualizou, garantimos que os registros estão em dia
-    localStorage.setItem("app_version", APP_VERSION);
-    if (!localStorage.getItem("last_seen_app_version")) {
-       localStorage.setItem("last_seen_app_version", APP_VERSION);
-    }
   }, []);
 
   const handleGlobalVerify = (code: string) => {
