@@ -15,7 +15,12 @@ export default function Header({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
   const { settings } = useSettings();
   const { showConfirm, showAlert } = useDialog();
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
-  const [isDark, setIsDark] = useState(false);
+  const [isDark, setIsDark] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('theme') === 'dark';
+    }
+    return false;
+  });
   const [showDropdown, setShowDropdown] = useState(false);
   const [showVolumeDropdown, setShowVolumeDropdown] = useState(false);
   const [currentVolume, setCurrentVolume] = useState(() => getSoundVolume());
@@ -56,7 +61,9 @@ export default function Header({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
     
     // Check initial theme
     const checkTheme = () => {
-      setIsDark(document.documentElement.classList.contains('dark'));
+      const domDark = document.documentElement.classList.contains('dark');
+      const storageDark = localStorage.getItem('theme') === 'dark';
+      setIsDark(domDark || storageDark);
     };
     checkTheme();
     window.addEventListener('themeChange', checkTheme);
@@ -79,7 +86,8 @@ export default function Header({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
   }, []);
 
   const toggleTheme = () => {
-    const newTheme = isDark ? 'light' : 'dark';
+    const isCurrentlyDark = document.documentElement.classList.contains('dark') || localStorage.getItem('theme') === 'dark';
+    const newTheme = isCurrentlyDark ? 'light' : 'dark';
     localStorage.setItem('theme', newTheme);
     
     // Explicitly toggle DOM
@@ -90,7 +98,7 @@ export default function Header({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
     }
     
     window.dispatchEvent(new Event('themeChange'));
-    setIsDark(!isDark);
+    setIsDark(newTheme === 'dark');
   };
 
   const handleInstallClick = async () => {

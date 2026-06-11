@@ -188,7 +188,7 @@ export default function Verifier({
           .filter((d: any) => !d.id.startsWith("_"))
           .map((m: any) => {
             // Strip sensitive PII per LGPD
-            const { cpf, birthDate, phone, address, email, photoUrl, ...safeMember } = m;
+            const { cpf, birthDate, phone, address, email, ...safeMember } = m;
             return safeMember as Member;
           });
 

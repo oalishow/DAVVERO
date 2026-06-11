@@ -8,16 +8,26 @@ interface ChangelogModalProps {
 export default function ChangelogModal({ onClose }: ChangelogModalProps) {
   const versions = [
     {
-      version: 'v6.7.0',
+      version: 'v6.8b',
+      title: 'Proteção Contra Loop de Atualização e Correções',
+      changes: [
+        'Solucionado um problema em que o aplicativo entrava em loop verificando atualizações contínuas e recarregando.',
+        'Corrigido problema em que a foto de passe não era exibida na tela de verificação de permissões.',
+        'Incluída limitação para exibição das novidades na modal de boas-vindas.'
+      ],
+      current: true,
+    },
+    {
+      version: 'v6.7b',
       title: 'Acesso com Biometria e Senha',
       changes: [
         'Adicionado suporte a métodos de biometria (Face ID, Touch ID, etc.) para desbloquear o passe.',
         'Melhorias de acesso e segurança.'
       ],
-      current: true,
+      current: false,
     },
     {
-      version: 'v6.6.0',
+      version: 'v6.6b',
       title: 'Atualização do Sistema',
       changes: [
         'Melhorias gerais.',
@@ -26,7 +36,7 @@ export default function ChangelogModal({ onClose }: ChangelogModalProps) {
       current: false,
     },
     {
-      version: 'v6.3.0',
+      version: 'v6.3b',
       title: 'Relatórios e Otimização',
       changes: [
         'Adicionada exportação de agendamentos em PDF no Painel Admin.',
@@ -37,7 +47,7 @@ export default function ChangelogModal({ onClose }: ChangelogModalProps) {
       current: false,
     },
     {
-      version: 'v6.2.0',
+      version: 'v6.2b',
       title: 'Melhorias de Visualização',
       changes: [
         'Aumentado o versionamento para 6.2',
@@ -46,7 +56,7 @@ export default function ChangelogModal({ onClose }: ChangelogModalProps) {
       current: false,
     },
     {
-      version: 'v6.1.0',
+      version: 'v6.1b',
       title: 'Portal Católico e Correções',
       changes: [
         'Adicionado selo "NOVO" em Ferramentas, que chegará em breve',
@@ -57,7 +67,7 @@ export default function ChangelogModal({ onClose }: ChangelogModalProps) {
       current: false,
     },
     {
-      version: 'v6.0.0',
+      version: 'v6.0b',
       title: 'Links Adicionais de Liturgia',
       changes: [
         'Adicionada a seção "Orações" (Pocket Terço).',
@@ -68,7 +78,7 @@ export default function ChangelogModal({ onClose }: ChangelogModalProps) {
       current: false,
     },
     {
-      version: 'v5.9.0',
+      version: 'v5.9b',
       title: 'Melhorias Visuais e de Usabilidade',
       changes: [
         'Aprimoramento na interface de instalação.',
@@ -78,7 +88,7 @@ export default function ChangelogModal({ onClose }: ChangelogModalProps) {
       current: false,
     },
     {
-      version: 'v5.8.0',
+      version: 'v5.8b',
       title: 'Níveis de Acesso e Gestão de Admins',
       changes: [
         'Painel para controle de múltiplas contas de administração.',
@@ -88,7 +98,7 @@ export default function ChangelogModal({ onClose }: ChangelogModalProps) {
       current: false,
     },
     {
-      version: 'v5.7.0',
+      version: 'v5.7b',
       title: 'Termos de Uso e LGPD',
       changes: [
         'Adicionados Termos de Uso e privacidade (LGPD).',
@@ -98,7 +108,7 @@ export default function ChangelogModal({ onClose }: ChangelogModalProps) {
       current: false,
     },
     {
-      version: 'v5.6.0',
+      version: 'v5.6b',
       title: 'Melhorias na Gestão de Conta e Configurações',
       changes: [
         'Adicionado painel \'Minha Conta\' para edição de dados pessoais do aluno.',
@@ -107,7 +117,7 @@ export default function ChangelogModal({ onClose }: ChangelogModalProps) {
       current: false,
     },
     {
-      version: 'v5.5.0',
+      version: 'v5.5b',
       title: 'Atualização do Sistema',
       changes: [
         'Simplificação e Foco: Redução de campos obsoletos (RG) em formulários e otimização do modal de novidades.'
@@ -115,7 +125,7 @@ export default function ChangelogModal({ onClose }: ChangelogModalProps) {
       current: false,
     },
     {
-      version: 'v5.4.0',
+      version: 'v5.4b',
       title: 'Notificações Push e Diálogos em Português',
       changes: [
         'Notificações Push: Suporte a avisos nativos no Windows, Android e iOS (Web Push).',
@@ -125,7 +135,7 @@ export default function ChangelogModal({ onClose }: ChangelogModalProps) {
       current: false,
     },
     {
-      version: 'v5.3.0',
+      version: 'v5.3b',
       title: 'Agendamentos e Trocas de Horário',
       changes: [
         'Atendimentos: Visualização de horários vagos e profissionais diretamente pelo mural de Eventos/Atendimentos.',

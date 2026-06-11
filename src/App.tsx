@@ -59,6 +59,8 @@ export default function App() {
   const [showUpdateModal, setShowUpdateModal] = useState(false);
   const [updateStatus, setUpdateStatus] = useState<"idle" | "success">("idle");
   const [isUpdating, setIsUpdating] = useState(false);
+  const [updateProgress, setUpdateProgress] = useState(0);
+  const [targetVersionText, setTargetVersionText] = useState("");
 
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
@@ -89,16 +91,29 @@ export default function App() {
       .then(data => {
         if (data.version && data.version !== APP_VERSION) {
           const attemptKey = `update_attempted_${data.version}`;
-          // Para evitar loop infinito caso o cache persista teimosamente
-          if (localStorage.getItem(attemptKey)) {
-             console.log(`Atualização para ${data.version} já tentada. Ignorando auto-reload.`);
+          const lastAttemptTimeStr = localStorage.getItem(`update_attempt_time_${data.version}`);
+          const lastAttemptTime = lastAttemptTimeStr ? parseInt(lastAttemptTimeStr, 10) : 0;
+          
+          // Se tentamos atualizar há menos de 1 minuto e falhou, não vamos tentar de novo num loop infinito
+          if (localStorage.getItem(attemptKey) && (Date.now() - lastAttemptTime) < 60000) {
+             console.log(`Atualização para ${data.version} tentada recentemente. Prevenindo loop.`);
              return;
           }
 
           console.log(`Versão obsoleta (Local: ${APP_VERSION}, Server: ${data.version}). Limpando cache e recarregando.`);
           setIsUpdating(true);
+          setTargetVersionText(data.version);
           localStorage.setItem(attemptKey, "true");
+          localStorage.setItem(`update_attempt_time_${data.version}`, Date.now().toString());
           
+          let progress = 0;
+          const progressInterval = setInterval(() => {
+            progress += 5;
+            if (progress <= 95) {
+              setUpdateProgress(progress);
+            }
+          }, 150);
+
           setTimeout(async () => {
             try {
               if ('serviceWorker' in navigator) {
@@ -116,8 +131,13 @@ export default function App() {
             } catch (e) {
               console.error('Falha ao limpar caches', e);
             }
-            window.location.href = window.location.pathname + '?v=' + new Date().getTime();
-          }, 1500);
+            clearInterval(progressInterval);
+            setUpdateProgress(100);
+            
+            setTimeout(() => {
+              window.location.href = window.location.pathname + '?v=' + new Date().getTime();
+            }, 600);
+          }, 3000);
         }
       })
       .catch(() => console.log("Não foi possível verificar versão com servidor"));
@@ -233,15 +253,32 @@ export default function App() {
       <AnimatePresence>
         {isUpdating && (
           <motion.div 
+            key="updating"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[200] bg-white dark:bg-slate-900 flex flex-col items-center justify-center gap-4"
+            className="fixed inset-0 z-[200] bg-white dark:bg-slate-900 flex flex-col items-center justify-center gap-6 p-6"
           >
-            <Loader2 className="w-10 h-10 text-sky-500 animate-spin" />
-            <div className="text-center">
-              <h2 className="text-lg font-bold text-slate-800 dark:text-white">Atualizando Sistema</h2>
-              <p className="text-xs text-slate-500">Preparando versão {APP_VERSION}...</p>
+            <Loader2 className="w-12 h-12 text-sky-500 animate-spin" />
+            <div className="text-center max-w-sm w-full space-y-4">
+              <div>
+                <h2 className="text-xl font-bold text-slate-800 dark:text-white">Atualizando Sistema</h2>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                  Baixando nova versão ({targetVersionText})...
+                </p>
+              </div>
+              
+              <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-3 overflow-hidden shadow-inner">
+                <motion.div 
+                  className="bg-sky-500 h-full rounded-full"
+                  initial={{ width: 0 }}
+                  animate={{ width: `${updateProgress}%` }}
+                  transition={{ ease: "linear" }}
+                />
+              </div>
+              <p className="text-xs font-mono text-slate-400">
+                {updateProgress}% concluído
+              </p>
             </div>
           </motion.div>
         )}
@@ -254,17 +291,18 @@ export default function App() {
         <div className="absolute -bottom-32 -right-32 w-64 h-64 bg-emerald-300 dark:bg-emerald-600 rounded-full mix-blend-multiply dark:mix-blend-screen blur-[90px] opacity-30 pointer-events-none print:hidden" />
 
         <AnimatePresence>
-            <Suspense fallback={null}>
+            <Suspense fallback={null} key="welcome-suspense">
               <WelcomeModal 
-                isOpen={showWelcomeModal}
+                isOpen={showWelcomeModal && !isUpdating && !showUpdateModal}
                 onClose={() => {
                   localStorage.setItem("has_seen_welcome", "true");
                   setShowWelcomeModal(false);
                 }} 
               />
             </Suspense>
-          {showUpdateModal && (
+          {!isUpdating && showUpdateModal && (
             <motion.div
+              key="update-modal"
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
@@ -305,7 +343,7 @@ export default function App() {
                 ) : (
                   <>
                     <div className="text-left space-y-1.5 mb-5">
-                      {CHANGELOG.map((item, i) => (
+                      {CHANGELOG.slice(0, 5).map((item, i) => (
                         <div key={i} className="flex gap-2 items-start group">
                           <div className="w-1 h-1 rounded-full bg-sky-500 mt-1.5 shrink-0 group-hover:scale-150 transition-transform" />
                           <span className="text-[10px] leading-tight text-slate-600 dark:text-slate-300 font-medium">
