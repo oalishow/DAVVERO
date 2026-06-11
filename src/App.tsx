@@ -82,12 +82,59 @@ export default function App() {
       localStorage.setItem("app_version", APP_VERSION);
       localStorage.setItem("last_seen_app_version", APP_VERSION);
       
-      // Força o recarregamento limpando cache (conforme possível no navegador)
-      setTimeout(() => {
+      // Força o recarregamento limpando cache
+      setTimeout(async () => {
+        try {
+          if ('serviceWorker' in navigator) {
+            const registrations = await navigator.serviceWorker.getRegistrations();
+            for (let registration of registrations) {
+              await registration.unregister();
+            }
+          }
+          if ('caches' in window) {
+             const keys = await caches.keys();
+             for (const key of keys) {
+                 await caches.delete(key);
+             }
+          }
+        } catch (e) {
+          console.error('Failed to clear cache/SW:', e);
+        }
         window.location.reload();
       }, 800);
       return;
     }
+
+    // Server-side version check for aggressive PWA cache flush
+    fetch(`/api/version?t=${new Date().getTime()}`, { cache: 'no-store' })
+      .then(res => res.json())
+      .then(data => {
+        if (data.version && data.version !== APP_VERSION) {
+          console.log(`Versão obsoleta (Local: ${APP_VERSION}, Server: ${data.version}). Forçando limpeza de cache.`);
+          setIsUpdating(true);
+          localStorage.setItem("app_version", data.version);
+          localStorage.setItem("last_seen_app_version", data.version);
+          
+          setTimeout(async () => {
+            try {
+              if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                for (let registration of registrations) {
+                  await registration.unregister();
+                }
+              }
+              if ('caches' in window) {
+                 const keys = await caches.keys();
+                 for (const key of keys) {
+                     await caches.delete(key);
+                 }
+              }
+            } catch (e) {}
+            window.location.href = window.location.pathname + '?updated=true';
+          }, 1500);
+        }
+      })
+      .catch(() => console.log("Não foi possível verificar versão com servidor"));
 
     // Se é a primeira vez ou já atualizou, garantimos que os registros estão em dia
     localStorage.setItem("app_version", APP_VERSION);

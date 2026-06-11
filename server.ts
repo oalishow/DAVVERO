@@ -4,6 +4,7 @@ import path from "path";
 import webpush from "web-push";
 import dotenv from "dotenv";
 import admin from "firebase-admin";
+import { APP_VERSION } from "./src/lib/constants";
 
 dotenv.config();
 
@@ -39,6 +40,11 @@ async function startServer() {
   const PORT = 3000;
 
   app.use(express.json());
+
+  // App Version config
+  app.get("/api/version", (req, res) => {
+    res.json({ version: APP_VERSION });
+  });
 
   // Routes for Push Notifications
   app.get("/api/push/public-key", (req, res) => {
