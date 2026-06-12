@@ -1,12 +1,13 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { ShieldCheck, Download, Sun, Moon, Bell, Trash2, Lock, Share2, Copy, Volume2, VolumeX, Volume1 } from 'lucide-react';
-import { APP_VERSION } from '../lib/constants';
+import { ShieldCheck, Download, Sun, Moon, Bell, Trash2, Lock, Share2, Copy, Volume2, VolumeX, Volume1, RefreshCw } from 'lucide-react';
+import { APP_VERSION, APP_BUILD } from '../lib/constants';
 import { useSettings } from '../context/SettingsContext';
 import { useDialog } from '../context/DialogContext';
 import { useState, useEffect, useRef } from 'react';
 import { useNotifications } from '../hooks/useNotifications';
 import { markAllNotificationsAsRead, markNotificationAsRead, clearAllNotifications, clearNotification } from '../lib/firebase';
 import { getSoundVolume, setSoundVolume, playSound } from '../lib/sounds';
+import ChangelogModal from './ChangelogModal';
 
 const STUDENT_BOND_KEY = 'davveroId_student_identity';
 const STUDENT_TRACK_KEY = 'davveroId_student_track_ra';
@@ -23,6 +24,7 @@ export default function Header({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
   });
   const [showDropdown, setShowDropdown] = useState(false);
   const [showVolumeDropdown, setShowVolumeDropdown] = useState(false);
+  const [showChangelog, setShowChangelog] = useState(false);
   const [currentVolume, setCurrentVolume] = useState(() => getSoundVolume());
   const dropdownRef = useRef<HTMLDivElement>(null);
   const volumeDropdownRef = useRef<HTMLDivElement>(null);
@@ -183,7 +185,7 @@ export default function Header({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
   );
 
   return (
-    <div className="text-center relative print:hidden no-print">
+    <div className="text-center relative print:hidden no-print pt-14">
       <div className="absolute top-0 left-0 flex items-center gap-2 z-50 no-print print:hidden">
         {onOpenAdmin && (
           <button
@@ -201,11 +203,28 @@ export default function Header({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
         >
           {isDark ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
         </button>
-        <div className="flex items-center justify-center px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-400 font-medium">
-          v{APP_VERSION}
-        </div>
+        <button 
+          onClick={() => setShowChangelog(true)}
+          className="flex items-center justify-center px-2 py-1 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-xs text-slate-500 dark:text-slate-400 font-medium whitespace-nowrap hover:text-sky-500 dark:hover:text-sky-400 hover:scale-105 active:scale-95 transition-all cursor-pointer"
+          title="Ver Novidades da Versão"
+        >
+          v{APP_VERSION} <span className="opacity-50 ml-1">({APP_BUILD})</span>
+        </button>
       </div>
       <div className="absolute top-0 right-0 flex items-center gap-2 z-50 no-print print:hidden">
+        <button 
+          onClick={async () => {
+             if ('serviceWorker' in navigator) {
+               const regs = await navigator.serviceWorker.getRegistrations();
+               for (let reg of regs) { await reg.unregister(); }
+             }
+             window.location.href = window.location.href.split('?')[0] + '?t=' + new Date().getTime();
+          }}
+          className="p-1.5 bg-slate-100 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-sky-500 dark:hover:text-sky-400 transition-colors no-print hover:scale-110 active:scale-95"
+          title="Forçar Atualização"
+        >
+          <RefreshCw className="w-4 h-4" />
+        </button>
         <div className="relative" ref={volumeDropdownRef}>
           <button
             onClick={() => setShowVolumeDropdown(!showVolumeDropdown)}
@@ -456,6 +475,7 @@ export default function Header({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
           BANCO DE DADOS: {settings.databaseName || instName}
         </div>
       </div>
+      {showChangelog && <ChangelogModal onClose={() => setShowChangelog(false)} />}
     </div>
   );
 }
