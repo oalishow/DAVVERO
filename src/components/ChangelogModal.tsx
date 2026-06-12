@@ -8,6 +8,16 @@ interface ChangelogModalProps {
 export default function ChangelogModal({ onClose }: ChangelogModalProps) {
   const versions = [
     {
+      version: 'v6.9b',
+      title: 'Integração da Biblioteca Pessoal',
+      changes: [
+        'Adicionada nova guia com acesso direto ao acervo digital institucional (Sophia).',
+        'Melhorias de layout e visibilidade no painel de verificação de identidades.',
+        'Os certificados agora podem ser consultados sem a necessidade de autenticação de administrador.'
+      ],
+      current: true,
+    },
+    {
       version: 'v6.8b',
       title: 'Proteção Contra Loop de Atualização e Correções',
       changes: [
@@ -15,7 +25,7 @@ export default function ChangelogModal({ onClose }: ChangelogModalProps) {
         'Corrigido problema em que a foto de passe não era exibida na tela de verificação de permissões.',
         'Incluída limitação para exibição das novidades na modal de boas-vindas.'
       ],
-      current: true,
+      current: false,
     },
     {
       version: 'v6.7b',

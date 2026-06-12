@@ -447,6 +447,7 @@ export default function MuralPage() {
       setIsAnonymousPoll(true);
       setExpiresIn(getDefaultSemester());
       setIsComposing(false);
+      setIsSubmitting(false);
 
       if (!isAdmin) {
         alert("Sua publicação foi enviada para aprovação! Ela aparecerá no mural para os outros alunos assim que um administrador aprovar.");

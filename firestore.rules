@@ -29,7 +29,12 @@ service cloud.firestore {
     }
 
     function isGerente(appId) {
-      return isSignedIn(); // Simplification: we don't have GERENTE logic separately anymore
+      return isSignedIn() && (
+        exists(/databases/$(database)/documents/artifacts/$(appId)/public/data/students/$(request.auth.uid)) && 
+        'roles' in get(/databases/$(database)/documents/artifacts/$(appId)/public/data/students/$(request.auth.uid)).data &&
+        get(/databases/$(database)/documents/artifacts/$(appId)/public/data/students/$(request.auth.uid)).data.roles is list &&
+        get(/databases/$(database)/documents/artifacts/$(appId)/public/data/students/$(request.auth.uid)).data.roles.hasAny(['GERENTE', 'gerente', 'COORDENAÇÕES', 'coordenações'])
+      );
     }
 
     // Root Collections
@@ -54,7 +59,7 @@ service cloud.firestore {
         allow read: if true;
         
         // Creation rules
-        allow create: if isSignedIn() && (
+        allow create: if true && (
           // Data validation
           request.resource.data.text is string &&
           // Force pending status for non-admins
@@ -62,7 +67,7 @@ service cloud.firestore {
         );
 
         // Update rules
-        allow update: if isSignedIn() && (
+        allow update: if true && (
           // Admin can update anything (approve, pin, etc.)
           isAdmin(appId) || isGerente(appId) || 
           (
@@ -80,14 +85,14 @@ service cloud.firestore {
         );
 
         // Delete rules
-        allow delete: if isAdmin(appId) || isGerente(appId) || isSignedIn();
+        allow delete: if isAdmin(appId) || isGerente(appId) || true;
 
         // Comments Subcollection
         match /comments/{commentId} {
           allow read: if true;
-          allow create: if isSignedIn();
-          allow update: if isAdmin(appId) || isGerente(appId) || isSignedIn();
-          allow delete: if isAdmin(appId) || isGerente(appId) || isSignedIn();
+          allow create: if true;
+          allow update: if isAdmin(appId) || isGerente(appId) || true;
+          allow delete: if isAdmin(appId) || isGerente(appId) || true;
         }
       }
 

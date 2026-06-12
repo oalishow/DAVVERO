@@ -363,6 +363,42 @@ export const updateAttendanceStatus = async (
   }
 };
 
+export const removeAttendancePresence = async (
+  attendanceId: string,
+  dateString?: string,
+) => {
+  try {
+    const { doc, updateDoc, arrayRemove, getDoc } = await import("firebase/firestore");
+    const attRef = doc(db, `artifacts/${appId}/public/data/attendances`, attendanceId);
+    
+    if (dateString) {
+      // Remover a data específica
+      await updateDoc(attRef, {
+        checkInDates: arrayRemove(dateString),
+      });
+      // Verificar se ainda existem datas, se não, voltar status para "inscrito"
+      const snap = await getDoc(attRef);
+      if (snap.exists()) {
+        const data = snap.data();
+        if (!data.checkInDates || data.checkInDates.length === 0) {
+          await updateDoc(attRef, { status: "inscrito" });
+        }
+      }
+    } else {
+      // Fallback antigo
+      await updateDoc(attRef, { 
+        status: "inscrito",
+        checkInDates: [] 
+      });
+    }
+  } catch (e: any) {
+    if (e.code !== 'not-found' && !e.message?.includes('No document to update')) {
+      console.error("Error removing attendance presence: ", e);
+    }
+    throw e;
+  }
+};
+
 export const updateAttendanceDetails = async (
   eventId: string,
   studentId: string,

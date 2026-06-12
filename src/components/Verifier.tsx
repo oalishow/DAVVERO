@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Camera, XCircle, Search, ScanLine } from "lucide-react";
+import { Camera, XCircle, Search, ScanLine, CheckCircle, ArrowLeft } from "lucide-react";
 import { collection, query, getDocs } from "firebase/firestore";
 import {
   db,
@@ -20,6 +20,8 @@ import { useDialog } from "../context/DialogContext";
 import { playSound } from '../lib/sounds';
 
 import { motion, AnimatePresence } from "motion/react";
+import confetti from "canvas-confetti";
+import { useSettings } from "../context/SettingsContext";
 
 interface VerifierProps {
   externalCode?: string | null;
@@ -31,6 +33,7 @@ export default function Verifier({
   onExternalVerified,
 }: VerifierProps) {
   const { showAlert } = useDialog();
+  const { settings } = useSettings();
   const [isScanning, setIsScanning] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [codeInput, setCodeInput] = useState("");
@@ -38,7 +41,7 @@ export default function Verifier({
   const [membersCache, setMembersCache] = useState<Member[]>([]);
   const [eventsCache, setEventsCache] = useState<Event[]>([]);
   const [attendancesCache, setAttendancesCache] = useState<Attendance[]>([]);
-  const [verifyMode, setVerifyMode] = useState<"STANDARD" | "EVENT" | "VISITOR">(
+  const [verifyMode, setVerifyMode] = useState<"STANDARD" | "EVENT" | "VISITOR" | "CERTIFICATE">(
     "STANDARD",
   );
   const [visitorName, setVisitorName] = useState("");
@@ -61,6 +64,7 @@ export default function Verifier({
   } | null>(null);
 
   const [showPublicReq, setShowPublicReq] = useState(false);
+  const [showRegistrationSuccessModal, setShowRegistrationSuccessModal] = useState(false);
   const [showSuggestEdit, setShowSuggestEdit] = useState(false);
   const [showRegisterTypeSelection, setShowRegisterTypeSelection] = useState(false);
   const [showVisitorRegisterModal, setShowVisitorRegisterModal] = useState(false);
@@ -842,25 +846,35 @@ export default function Verifier({
 
       <div className="w-full text-center">
         {/* Verify Mode Selector */}
-        {!isScanning && isAdminLogged && (
-          <div className="w-full max-w-sm mx-auto flex gap-1 no-print p-1 bg-slate-100 dark:bg-slate-800 rounded-xl mb-4 shadow-inner border border-slate-200 dark:border-slate-700">
+        {!isScanning && verifyMode !== "CERTIFICATE" && (
+          <div className={`w-full max-w-[600px] mx-auto grid ${isAdminLogged ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2 max-w-[300px]"} gap-2 no-print p-1.5 bg-slate-100/80 dark:bg-slate-800/80 rounded-2xl mb-6 shadow-inner border border-slate-200 dark:border-slate-700`}>
             <button
               onClick={() => setVerifyMode("STANDARD")}
-              className={`flex-1 py-2 px-1 text-[10px] sm:text-xs font-bold rounded-lg transition-all ${verifyMode === "STANDARD" ? "bg-white dark:bg-slate-700 shadow-sm text-sky-600 dark:text-sky-400" : "text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-700/50"}`}
+              className={`py-2.5 px-2 text-[10px] sm:text-xs font-bold rounded-xl transition-all flex items-center justify-center ${verifyMode === "STANDARD" ? "bg-white dark:bg-slate-700 shadow-sm text-sky-600 dark:text-sky-400 border border-slate-200/50 dark:border-slate-600" : "text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 border border-transparent"}`}
             >
-              Verificar Identidade
+              Identidade
             </button>
+            {isAdminLogged && (
+              <>
+                <button
+                  onClick={() => setVerifyMode("EVENT")}
+                  className={`py-2.5 px-2 text-[10px] sm:text-xs font-bold rounded-xl transition-all flex items-center justify-center ${verifyMode === "EVENT" ? "bg-white dark:bg-slate-700 shadow-sm text-sky-600 dark:text-sky-400 border border-slate-200/50 dark:border-slate-600" : "text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 border border-transparent"}`}
+                >
+                  Check-in Evento
+                </button>
+                <button
+                  onClick={() => setVerifyMode("VISITOR")}
+                  className={`py-2.5 px-2 text-[10px] sm:text-xs font-bold rounded-xl transition-all flex items-center justify-center ${verifyMode === "VISITOR" ? "bg-white dark:bg-slate-700 shadow-sm text-sky-600 dark:text-sky-400 border border-slate-200/50 dark:border-slate-600" : "text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 border border-transparent"}`}
+                >
+                  Visitante
+                </button>
+              </>
+            )}
             <button
-              onClick={() => setVerifyMode("EVENT")}
-              className={`flex-1 py-2 px-1 text-[10px] sm:text-xs font-bold rounded-lg transition-all ${verifyMode === "EVENT" ? "bg-white dark:bg-slate-700 shadow-sm text-sky-600 dark:text-sky-400" : "text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-700/50"}`}
+              onClick={() => setVerifyMode("CERTIFICATE")}
+              className={`py-2.5 px-2 text-[10px] sm:text-xs font-bold rounded-xl transition-all flex items-center justify-center ${verifyMode === "CERTIFICATE" ? "bg-white dark:bg-slate-700 shadow-sm text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-600/50" : "text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 border border-transparent"}`}
             >
-              Check-in Evento
-            </button>
-            <button
-              onClick={() => setVerifyMode("VISITOR")}
-              className={`flex-1 py-2 px-1 text-[10px] sm:text-xs font-bold rounded-lg transition-all ${verifyMode === "VISITOR" ? "bg-white dark:bg-slate-700 shadow-sm text-sky-600 dark:text-sky-400" : "text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-700/50"}`}
-            >
-              Cadastro Visitante
+              Certificados
             </button>
           </div>
         )}
@@ -887,7 +901,7 @@ export default function Verifier({
           </div>
         )}
 
-        {verifyMode !== "VISITOR" && (
+        {verifyMode !== "VISITOR" && verifyMode !== "CERTIFICATE" && (
           <>
             {!isScanning ? (
               <button
@@ -913,7 +927,7 @@ export default function Verifier({
         )}
       </div>
 
-      {verifyMode !== "VISITOR" && (
+      {verifyMode !== "VISITOR" && verifyMode !== "CERTIFICATE" && (
         <>
           <div className={`relative w-full max-w-sm rounded-xl overflow-hidden shadow-2xl border-2 border-sky-400 dark:border-sky-500/30 aspect-square bg-black ${!isScanning && !scanSuccessAnim && "hidden"}`}>
             <div id="reader" className="w-full h-full"></div>
@@ -1071,15 +1085,102 @@ export default function Verifier({
         </div>
       )}
 
+      {verifyMode === "CERTIFICATE" && (
+        <div className="w-full flex-col justify-center text-center max-w-6xl mx-auto space-y-4 min-h-[500px]">
+          {settings.useGoogleScriptCertificate && settings.googleScriptCertificateUrl ? (
+            <>
+              <div className="flex justify-between items-center no-print">
+                 <button
+                   onClick={() => setVerifyMode("STANDARD")}
+                   className="text-xs font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 transition-colors flex items-center gap-1"
+                 >
+                   <ArrowLeft className="w-4 h-4" /> Voltar
+                 </button>
+                 <a 
+                   href={settings.googleScriptCertificateUrl} 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   className="text-xs font-bold text-sky-500 hover:text-sky-600 transition-colors"
+                 >
+                   Abrir em nova aba ↗
+                 </a>
+              </div>
+              <iframe 
+                src={settings.googleScriptCertificateUrl} 
+                className="w-full h-[75vh] min-h-[600px] bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-lg"
+                title="Validação de Certificados"
+                allow="clipboard-read; clipboard-write; display-capture"
+              />
+            </>
+          ) : (
+            <div className="w-full bg-white dark:bg-slate-800/40 p-10 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-lg text-center flex flex-col items-center justify-center">
+               <p className="text-slate-500 font-medium mb-6">A validação por Google Script não está ativada nas configurações ou o link não foi fornecido.</p>
+               <button 
+                  onClick={() => setVerifyMode("STANDARD")}
+                  className="btn-modern px-6 py-3 bg-sky-500 hover:bg-sky-600 text-white font-bold rounded-xl"
+               >
+                 Voltar para Verificar Identidade
+               </button>
+            </div>
+          )}
+        </div>
+      )}
+
       {showPublicReq && (
         <PublicRequestModal
           onClose={() => setShowPublicReq(false)}
           onSubmitSuccess={() => {
             setShowPublicReq(false);
-            setSuccessMsg("Solicitação enviada com sucesso! Aguarde analise.");
-            setTimeout(() => setSuccessMsg(""), 4000);
+            setShowRegistrationSuccessModal(true);
+            playSound('success'); // Play positive sound on registration
+            confetti({
+              particleCount: 150,
+              spread: 70,
+              origin: { y: 0.6 },
+              colors: ['#0ea5e9', '#10b981', '#6366f1'] // sky, emerald, indigo
+            });
           }}
         />
+      )}
+
+      {showRegistrationSuccessModal && (
+        <Modal
+          isOpen={showRegistrationSuccessModal}
+          onClose={() => setShowRegistrationSuccessModal(false)}
+          title="Cadastro Recebido"
+          hideFooter
+        >
+          <div className="flex flex-col items-center text-center justify-center py-8">
+            <motion.div
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 260, damping: 20 }}
+              className="w-20 h-20 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-500 rounded-full flex items-center justify-center mb-6"
+            >
+              <CheckCircle className="w-10 h-10" />
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+            >
+              <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">
+                Sucesso! Seu cadastro foi recebido.
+              </h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mb-6 max-w-sm">
+                Os seus dados foram enviados e estão agora no <b>Painel de Solicitações</b>.
+                <br /><br />
+                A secretaria responsável fará a análise das suas informações e em breve você será notificado(a) sobre a liberação da sua carteirinha.
+              </p>
+              <button
+                onClick={() => setShowRegistrationSuccessModal(false)}
+                className="px-8 py-3 bg-slate-800 dark:bg-slate-700 text-white font-bold rounded-xl hover:bg-slate-700 transition-colors shadow-lg shadow-slate-200 dark:shadow-none"
+              >
+                Entendi
+              </button>
+            </motion.div>
+          </div>
+        </Modal>
       )}
 
       {showRegisterTypeSelection && (

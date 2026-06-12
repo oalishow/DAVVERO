@@ -1,11 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
-import { Send, Sparkles, AlertCircle, RefreshCw, Wand2, X, Bell, BellOff } from "lucide-react";
+import { Send, Sparkles, AlertCircle, RefreshCw, Wand2, X, Bell, BellOff, Users, User, Globe } from "lucide-react";
 import { createNotification, db, appId } from "../lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
 import { useDialog } from "../context/DialogContext";
 import { GoogleGenAI, Type } from "@google/genai";
 import { usePushNotifications } from "../hooks/usePushNotifications";
+import type { Member } from "../types";
 
 const NOTIFICATION_TEMPLATES = [
   {
@@ -54,9 +55,31 @@ export default function NotificationsManager() {
   const [generating, setGenerating] = useState(false);
   const [promptAi, setPromptAi] = useState("");
   const [showAiModal, setShowAiModal] = useState(false);
+
+  const [audienceMode, setAudienceMode] = useState<"todos" | "grupo" | "individual">("todos");
+  const [selectedGroup, setSelectedGroup] = useState<string>("alunos");
+  const [selectedUserId, setSelectedUserId] = useState<string>("");
+  const [members, setMembers] = useState<Member[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(false);
   
   const { showAlert } = useDialog();
   const { isSupported, subscription, subscribe } = usePushNotifications();
+
+  useEffect(() => {
+    const fetchMembers = async () => {
+      setLoadingMembers(true);
+      try {
+        const snap = await getDocs(collection(db, `artifacts/${appId}/public/data/students`));
+        const data = snap.docs.map(d => ({ id: d.id, ...d.data() } as Member));
+        setMembers(data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoadingMembers(false);
+      }
+    };
+    fetchMembers();
+  }, []);
 
   const handleSendNotification = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -65,27 +88,73 @@ export default function NotificationsManager() {
       return;
     }
 
+    if (audienceMode === "individual" && !selectedUserId) {
+      showAlert("Por favor, selecione um usuário membro para enviar.", { type: "warning" });
+      return;
+    }
+
     setSending(true);
     try {
-      // 1. Create Firestore notification (for in-app display)
-      await createNotification({
-        recipientId: "todos",
-        title,
-        message,
-        type,
-      });
+      // 1. Definição do Público-alvo (Audience)
+      let targetMemberIds: string[] = [];
+      let targetLabel = "todos";
 
-      // 2. Fetch subscriptions from Firestore
+      if (audienceMode === "todos") {
+        targetMemberIds = ["todos"];
+      } else if (audienceMode === "individual") {
+        targetMemberIds = [selectedUserId];
+        const m = members.find(x => x.id === selectedUserId);
+        targetLabel = m ? m.name : "Usuário Específico";
+      } else if (audienceMode === "grupo") {
+        targetLabel = selectedGroup === "alunos" ? "Alunos e Seminaristas" : "Visitantes";
+        let filtered = members;
+        if (selectedGroup === "alunos") {
+          filtered = members.filter(m => !m.roles?.includes("VISITANTE") && Object.keys(m).length > 2);
+        } else if (selectedGroup === "visitantes") {
+          filtered = members.filter(m => !!m.roles?.includes("VISITANTE"));
+        }
+        targetMemberIds = filtered.map(m => m.id);
+        
+        if (targetMemberIds.length === 0) {
+          showAlert("Não há usuários neste grupo no momento.", { type: "warning" });
+          setSending(false);
+          return;
+        }
+      }
+
+      // 2. Create Firestore notifications (for in-app display)
+      // Se for um broadcast global, cria apenas 1 notificação com recipient="todos".
+      // Se for grupo/individual, cria uma notificação individual por ID.
+      if (audienceMode === "todos") {
+        await createNotification({ recipientId: "todos", title, message, type });
+      } else {
+        await Promise.all(targetMemberIds.map(uid => 
+          createNotification({ recipientId: uid, title, message, type })
+        ));
+      }
+
+      // 3. Fetch subscriptions from Firestore para Push Nativo
       let targetSubscriptions: any[] = [];
       const subPath = "push_subscriptions";
       try {
         const subsSnapshot = await getDocs(collection(db, subPath));
-        targetSubscriptions = subsSnapshot.docs.map(doc => doc.data());
+        if (audienceMode === "todos") {
+          targetSubscriptions = subsSnapshot.docs.map(doc => doc.data());
+        } else {
+          // Send push to matching device only
+          // Our push subscriptions currently might or might not have user ID associated.
+          // Since our subscription logic typically saves the browser token, if we linked it using device or user, we filter.
+          // IF we don't have user IDs in push_subscriptions, we can only safely do "todos", but we will try filtering if user field exists.
+          targetSubscriptions = subsSnapshot.docs
+            .map(doc => doc.data())
+            .filter(sub => targetMemberIds.includes(sub.userId) || audienceMode === "todos"); 
+          // Note: If sub.userId is missing, individual push might be skipped, which is fine since in-app still works.
+        }
       } catch (subErr) {
         console.error(`Error fetching subscriptions for path: ${subPath}`, subErr);
       }
 
-      // 3. Send Push Notification Broadcast (Native)
+      // 4. Send Push Notification Broadcast (Native)
       if (targetSubscriptions.length > 0) {
         try {
           const controller = new AbortController();
@@ -102,17 +171,14 @@ export default function NotificationsManager() {
 
           const result = await resp.json();
           if (result.expiredEndpoints && result.expiredEndpoints.length > 0) {
-             // Subscriptions that returned 410 Gone / expired
-             // You can optionally clean them up from Firestore
              console.log("Cleanup expired subscriptions:", result.expiredEndpoints);
           }
-
         } catch (pushErr) {
           console.error("Cloud Push error:", pushErr);
         }
       }
 
-      showAlert("Notificação enviada a todos com sucesso (In-app + Push)!", { type: "success" });
+      showAlert(`Notificação enviada a: ${targetLabel} com sucesso!`, { type: "success" });
       setTitle("");
       setMessage("");
     } catch (err: any) {
@@ -224,6 +290,73 @@ Retorne o resultado estritamente em um JSON com os campos 'title' (o título) e 
       <div className="flex flex-col xl:flex-row gap-6">
         <div className="flex-1 space-y-4">
           <form onSubmit={handleSendNotification} className="space-y-4">
+            <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                  Público Alvo
+                </label>
+                <div className="flex flex-col sm:flex-row gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setAudienceMode("todos")}
+                    className={`flex-1 p-3 text-sm font-bold rounded-xl border flex justify-center items-center gap-2 transition-colors ${audienceMode === "todos" ? "bg-sky-50 dark:bg-sky-500/20 text-sky-600 dark:text-sky-400 border-sky-300 dark:border-sky-500" : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750"}`}
+                  >
+                    <Globe className="w-4 h-4" /> Todos
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAudienceMode("grupo")}
+                    className={`flex-1 p-3 text-sm font-bold rounded-xl border flex justify-center items-center gap-2 transition-colors ${audienceMode === "grupo" ? "bg-indigo-50 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 border-indigo-300 dark:border-indigo-500" : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750"}`}
+                  >
+                    <Users className="w-4 h-4" /> Grupo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAudienceMode("individual")}
+                    className={`flex-1 p-3 text-sm font-bold rounded-xl border flex justify-center items-center gap-2 transition-colors ${audienceMode === "individual" ? "bg-emerald-50 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-300 dark:border-emerald-500" : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750"}`}
+                  >
+                    <User className="w-4 h-4" /> Individual
+                  </button>
+                </div>
+              </div>
+
+              {audienceMode === "grupo" && (
+                <div className="animate-fade-in">
+                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                    Selecione o Grupo
+                  </label>
+                  <select
+                    value={selectedGroup}
+                    onChange={(e) => setSelectedGroup(e.target.value)}
+                    className="input-modern"
+                  >
+                    <option value="alunos">Apenas Alunos e Seminaristas</option>
+                    <option value="visitantes">Apenas Visitantes</option>
+                  </select>
+                </div>
+              )}
+
+              {audienceMode === "individual" && (
+                <div className="animate-fade-in">
+                  <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                    Buscar Usuário / Membro
+                  </label>
+                  <select
+                    value={selectedUserId}
+                    onChange={(e) => setSelectedUserId(e.target.value)}
+                    className="input-modern"
+                    required={audienceMode === "individual"}
+                  >
+                    <option value="">-- Selecione o usuário --</option>
+                    {members.map(m => (
+                      <option key={m.id} value={m.id}>{m.name} ({m.ra || m.cpf || 'S/ Doc'}) - {m.roles?.includes("VISITANTE") ? "Visitante" : "Aluno"}</option>
+                    ))}
+                  </select>
+                  {loadingMembers && <p className="text-[10px] text-sky-500 mt-1 animate-pulse">Carregando membros...</p>}
+                </div>
+              )}
+            </div>
+
             <div>
               <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
                 Título da Notificação
@@ -293,14 +426,14 @@ Retorne o resultado estritamente em um JSON com os campos 'title' (o título) e 
                 ) : (
                   <Send className="w-5 h-5" />
                 )}
-                {sending ? "Enviando Notificação..." : "Enviar para Todos (Broadcast)"}
+                {sending ? "Enviando Notificação..." : audienceMode === "todos" ? "Enviar para Todos (Broadcast)" : audienceMode === "grupo" ? "Enviar para Grupo" : "Enviar para Usuário"}
               </button>
             </div>
             
             <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3 flex gap-3 text-amber-800 dark:text-amber-300">
               <AlertCircle className="w-5 h-5 shrink-0" />
               <p className="text-xs leading-relaxed">
-                <strong>Atenção:</strong> O broadcast enviará esta notificação para o painel de TODOS os alunos imediatamente. Esta ação não poderá ser desfeita.
+                <strong>Atenção:</strong> {audienceMode === "todos" ? "O broadcast enviará esta notificação para o painel de TODOS os usuários imediatamente." : audienceMode === "grupo" ? "Esta notificação será enviada para o painel de todos os membros do grupo selecionado." : "A notificação será processada imediatamente para o usuário selecionado."} Esta ação não poderá ser desfeita.
               </p>
             </div>
           </form>

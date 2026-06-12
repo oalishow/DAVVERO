@@ -26,13 +26,15 @@ export const INSTITUTION_DESCRIPTION_KEY = "davveroId_institution_description";
 export const CARD_DESCRIPTION_KEY = "davveroId_card_description";
 export const CUSTOM_ROLES_KEY = "davveroId_custom_roles";
 export const CUSTOM_COURSES_KEY = "davveroId_custom_courses";
-export const APP_VERSION = "6.8b";
+export const APP_VERSION = "6.9b";
 export const APP_BUILD = "11.06.2026";
 export const SETTINGS_DOC_PATH = (appId: string) =>
   `artifacts/${appId}/public/data/students/_settings_global`;
 export const ASSETS_DOC_PATH = (appId: string, assetType: string) =>
   `artifacts/${appId}/public/data/students/_asset_${assetType}`;
 export const CHANGELOG = [
+  "Versão 6.9b - Integração da Biblioteca Pessoal",
+  "Adicionada nova guia com acesso ao acervo digital institucional.",
   "Versão 6.8b - Proteção Contra Loop e Foto na Verificação",
   "Correções aplicadas na ferramenta de atualizações automáticas e correção de foto oculta no painel de verificação de usuários.",
   "Versão 6.7b - Acesso com Biometria",

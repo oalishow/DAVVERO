@@ -19,7 +19,8 @@ import {
   BookHeart,
   HeartHandshake,
   Trash2,
-  Fingerprint
+  Fingerprint,
+  Library
 } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 import { jsPDF } from "jspdf";
@@ -178,7 +179,7 @@ export default function StudentPortal({
   const [alphaCode, setAlphaCode] = useState("");
   const [isPrePinAnimation, setIsPrePinAnimation] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [activeTab, setActiveTab] = useState<"id" | "events" | "certificates" | "academic" | "appointments" | "seminary_events" | "liturgy" | "account">(
+  const [activeTab, setActiveTab] = useState<"id" | "events" | "certificates" | "academic" | "appointments" | "seminary_events" | "liturgy" | "account" | "biblioteca">(
     "id",
   );
   const [eventsSubTab, setEventsSubTab] = useState<"upcoming" | "past">(
@@ -319,6 +320,23 @@ export default function StudentPortal({
     type: "participant" | "organizer",
   ) => {
     if (!member) return;
+
+    // Check if Google Script is enabled
+    if (settings.useGoogleScriptCertificate && settings.googleScriptCertificateUrl) {
+       try {
+         const url = new URL(settings.googleScriptCertificateUrl);
+         // Append some helpful params in case the GS needs them
+         url.searchParams.append('name', member.name || '');
+         url.searchParams.append('doc', member.ra || (member as any).cpf || '');
+         url.searchParams.append('event', event.title || '');
+         url.searchParams.append('type', type);
+         window.open(url.toString(), '_blank');
+       } catch (e) {
+         window.open(settings.googleScriptCertificateUrl, '_blank');
+       }
+       return;
+    }
+
     setIsDownloading(true);
 
     try {
@@ -1282,6 +1300,17 @@ export default function StudentPortal({
               </>
             )}
             <button
+              onClick={() => setActiveTab("biblioteca")}
+              className={`flex items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all border ${
+                activeTab === "biblioteca"
+                  ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30 shadow-sm"
+                  : "bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
+              }`}
+            >
+              <Library className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+              <span>Biblioteca</span>
+            </button>
+            <button
               onClick={() => setActiveTab("account")}
               className={`flex items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all border ${
                 activeTab === "account"
@@ -1637,187 +1666,128 @@ export default function StudentPortal({
                 animate={{ opacity: 1, y: 0 }}
                 className="space-y-4"
               >
-                <div className="flex items-center justify-between mb-4 px-1">
-                  <h3 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-widest flex items-center gap-2">
-                    <ShieldCheck className="w-4 h-4 text-emerald-500" /> Meus
-                    Certificados
-                  </h3>
-                </div>
-
-                {allEvents.filter((e) => {
-                  const attendance = myAttendances.find((a) => a.eventId === e.id);
-                  if (!attendance) return false;
-                  const hasPartCert =
-                    (e.status === "encerrado" || e.status === "aberto") &&
-                    e.certificateTemplate?.isApproved === true &&
-                    (attendance.status === "presente" ||
-                      attendance.status === "apto_para_certificado");
-                  const hasOrgCert =
-                    (e.status === "encerrado" || e.status === "aberto") &&
-                    e.organizationCertificateTemplate?.isApproved === true &&
-                    attendance.isOrganizer === true;
-                  return hasPartCert || hasOrgCert;
-                }).length > 0 ? (
-                  <div className="space-y-3">
-                    {allEvents
-                      .filter((e) => {
-                        if (e.status !== "encerrado" && e.status !== "aberto")
-                          return false;
-                        const attendance = myAttendances.find(
-                          (a) => a.eventId === e.id,
-                        );
-                        if (!attendance) return false;
-
-                        const hasPartCert =
-                          e.certificateTemplate?.isApproved === true &&
-                          (attendance.status === "presente" ||
-                            attendance.status === "apto_para_certificado");
-                        const hasOrgCert =
-                          e.organizationCertificateTemplate?.isApproved ===
-                            true && attendance.isOrganizer === true;
-
-                        return hasPartCert || hasOrgCert;
-                      })
-                      .map((event) => {
-                        const startStr = new Date(
-                          event.startDate,
-                        ).toLocaleDateString("pt-BR");
-                        const endStr = event.endDate
-                          ? new Date(event.endDate).toLocaleDateString("pt-BR")
-                          : startStr;
-                        const periodText =
-                          startStr === endStr
-                            ? startStr
-                            : `${startStr} a ${endStr}`;
-                        const formatText =
-                          event.format === "online" ? "Online" : event.format === "hibrido" ? "Híbrido" : "Presencial";
-
-                        const attendance = myAttendances.find(
-                          (a) => a.eventId === event.id,
-                        );
-                        const hasPartCert =
-                          event.certificateTemplate?.isApproved === true &&
-                          (attendance?.status === "presente" ||
-                            attendance?.status === "apto_para_certificado");
-                        const hasOrgCert =
-                          event.organizationCertificateTemplate?.isApproved ===
-                            true && attendance?.isOrganizer === true;
-
-                        return (
-                          <div
-                            key={event.id}
-                            className="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-200 dark:border-slate-700 text-left shadow-sm flex flex-col gap-2"
-                          >
-                            <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm leading-tight mb-2">
-                              {event.title}
-                            </h4>
-                            <div className="flex flex-wrap gap-2 mb-2">
-                              <span className="text-[9px] font-bold uppercase bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md text-slate-500">
-                                {formatText}
-                              </span>
-                              <span className="text-[9px] font-bold uppercase bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md text-slate-500">
-                                {periodText}
-                              </span>
-                            </div>
-
-                            {hasPartCert && (
-                              <button
-                                onClick={() =>
-                                  handleDownloadCertificate(
-                                    event,
-                                    "participant",
-                                  )
-                                }
-                                className="w-full py-3 bg-sky-600 hover:bg-sky-500 text-white rounded-2xl text-xs font-bold transition-all active:scale-95 shadow-md flex items-center justify-center gap-2"
-                              >
-                                {isDownloading ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <>
-                                    <ExternalLink className="w-4 h-4" />
-                                    Participação
-                                  </>
-                                )}
-                              </button>
-                            )}
-
-                            {hasOrgCert && (
-                              <button
-                                onClick={() =>
-                                  handleDownloadCertificate(event, "organizer")
-                                }
-                                className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-white rounded-2xl text-xs font-bold transition-all active:scale-95 shadow-md flex items-center justify-center gap-2"
-                              >
-                                {isDownloading ? (
-                                  <Loader2 className="w-4 h-4 animate-spin" />
-                                ) : (
-                                  <>
-                                    <ExternalLink className="w-4 h-4" />
-                                    Organização
-                                  </>
-                                )}
-                              </button>
-                            )}
-                          </div>
-                        );
-                      })}
+                {settings.useGoogleScriptCertificate && settings.googleScriptCertificateUrl ? (
+                  <div className="bg-white dark:bg-slate-800 p-8 sm:p-12 rounded-3xl border border-slate-200 dark:border-slate-700 text-center shadow-lg flex flex-col items-center justify-center gap-6 min-h-[400px]">
+                    <ShieldCheck className="w-16 h-16 text-emerald-500" />
+                    <div>
+                      <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-widest mb-2">Portal de Certificados</h3>
+                      <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
+                        Acesse seu histórico completo e faça o download dos certificados das atividades que você participou.
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => {
+                        try {
+                          const url = new URL(settings.googleScriptCertificateUrl);
+                          url.searchParams.append('name', member.name || '');
+                          url.searchParams.append('doc', member.ra || (member as any).cpf || '');
+                          window.open(url.toString(), '_blank');
+                        } catch (e) {
+                          window.open(settings.googleScriptCertificateUrl, '_blank');
+                        }
+                      }}
+                      className="btn-modern px-8 py-4 bg-emerald-500 hover:bg-emerald-600 text-white font-bold rounded-2xl flex items-center justify-center gap-3 text-sm shadow-md transition-all active:scale-95"
+                    >
+                      <ExternalLink className="w-5 h-5" /> Acessar Meus Certificados
+                    </button>
                   </div>
                 ) : (
-                  <div className="bg-slate-50 dark:bg-slate-800/30 p-10 rounded-3xl border border-dashed border-slate-200 dark:border-slate-700 text-center">
-                    <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-2">
-                      Nenhum certificado disponível
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      Os certificados aparecem aqui após a confirmação da sua
-                      participação em eventos.
-                    </p>
-                  </div>
-                )}
+                  <>
+                    <div className="flex items-center justify-between mb-4 px-1">
+                      <h3 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-widest flex items-center gap-2">
+                        <ShieldCheck className="w-4 h-4 text-emerald-500" /> Meus Certificados
+                      </h3>
+                    </div>
 
-                {/* External Certificates */}
-                <div className="mt-8">
-                  <div className="flex items-center justify-between mb-4 px-1">
-                    <h3 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-widest flex items-center gap-2">
-                       Certificados Anexados
-                    </h3>
-                  </div>
-
-                  <div className="space-y-4">
-                    {(member?.externalCertificates && member.externalCertificates.length > 0) ? (
+                    {allEvents.filter((e) => {
+                      const attendance = myAttendances.find((a) => a.eventId === e.id);
+                      if (!attendance) return false;
+                      const hasPartCert = (e.status === "encerrado" || e.status === "aberto") && e.certificateTemplate?.isApproved === true && (attendance.status === "presente" || attendance.status === "apto_para_certificado");
+                      const hasOrgCert = (e.status === "encerrado" || e.status === "aberto") && e.organizationCertificateTemplate?.isApproved === true && attendance.isOrganizer === true;
+                      return hasPartCert || hasOrgCert;
+                    }).length > 0 ? (
                       <div className="space-y-3">
-                        {member.externalCertificates.map(cert => (
-                          <div key={cert.id} className="bg-white dark:bg-slate-800 p-4 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
-                            <div className="flex-1 min-w-0 pr-4">
-                              <h4 className="font-bold text-slate-800 dark:text-slate-100 text-xs truncate mb-1">{cert.title}</h4>
-                              <p className="text-[9px] text-slate-500 uppercase">{formatDateTime(cert.uploadedAt)}</p>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <a href={cert.fileUrl} target="_blank" rel="noopener noreferrer" className="p-2 text-sky-600 bg-sky-50 rounded-xl hover:bg-sky-100 transition-colors">
-                                <ExternalLink className="w-4 h-4" />
-                              </a>
-                              <button onClick={() => handleDeleteExternalCertificate(cert.id)} className="p-2 text-rose-600 bg-rose-50 rounded-xl hover:bg-rose-100 transition-colors">
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </div>
-                          </div>
-                        ))}
+                        {allEvents.filter((e) => {
+                            if (e.status !== "encerrado" && e.status !== "aberto") return false;
+                            const attendance = myAttendances.find((a) => a.eventId === e.id);
+                            if (!attendance) return false;
+                            const hasPartCert = e.certificateTemplate?.isApproved === true && (attendance.status === "presente" || attendance.status === "apto_para_certificado");
+                            const hasOrgCert = e.organizationCertificateTemplate?.isApproved === true && attendance.isOrganizer === true;
+                            return hasPartCert || hasOrgCert;
+                          })
+                          .map((event) => {
+                            const startStr = new Date(event.startDate).toLocaleDateString("pt-BR");
+                            const endStr = event.endDate ? new Date(event.endDate).toLocaleDateString("pt-BR") : startStr;
+                            const periodText = startStr === endStr ? startStr : `${startStr} a ${endStr}`;
+                            const formatText = event.format === "online" ? "Online" : event.format === "hibrido" ? "Híbrido" : "Presencial";
+                            const attendance = myAttendances.find((a) => a.eventId === event.id);
+                            const hasPartCert = event.certificateTemplate?.isApproved === true && (attendance?.status === "presente" || attendance?.status === "apto_para_certificado");
+                            const hasOrgCert = event.organizationCertificateTemplate?.isApproved === true && attendance?.isOrganizer === true;
+
+                            return (
+                              <div key={event.id} className="bg-white dark:bg-slate-800 p-5 rounded-3xl border border-slate-200 dark:border-slate-700 text-left shadow-sm flex flex-col gap-2">
+                                <h4 className="font-bold text-slate-800 dark:text-slate-100 text-sm leading-tight mb-2">{event.title}</h4>
+                                <div className="flex flex-wrap gap-2 mb-2">
+                                  <span className="text-[9px] font-bold uppercase bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md text-slate-500">{formatText}</span>
+                                  <span className="text-[9px] font-bold uppercase bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded-md text-slate-500">{periodText}</span>
+                                </div>
+                                {hasPartCert && (
+                                  <button onClick={() => handleDownloadCertificate(event, "participant")} className="w-full py-3 bg-sky-600 hover:bg-sky-500 text-white rounded-2xl text-xs font-bold transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                                    {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><ExternalLink className="w-4 h-4" /> Participação</>}
+                                  </button>
+                                )}
+                                {hasOrgCert && (
+                                  <button onClick={() => handleDownloadCertificate(event, "organizer")} className="w-full py-3 bg-amber-500 hover:bg-amber-400 text-white rounded-2xl text-xs font-bold transition-all active:scale-95 shadow-md flex items-center justify-center gap-2">
+                                    {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><ExternalLink className="w-4 h-4" /> Organização</>}
+                                  </button>
+                                )}
+                              </div>
+                            );
+                          })}
                       </div>
                     ) : (
-                      <div className="bg-slate-50 dark:bg-slate-800/30 p-8 rounded-3xl border border-dashed border-slate-200 dark:border-slate-700 text-center">
-                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-1">Nenhum certificado anexado</p>
+                      <div className="bg-slate-50 dark:bg-slate-800/30 p-10 rounded-3xl border border-dashed border-slate-200 dark:border-slate-700 text-center">
+                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-2">Nenhum certificado disponível</p>
+                        <p className="text-xs text-slate-500">Os certificados aparecem aqui após a confirmação da sua participação em eventos.</p>
                       </div>
                     )}
 
-                    <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-dashed border-sky-300 dark:border-sky-700 text-center">
-                       <label className="cursor-pointer text-xs font-bold text-sky-600 dark:text-sky-400 flex flex-col items-center justify-center gap-2 hover:text-sky-500 transition-colors py-2">
-                         {isUploadingCert ? <Loader2 className="w-6 h-6 animate-spin" /> : <ShieldCheck className="w-6 h-6" />}
-                         <span>{isUploadingCert ? "Anexando..." : "Anexar Novo Certificado (Máx 2MB)"}</span>
-                         <input type="file" className="hidden" accept="image/*,application/pdf" onChange={handleUploadExternalCertificate} disabled={isUploadingCert} />
-                       </label>
+                    <div className="mt-8">
+                      <div className="flex items-center justify-between mb-4 px-1">
+                        <h3 className="text-xs font-black text-slate-800 dark:text-white uppercase tracking-widest flex items-center gap-2">Certificados Anexados</h3>
+                      </div>
+                      <div className="space-y-4">
+                        {(member?.externalCertificates && member.externalCertificates.length > 0) ? (
+                          <div className="space-y-3">
+                            {member.externalCertificates.map(cert => (
+                              <div key={cert.id} className="bg-white dark:bg-slate-800 p-4 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-sm flex items-center justify-between">
+                                <div className="flex-1 min-w-0 pr-4">
+                                  <h4 className="font-bold text-slate-800 dark:text-slate-100 text-xs truncate mb-1">{cert.title}</h4>
+                                  <p className="text-[9px] text-slate-500 uppercase">{formatDateTime(cert.uploadedAt)}</p>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <a href={cert.fileUrl} target="_blank" rel="noopener noreferrer" className="p-2 text-sky-600 bg-sky-50 rounded-xl hover:bg-sky-100 transition-colors"><ExternalLink className="w-4 h-4" /></a>
+                                  <button onClick={() => handleDeleteExternalCertificate(cert.id)} className="p-2 text-rose-600 bg-rose-50 rounded-xl hover:bg-rose-100 transition-colors"><Trash2 className="w-4 h-4" /></button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="bg-slate-50 dark:bg-slate-800/30 p-8 rounded-3xl border border-dashed border-slate-200 dark:border-slate-700 text-center">
+                            <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-1">Nenhum certificado anexado</p>
+                          </div>
+                        )}
+                        <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-dashed border-sky-300 dark:border-sky-700 text-center">
+                           <label className="cursor-pointer text-xs font-bold text-sky-600 dark:text-sky-400 flex flex-col items-center justify-center gap-2 hover:text-sky-500 transition-colors py-2">
+                             {isUploadingCert ? <Loader2 className="w-6 h-6 animate-spin" /> : <ShieldCheck className="w-6 h-6" />}
+                             <span>{isUploadingCert ? "Anexando..." : "Anexar Novo Certificado (Máx 2MB)"}</span>
+                             <input type="file" className="hidden" accept="image/*,application/pdf" onChange={handleUploadExternalCertificate} disabled={isUploadingCert} />
+                           </label>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                </div>
-
+                  </>
+                )}
               </motion.div>
             )}
 
@@ -1865,6 +1835,34 @@ export default function StudentPortal({
                 className="space-y-4"
               >
                 <AppointmentsPanel member={member} />
+              </motion.div>
+            )}
+
+            {activeTab === "biblioteca" && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="space-y-4"
+              >
+                <div className="bg-white dark:bg-slate-800 p-4 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-lg text-center flex flex-col items-center justify-center min-h-[500px]">
+                  <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-widest mb-2 flex flex-col items-center gap-4">
+                    <div className="p-4 bg-emerald-50 dark:bg-emerald-900/30 rounded-full text-emerald-600 dark:text-emerald-400">
+                      <Library className="w-8 h-8" />
+                    </div>
+                    Biblioteca Pessoal
+                  </h3>
+                  <p className="text-sm text-slate-500 mb-6 max-w-md mx-auto">
+                    Acesse o acervo digital completo da instituição diretamente pelo portal seguro.
+                  </p>
+                  
+                  <div className="w-full bg-slate-50 dark:bg-slate-900/50 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 flex-1 relative min-h-[500px]">
+                    <iframe 
+                      src="https://biblioteca.sophia.com.br/1291/" 
+                      className="absolute inset-0 w-full h-full border-none"
+                      title="Biblioteca Sophia"
+                    />
+                  </div>
+                </div>
               </motion.div>
             )}
 

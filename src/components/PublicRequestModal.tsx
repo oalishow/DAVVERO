@@ -342,7 +342,7 @@ export default function PublicRequestModal({ onClose, onSubmitSuccess }: PublicR
         </div>
 
         <button onClick={handleSubmit} disabled={loading} className="mt-6 btn-modern w-full py-3.5 px-4 rounded-xl shadow-lg shadow-sky-600/20 text-sm font-bold text-white bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 flex justify-center gap-2 items-center">
-            {loading ? 'A Enviar...' : <><Save className="w-4 h-4"/> Enviar Solicitação</>}
+            {loading ? <><div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin"></div> Enviando para o Painel...</> : <><Save className="w-4 h-4"/> Enviar Solicitação</>}
         </button>
       </div>
 

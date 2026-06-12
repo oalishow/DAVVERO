@@ -39,6 +39,8 @@ interface AppSettings {
     rectorName: string;
     professionals?: { id: string, name: string, role: string, photoUrl: string | null }[];
   }>;
+  useGoogleScriptCertificate: boolean;
+  googleScriptCertificateUrl: string;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -86,7 +88,9 @@ const DEFAULT_SETTINGS: AppSettings = {
   databaseName: 'FAJOPA e SPSCJ',
   cardZoom: 1,
   termsVersion: 1,
-  seminariesConfig: {}
+  seminariesConfig: {},
+  useGoogleScriptCertificate: false,
+  googleScriptCertificateUrl: 'https://script.google.com/macros/s/AKfycbxNT2BgfK1y0c5N7JILcWaDhexhQqJ6UQv-dmOBFye7mbQNz8kfZ_9JolRzQ4BiTUsr/exec'
 };
 
 interface SettingsContextType {

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { X, Search, CheckCircle, Clock, Trash2, Shield, ShieldAlert, Star, ScanLine } from "lucide-react";
 import type { Event, Attendance, Member } from "../types";
-import { db, appId, unsubscribeFromEvent, updateAttendanceDetails, updateAttendanceStatus } from "../lib/firebase";
+import { db, appId, unsubscribeFromEvent, updateAttendanceDetails, updateAttendanceStatus, removeAttendancePresence } from "../lib/firebase";
 import { doc, getDoc, collection, getDocs, query, where } from "firebase/firestore";
 import Modal from "./Modal";
 import { useDialog } from "../context/DialogContext";
@@ -100,6 +100,17 @@ export default function EventAttendeesModal({
         }
       },
     });
+  };
+
+  const handleRemovePresence = async (attendanceId: string) => {
+    try {
+      // Remover a presença (todas as datas ou reverter para inscrito)
+      await removeAttendancePresence(attendanceId);
+      loadData();
+      showAlert("Presença removida com sucesso.", { type: 'success' });
+    } catch (err) {
+      showAlert("Erro ao remover presença.", { type: 'error' });
+    }
   };
 
   const handleMarkPresent = async (attendanceId: string) => {
@@ -261,6 +272,165 @@ export default function EventAttendeesModal({
     }
   };
 
+  const handleExportCSV = () => {
+    let toPrint = attendees;
+    if (activeTab === "alunos") {
+      toPrint = attendees.filter(a => !a.member?.roles?.includes("VISITANTE"));
+    } else if (activeTab === "visitantes") {
+      toPrint = attendees.filter(a => !!a.member?.roles?.includes("VISITANTE"));
+    }
+
+    const rows = [
+      ["#", "NOME", "RA/CPF", "VINCULO/DIOCESE", "STATUS", "DIAS PRESENTES"]
+    ];
+
+    toPrint.forEach((sub, idx) => {
+      const rolesText = [
+        ...(sub.member?.roles || []),
+        sub.member?.diocese ? `Diocese: ${sub.member?.diocese}` : ""
+      ].filter(Boolean).join(" - ");
+
+      const status = sub.status === "presente" ? "Presente" : "Inscrito";
+      const dias = (sub.checkInDates || []).join(" | ");
+
+      rows.push([
+        String(idx + 1),
+        sub.member?.name || "Desconhecido",
+        sub.member?.ra || (sub.member as any)?.cpf || "-",
+        rolesText,
+        status,
+        dias
+      ]);
+    });
+
+    const csvContent = "data:text/csv;charset=utf-8,\uFEFF" 
+      + rows.map(e => e.map(item => `"${(item || '').replace(/"/g, '""')}"`).join(";")).join("\n");
+
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `relatorio_presencas_${event.title.replace(/\s+/g, '_')}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const handlePrintReport = () => {
+    let toPrint = attendees;
+    let titleAddon = "Geral";
+    
+    if (activeTab === "alunos") {
+      toPrint = attendees.filter(a => !a.member?.roles?.includes("VISITANTE"));
+      titleAddon = "Categoria: Alunos / Seminaristas";
+    } else if (activeTab === "visitantes") {
+      toPrint = attendees.filter(a => !!a.member?.roles?.includes("VISITANTE"));
+      titleAddon = "Categoria: Visitantes";
+    }
+
+    const printWindow = window.open("", "_blank");
+    if (printWindow) {
+      let trs = "";
+      toPrint.forEach((sub, idx) => {
+        const rolesText = [
+          ...(sub.member?.roles || []),
+          sub.member?.diocese ? `Diocese: ${sub.member?.diocese}` : ""
+        ].filter(Boolean).join(" • ");
+
+        const status = sub.status === "presente" ? "Presente" : "Inscrito";
+        const dias = (sub.checkInDates || []).map(d => {
+             const parts = d.split('-');
+             if (parts.length === 3) return `${parts[2]}/${parts[1]}`;
+             return d;
+        }).join(", ");
+
+        trs += `
+          <tr>
+            <td class="border border-black p-2 text-center font-bold">${idx + 1}</td>
+            <td class="border border-black p-2 uppercase font-semibold">${sub.member?.name || "Desconhecido"}</td>
+            <td class="border border-black p-2 text-center">${sub.member?.ra || (sub.member as any)?.cpf || "-"}</td>
+            <td class="border border-black p-2 text-[10px] uppercase">${rolesText}</td>
+            <td class="border border-black p-2 text-center font-bold ${sub.status === 'presente' ? 'text-green-600' : ''}">${status}</td>
+            <td class="border border-black p-2 text-center text-[10px]">${dias || "-"}</td>
+          </tr>
+        `;
+      });
+
+      const printContent = `
+        <div class="text-center mb-6">
+          <h2 class="text-xl font-black uppercase tracking-widest border-b-2 border-black pb-2">
+            Relatório Oficial de Presenças
+          </h2>
+          <p class="text-sm font-bold mt-2 uppercase">${event?.title}</p>
+          <p class="text-xs font-semibold mt-1 bg-gray-200 inline-block px-2 py-0.5 rounded">${titleAddon}</p>
+          <p class="text-xs mt-1">
+            Data de Início: ${event?.startDate ? new Date(event.startDate + "T12:00:00").toLocaleDateString("pt-BR") : "N/D"}
+          </p>
+        </div>
+        <table class="w-full border-collapse border border-black text-xs">
+          <thead>
+            <tr class="bg-gray-100">
+              <th class="border border-black p-2 w-8 text-center">#</th>
+              <th class="border border-black p-2 text-left">NOME DO INSCRITO</th>
+              <th class="border border-black p-2 w-24 text-center">R.A. / CPF</th>
+              <th class="border border-black p-2 text-left">VÍNCULO / DIOCESE</th>
+              <th class="border border-black p-2 text-center w-20">STATUS</th>
+              <th class="border border-black p-2 text-center w-32">DIAS PRESENTES</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${trs}
+          </tbody>
+        </table>
+        <div class="mt-8 pt-4 border-t border-black text-center text-[10px] uppercase tracking-widest">
+          Documento Gerado pelo DAVVERO System • Faculdade João Paulo II (FAJOPA)
+        </div>
+      `;
+
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Relatório de Presenças</title>
+            <style>
+              body { font-family: Arial, sans-serif; padding: 20px; font-size: 12px; }
+              table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+              th, td { border: 1px solid black; padding: 8px; text-align: left; }
+              th { background-color: #f3f4f6; }
+              .text-center { text-align: center; }
+              .font-bold { font-weight: bold; }
+              .uppercase { text-transform: uppercase; }
+              .tracking-widest { letter-spacing: 0.1em; }
+              .border-black { border-color: black; }
+              .border-b-2 { border-bottom-width: 2px; }
+              .mb-6 { margin-bottom: 24px; }
+              .mt-2 { margin-top: 8px; }
+              .mt-8 { margin-top: 32px; }
+              .pb-2 { padding-bottom: 8px; }
+              .text-xl { font-size: 20px; }
+              .text-sm { font-size: 14px; }
+              .text-xs { font-size: 12px; }
+              .inline-block { display: inline-block; }
+              .px-2 { padding-left: 8px; padding-right: 8px; }
+              .py-0\\.5 { padding-top: 2px; padding-bottom: 2px; }
+              .rounded { border-radius: 4px; }
+              .bg-gray-200 { background-color: #e5e7eb; }
+              .text-green-600 { color: #16a34a; }
+            </style>
+          </head>
+          <body>
+            ${printContent}
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.focus();
+      // Allow images or styles to load briefly before printing
+      setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+      }, 250);
+    }
+  };
+
   const filteredAttendees = attendees.filter((a) => {
     if (activeTab === "organizacao") return false; // Handled separately below
     let matchTab = true;
@@ -375,29 +545,50 @@ export default function EventAttendeesModal({
               className="w-full bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl pl-10 pr-4 py-2.5 text-sm outline-none focus:border-sky-500 dark:focus:border-sky-500 text-slate-700 dark:text-slate-200"
             />
           </div>
-          <div className="flex items-center gap-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
-            <div className="text-[10px] font-bold text-slate-400 uppercase mr-1 whitespace-nowrap">Imprimir:</div>
-            <button
-              onClick={() => handlePrint("all")}
-              className="print:hidden whitespace-nowrap flex items-center justify-center gap-1.5 bg-slate-800 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-slate-700 transition-colors shrink-0"
-              title="Lista de Presença Completa"
-            >
-              Tudo
-            </button>
-            <button
-              onClick={() => handlePrint("alunos")}
-              className="print:hidden whitespace-nowrap flex items-center justify-center gap-1.5 bg-slate-800 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-slate-700 transition-colors shrink-0"
-              title="Apenas Alunos e Seminaristas"
-            >
-              Alunos
-            </button>
-            <button
-              onClick={() => handlePrint("visitantes")}
-              className="print:hidden whitespace-nowrap flex items-center justify-center gap-1.5 bg-slate-800 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-slate-700 transition-colors shrink-0"
-              title="Apenas Visitantes"
-            >
-              Visitantes
-            </button>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-6 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0">
+            <div className="flex items-center gap-2">
+              <div className="text-[10px] font-bold text-slate-400 uppercase mr-1 whitespace-nowrap">Listas:</div>
+              <button
+                onClick={() => handlePrint("all")}
+                className="print:hidden whitespace-nowrap flex items-center justify-center gap-1.5 bg-slate-800 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-slate-700 transition-colors shrink-0"
+                title="Lista de Presença Completa (Assinatura)"
+              >
+                Tudo
+              </button>
+              <button
+                onClick={() => handlePrint("alunos")}
+                className="print:hidden whitespace-nowrap flex items-center justify-center gap-1.5 bg-slate-800 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-slate-700 transition-colors shrink-0"
+                title="Apenas Alunos e Seminaristas (Assinatura)"
+              >
+                Alunos
+              </button>
+              <button
+                onClick={() => handlePrint("visitantes")}
+                className="print:hidden whitespace-nowrap flex items-center justify-center gap-1.5 bg-slate-800 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-slate-700 transition-colors shrink-0"
+                title="Apenas Visitantes (Assinatura)"
+              >
+                Visitantes
+              </button>
+            </div>
+            {activeTab !== "organizacao" && (
+              <div className="flex items-center gap-2 pl-0 sm:pl-3 sm:border-l border-slate-200 dark:border-slate-700">
+                <div className="text-[10px] font-bold text-slate-400 uppercase mr-1 whitespace-nowrap">Relatórios:</div>
+                <button
+                  onClick={handleExportCSV}
+                  className="print:hidden whitespace-nowrap flex items-center justify-center gap-1.5 bg-emerald-600 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-emerald-700 transition-colors shrink-0"
+                  title="Exportar Relatório em CSV"
+                >
+                  <span className="hidden sm:inline">Normal</span> CSV
+                </button>
+                <button
+                  onClick={handlePrintReport}
+                  className="print:hidden whitespace-nowrap flex items-center justify-center gap-1.5 bg-sky-600 text-white px-3 py-2 rounded-lg text-xs font-bold hover:bg-sky-700 transition-colors shrink-0"
+                  title="Imprimir Relatório de Presenças"
+                >
+                  Imprimir
+                </button>
+              </div>
+            )}
           </div>
         </div>
 
@@ -568,6 +759,13 @@ export default function EventAttendeesModal({
                             </span>
                           )}
                         </div>
+                        <button
+                          onClick={() => handleRemovePresence(a.id)}
+                          className="p-1.5 text-amber-500 hover:bg-amber-50 dark:hover:bg-amber-500/10 rounded-lg transition-colors border border-transparent hover:border-amber-200 dark:hover:border-amber-500/20"
+                          title="Remover apenas a presença"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
                         <button
                           onClick={() => handleRemove(event.id, a.studentId)}
                           className="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-500/10 rounded-lg transition-colors border border-transparent hover:border-rose-200 dark:hover:border-rose-500/20"

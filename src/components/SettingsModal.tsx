@@ -158,6 +158,10 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
   const [seminariesConfig, setSeminariesConfig] = useState<Record<string, { logo: string | null; signature: string | null; rectorName: string }>>(
     cloudSettings.seminariesConfig || {}
   );
+  
+  const [useGoogleScriptCertificate, setUseGoogleScriptCertificate] = useState(cloudSettings.useGoogleScriptCertificate || false);
+  const [googleScriptCertificateUrl, setGoogleScriptCertificateUrl] = useState(cloudSettings.googleScriptCertificateUrl || 'https://script.google.com/macros/s/AKfycbxNT2BgfK1y0c5N7JILcWaDhexhQqJ6UQv-dmOBFye7mbQNz8kfZ_9JolRzQ4BiTUsr/exec');
+
   const [activeTab, setActiveTab] = useState<"visual" | "content" | "database">(
     "visual",
   );
@@ -235,6 +239,8 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
         databaseName,
         cardZoom,
         seminariesConfig,
+        useGoogleScriptCertificate,
+        googleScriptCertificateUrl,
       });
 
       // Legacy fallback
@@ -1686,6 +1692,41 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                       >
                         <ShieldAlert className="w-4 h-4" /> Notificar e Exigir Novo Aceite
                       </button>
+                    </div>
+                  </div>
+
+                  <div className="bg-emerald-50 dark:bg-emerald-900/10 p-5 rounded-2xl border border-emerald-200 dark:border-emerald-500/20">
+                    <h3 className="text-sm font-bold flex items-center gap-2 mb-4 text-emerald-700 dark:text-emerald-300 uppercase tracking-widest text-[10px]">
+                      <FileText className="w-4 h-4" /> Emissão de Certificados
+                    </h3>
+                    <div className="space-y-4">
+                      <label className="flex items-center gap-3 p-3 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={useGoogleScriptCertificate}
+                          onChange={(e) => setUseGoogleScriptCertificate(e.target.checked)}
+                          className="w-5 h-5 text-emerald-500"
+                        />
+                        <div>
+                          <p className="text-sm font-bold text-slate-700 dark:text-slate-200">Usar Google Apps Script</p>
+                          <p className="text-[10px] sm:text-xs text-slate-500">Ao invés do emissor nativo, redirecionar para um script externo.</p>
+                        </div>
+                      </label>
+
+                      {useGoogleScriptCertificate && (
+                        <div>
+                          <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
+                            URL do Google Script
+                          </label>
+                          <input
+                            type="url"
+                            value={googleScriptCertificateUrl}
+                            onChange={(e) => setGoogleScriptCertificateUrl(e.target.value)}
+                            className="input-modern"
+                            placeholder="https://script.google.com/macros/..."
+                          />
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
