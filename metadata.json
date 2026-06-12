@@ -2,7 +2,9 @@
   "name": "DAVVERO System",
   "description": "Sistema avançado de verificação de identidades para FAJOPA e SPSCJ com relatórios de impressão e gestão de membros.",
   "requestFramePermissions": [
-    "camera"
+    "camera",
+    "publickey-credentials-create",
+    "publickey-credentials-get"
   ],
   "majorCapabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"

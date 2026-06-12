@@ -788,7 +788,19 @@ export default function StudentPortal({
       }
     } catch (e: any) {
       console.error(e);
-      setError(e.message || "Falha na biometria");
+      const errorMsg = e.message || "";
+      const isFrameError =
+        e.name === "SecurityError" ||
+        e.name === "NotAllowedError" ||
+        errorMsg.includes("publickey-credentials") || 
+        errorMsg.includes("feature is not enabled") ||
+        errorMsg.includes("Permissions Policy");
+
+      if (isFrameError) {
+        setError("BIOMETRIA RESTRITA NO IFRAME. CLIQUE EM 'ABRIR PORTAL' OU COPIE O LINK DE COMPARTILHAMENTO, OU USE SEU PIN NUMÉRICO.");
+      } else {
+        setError(e.message || "FALHA NA BIOMETRIA");
+      }
       playSound('error');
     }
   };
@@ -1797,33 +1809,25 @@ export default function StudentPortal({
                 animate={{ opacity: 1, y: 0 }}
                 className="space-y-4"
               >
-                <div className="bg-slate-50 dark:bg-slate-800/30 p-10 rounded-3xl border border-dashed border-slate-200 dark:border-slate-700 text-center space-y-4">
-                  <div className="mx-auto w-16 h-16 bg-sky-100 dark:bg-sky-500/20 rounded-full flex items-center justify-center">
-                    <GraduationCap className="w-8 h-8 text-sky-600 dark:text-sky-400" />
+                <div className="bg-white dark:bg-slate-800 p-4 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-lg text-center flex flex-col items-center justify-center min-h-[500px]">
+                  <div className="p-4 bg-sky-50 dark:bg-sky-900/30 rounded-full text-sky-600 dark:text-sky-400 mb-6">
+                    <GraduationCap className="w-12 h-12" />
                   </div>
-                  <p className="text-[10px] uppercase font-bold text-slate-400 tracking-widest mb-2">
+                  <h3 className="text-xl sm:text-2xl font-black text-slate-800 dark:text-white uppercase tracking-widest leading-tight truncate mb-4">
                     Portal Acadêmico
-                  </p>
-                  <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-tighter">
-                    SISTEMA FAJOPA (SOPHIA)
                   </h3>
-                  <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
-                    Estamos criando uma integração direta com o Sistema Acadêmico Sophia para futuras versões. Enquanto a integração não está pronta, você pode acessar o portal externo clicando no botão abaixo.
+                  <p className="text-sm text-slate-500 max-w-md mx-auto mb-8">
+                    Por medidas de segurança do Sistema Integrado FAJOPA (Sophia), o portal não permite visualização integrada. Por favor, acesse o sistema através do botão abaixo usando seu navegador comum.
                   </p>
-                  <div className="pt-4 flex flex-col items-center gap-3">
-                    <a
-                      href="https://portal.sophia.com.br/SophiA_107/Acesso.aspx?escola=9087"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-2 px-6 py-3 bg-sky-600 hover:bg-sky-500 text-white rounded-xl font-bold shadow-md transition-all active:scale-95"
-                    >
-                      Acessar o portal do aluno
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-bold uppercase tracking-wider">
-                      Integração Nativa em Breve
-                    </span>
-                  </div>
+                  <a
+                    href="https://portal.sophia.com.br/SophiA_107/Acesso.aspx?escola=9087"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-sky-600 hover:bg-sky-500 text-white rounded-2xl font-bold shadow-xl shadow-sky-600/20 transition-all active:scale-95 text-sm uppercase tracking-wider"
+                  >
+                    Acessar o portal do aluno
+                    <ExternalLink className="w-5 h-5" />
+                  </a>
                 </div>
               </motion.div>
             )}
@@ -1845,23 +1849,24 @@ export default function StudentPortal({
                 className="space-y-4"
               >
                 <div className="bg-white dark:bg-slate-800 p-4 sm:p-8 rounded-3xl border border-slate-200 dark:border-slate-700 shadow-lg text-center flex flex-col items-center justify-center min-h-[500px]">
-                  <h3 className="text-xl font-black text-slate-800 dark:text-white uppercase tracking-widest mb-2 flex flex-col items-center gap-4">
-                    <div className="p-4 bg-emerald-50 dark:bg-emerald-900/30 rounded-full text-emerald-600 dark:text-emerald-400">
-                      <Library className="w-8 h-8" />
-                    </div>
+                  <div className="p-4 bg-emerald-50 dark:bg-emerald-900/30 rounded-full text-emerald-600 dark:text-emerald-400 mb-6">
+                    <Library className="w-12 h-12" />
+                  </div>
+                  <h3 className="text-xl sm:text-2xl font-black text-slate-800 dark:text-white uppercase tracking-widest leading-tight truncate mb-4">
                     Biblioteca Pessoal
                   </h3>
-                  <p className="text-sm text-slate-500 mb-6 max-w-md mx-auto">
-                    Acesse o acervo digital completo da instituição diretamente pelo portal seguro.
+                  <p className="text-sm text-slate-500 max-w-md mx-auto mb-8">
+                    Por medidas de segurança, o Acervo Digital Institucional não permite visualização integrada. Por favor, acesse o sistema através do botão abaixo usando seu navegador comum.
                   </p>
-                  
-                  <div className="w-full bg-slate-50 dark:bg-slate-900/50 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 flex-1 relative min-h-[500px]">
-                    <iframe 
-                      src="https://biblioteca.sophia.com.br/1291/" 
-                      className="absolute inset-0 w-full h-full border-none"
-                      title="Biblioteca Sophia"
-                    />
-                  </div>
+                  <a
+                    href="https://biblioteca.sophia.com.br/1291/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-bold shadow-xl shadow-emerald-600/20 transition-all active:scale-95 text-sm uppercase tracking-wider"
+                  >
+                    Abrir no Navegador
+                    <ExternalLink className="w-5 h-5" />
+                  </a>
                 </div>
               </motion.div>
             )}

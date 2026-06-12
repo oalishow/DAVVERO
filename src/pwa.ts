@@ -2,6 +2,16 @@ import { registerSW } from 'virtual:pwa-register';
 
 export const setupPWA = () => {
     if ('serviceWorker' in navigator) {
+        // Remover service worker antigo e genérico para remover conflito e forçar a atualização (se houver)
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            for(let registration of registrations) {
+                if (registration.active && registration.active.scriptURL.includes('/sw.js')) {
+                    registration.unregister();
+                    console.log("Service worker antigo '/sw.js' não registrado para evitar conflitos.");
+                }
+            }
+        });
+
         const updateSW = registerSW({
             onNeedRefresh() {
                 console.log("Novo conteúdo detectado. Forçando atualização do Service Worker...");
