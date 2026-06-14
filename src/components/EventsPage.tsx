@@ -149,6 +149,28 @@ export default function EventsPage({ onNavigateToStudent, renderSeminary = false
 
   const hasPrivilegedRole = member?.roles?.some(r => ["ADMIN", "COORDENADOR", "GERENTE", "REITOR", "VICE-REITOR", "DIRETOR ESPIRITUAL", "PADRE"].includes(r.toUpperCase()));
 
+  const getEventComputedState = (e: any) => {
+    if (e.status === "deleted") return "past";
+    if (e.status === "cancelado") return "past";
+    const now = new Date();
+    const start = new Date(e.startDate);
+    let end = e.endDate ? new Date(e.endDate) : new Date(e.startDate);
+    
+    const hasStarted = now >= start;
+    const hasFinished = now > end;
+    const hoursSinceEnd = hasFinished ? (now.getTime() - end.getTime()) / (1000 * 60 * 60) : 0;
+
+    if (e.status === "encerrado" && hoursSinceEnd >= 2) return "past";
+
+    if (hasStarted && !hasFinished) {
+      return "in_progress";
+    } else if (hasFinished) {
+      return hoursSinceEnd < 2 ? "finished_recently" : "past";
+    } else {
+      return "upcoming";
+    }
+  };
+
   const filteredEvents = events.filter((e) => {
     if (eventTypeTab === "seminary") {
       if (!e.isSeminary) return false;
@@ -468,7 +490,10 @@ END:VCALENDAR`;
       </div>
 
       <div className="space-y-4">
-        {filteredEvents.filter(e => subTab === "upcoming" ? e.status !== "encerrado" : e.status === "encerrado").length === 0 ? (
+        {filteredEvents.filter(e => {
+            const computedState = getEventComputedState(e);
+            return subTab === "upcoming" ? computedState !== "past" : computedState === "past";
+        }).length === 0 ? (
           <div className="bg-white dark:bg-slate-800 p-8 rounded-3xl text-center border border-slate-200 dark:border-slate-700">
             <Calendar className="w-12 h-12 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
             <p className="text-slate-500 dark:text-slate-400 font-medium">
@@ -477,8 +502,33 @@ END:VCALENDAR`;
           </div>
         ) : (
           filteredEvents
-            .filter(e => subTab === "upcoming" ? e.status !== "encerrado" : e.status === "encerrado")
+            .filter(e => {
+                const computedState = getEventComputedState(e);
+                return subTab === "upcoming" ? computedState !== "past" : computedState === "past";
+            })
+            .sort((a, b) => {
+              if (subTab === "upcoming") {
+                 const stateA = getEventComputedState(a);
+                 const stateB = getEventComputedState(b);
+                 
+                 const getPriority = (s: string) => {
+                    if (s === "in_progress") return 0;
+                    if (s === "upcoming") return 1;
+                    if (s === "finished_recently") return 2;
+                    return 3;
+                 };
+                 
+                 const pA = getPriority(stateA);
+                 const pB = getPriority(stateB);
+                 
+                 if (pA !== pB) return pA - pB;
+                 return new Date(a.startDate).getTime() - new Date(b.startDate).getTime();
+              } else {
+                 return new Date(b.startDate).getTime() - new Date(a.startDate).getTime();
+              }
+            })
             .map((event) => {
+            const computedState = getEventComputedState(event);
             const isOnline = event.format === "online";
             const enrolled = myAttendances.find(
               (a) =>
@@ -568,11 +618,24 @@ END:VCALENDAR`;
                       </div>
                     )}
                     <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <span
-                        className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${getStatusColor(event.status)}`}
-                      >
-                        {event.status}
-                      </span>
+                      {computedState === "in_progress" ? (
+                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider bg-purple-100 text-purple-700 dark:bg-purple-500/20 dark:text-purple-400 flex items-center gap-1.5 shadow-sm shadow-purple-500/10 border border-purple-200 dark:border-purple-500/30 ring-1 ring-purple-500/20 ring-offset-1 dark:ring-offset-slate-800 animate-pulse">
+                           <span className="w-1.5 h-1.5 bg-purple-500 dark:bg-purple-400 rounded-full animate-ping relative inline-flex">
+                             <span className="absolute inline-flex w-full h-full rounded-full opacity-75 bg-purple-400 blur-[2px]"></span>
+                           </span>
+                           Em andamento
+                         </span>
+                      ) : computedState === "finished_recently" ? (
+                         <span className="text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400 flex items-center gap-1 shadow-sm shadow-amber-500/10 transition-all duration-1000">
+                           Evento Finalizado
+                         </span>
+                      ) : (
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider ${getStatusColor(event.status)}`}
+                        >
+                          {event.status}
+                        </span>
+                      )}
                       <span className="inline-flex items-center gap-1 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
                         {event.format === "online" ? (
                           <Video className="w-3 h-3" />

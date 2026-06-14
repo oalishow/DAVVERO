@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Camera, XCircle, Search, ScanLine, CheckCircle, ArrowLeft } from "lucide-react";
+import { Camera, XCircle, Search, ScanLine, CheckCircle, ArrowLeft, Loader2 } from "lucide-react";
 import { collection, query, getDocs } from "firebase/firestore";
 import {
   db,
@@ -74,6 +74,7 @@ export default function Verifier({
   const [lastScannedDebug, setLastScannedDebug] = useState("");
   const [isAdminLogged, setIsAdminLogged] = useState(false);
   const [scanSuccessAnim, setScanSuccessAnim] = useState(false);
+  const [iframeLoaded, setIframeLoaded] = useState(false);
   const scanHandledRef = useRef(false);
 
   useEffect(() => {
@@ -871,7 +872,10 @@ export default function Verifier({
               </>
             )}
             <button
-              onClick={() => setVerifyMode("CERTIFICATE")}
+              onClick={() => {
+                setVerifyMode("CERTIFICATE");
+                setIframeLoaded(false);
+              }}
               className={`py-2.5 px-2 text-[10px] sm:text-xs font-bold rounded-xl transition-all flex items-center justify-center ${verifyMode === "CERTIFICATE" ? "bg-white dark:bg-slate-700 shadow-sm text-emerald-600 dark:text-emerald-400 border border-emerald-200/50 dark:border-emerald-600/50" : "text-slate-500 hover:bg-slate-200/50 dark:hover:bg-slate-700/50 border border-transparent"}`}
             >
               Certificados
@@ -1105,12 +1109,21 @@ export default function Verifier({
                    Abrir em nova aba ↗
                  </a>
               </div>
-              <iframe 
-                src={settings.googleScriptCertificateUrl} 
-                className="w-full h-[75vh] min-h-[600px] bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-lg"
-                title="Validação de Certificados"
-                allow="clipboard-read; clipboard-write; display-capture"
-              />
+              <div className="relative w-full h-[75vh] min-h-[600px] rounded-2xl border border-slate-200 dark:border-slate-700 shadow-lg overflow-hidden bg-white dark:bg-slate-800">
+                {!iframeLoaded && (
+                  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-slate-50/80 dark:bg-slate-900/80 backdrop-blur-sm">
+                    <Loader2 className="w-10 h-10 text-emerald-500 animate-spin mb-4" />
+                    <p className="text-sm font-bold text-slate-600 dark:text-slate-300 animate-pulse">Carregando sistema de verificações...</p>
+                  </div>
+                )}
+                <iframe 
+                  src={settings.googleScriptCertificateUrl} 
+                  className={`w-full h-full transition-opacity duration-500 ${iframeLoaded ? 'opacity-100' : 'opacity-0'}`}
+                  title="Validação de Certificados"
+                  allow="clipboard-read; clipboard-write; display-capture"
+                  onLoad={() => setIframeLoaded(true)}
+                />
+              </div>
             </>
           ) : (
             <div className="w-full bg-white dark:bg-slate-800/40 p-10 rounded-2xl border border-slate-200 dark:border-slate-700/50 shadow-lg text-center flex flex-col items-center justify-center">
