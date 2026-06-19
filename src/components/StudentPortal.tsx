@@ -200,13 +200,11 @@ export default function StudentPortal({
 
   const portalContainerRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (isUnlocked && !isGenerating && portalContainerRef.current) {
-      setTimeout(() => {
-        portalContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      }, 100);
-    }
-  }, [isUnlocked, isGenerating]);
+  const scrollToCard = () => {
+    setTimeout(() => {
+      portalContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  };
 
   // Fallback PIN state
   const [pinMode, setPinMode] = useState<"create" | "verify" | "none">("none");
@@ -745,6 +743,7 @@ export default function StudentPortal({
           setPinMode("none");
           setError(null);
           playSound('login');
+          scrollToCard();
         } else {
           setError("Os PINs não coincidem");
           setPinInput("");
@@ -767,6 +766,7 @@ export default function StudentPortal({
         setError(null);
         setPinInput("");
         playSound('login');
+        scrollToCard();
       } else {
         setError("PIN Incorreto");
         setPinInput("");
@@ -788,6 +788,7 @@ export default function StudentPortal({
         setIsGenerating(false);
         setPinMode("none");
         playSound('login');
+        scrollToCard();
       } else {
         if (!member) return;
         const newCredId = await registerBiometric(member.email || "aluno@fajopa", member.name);
@@ -799,6 +800,7 @@ export default function StudentPortal({
         setIsGenerating(false);
         setPinMode("none");
         playSound('login');
+        scrollToCard();
       }
     } catch (e: any) {
       console.error(e);
