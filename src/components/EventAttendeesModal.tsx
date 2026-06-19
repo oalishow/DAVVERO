@@ -56,6 +56,7 @@ export default function EventAttendeesModal({
         membersSnap.docs.forEach((d) => {
           if (!d.id.startsWith("_")) {
             const mbr = { id: d.id, ...d.data() } as Member;
+            if (mbr.deletedAt || mbr.isApproved === false || mbr.isActive === false) return; // Ignore deleted/unapproved/inactive
             membersDict[d.id] = mbr;
             allM.push(mbr);
           }

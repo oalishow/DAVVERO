@@ -54,6 +54,25 @@ export default function SuggestEditModal({ member, onClose, onSubmitSuccess }: S
     setRoles(prev => prev.includes(role) ? prev.filter(r => r !== role) : [...prev, role]);
   };
 
+  const [newRole, setNewRole] = useState('');
+  const [newDiocese, setNewDiocese] = useState('');
+
+  const handleAddRole = () => {
+    if (newRole.trim() && !availableRoles.includes(newRole.trim().toUpperCase())) {
+      const formatted = newRole.trim().toUpperCase();
+      setRoles(prev => [...prev, formatted]);
+      setNewRole('');
+    }
+  };
+
+  const handleAddDiocese = () => {
+    if (newDiocese.trim() && !availableDioceses.includes(newDiocese.trim().toUpperCase())) {
+      const formatted = newDiocese.trim().toUpperCase();
+      setDiocese(formatted);
+      setNewDiocese('');
+    }
+  };
+
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
@@ -186,6 +205,22 @@ export default function SuggestEditModal({ member, onClose, onSubmitSuccess }: S
                   </button>
                 ))}
               </div>
+              <div className="flex gap-2 mt-3">
+                <input 
+                  type="text" 
+                  value={newRole} 
+                  onChange={e => setNewRole(e.target.value)} 
+                  placeholder="Novo" 
+                  className="input-modern flex-1 rounded-xl py-2 px-3 text-xs"
+                  onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddRole())}
+                />
+                <button 
+                  onClick={handleAddRole}
+                  className="px-3 py-2 bg-slate-800 dark:bg-slate-700 text-white rounded-xl text-xs font-bold hover:bg-slate-700 transition-colors"
+                >
+                  +
+                </button>
+              </div>
           </div>
 
           <div>
@@ -199,12 +234,30 @@ export default function SuggestEditModal({ member, onClose, onSubmitSuccess }: S
           </div>
           <div>
               <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1 mt-2">Nova Diocese</label>
-              <select value={diocese} onChange={e => setDiocese(e.target.value)} className="input-modern w-full rounded-xl py-3 px-4 text-sm">
-                  <option value="">Nenhum / Não aplicável</option>
-                  {availableDioceses.map(d => (
-                    <option key={d} value={d}>{d}</option>
-                  ))}
-              </select>
+              <div className="flex gap-2">
+                <select value={diocese} onChange={e => setDiocese(e.target.value)} className="input-modern flex-1 rounded-xl py-3 px-4 text-sm">
+                    <option value="">Nenhum / Não aplicável</option>
+                    {availableDioceses.map(d => (
+                      <option key={d} value={d}>{d}</option>
+                    ))}
+                </select>
+                <div className="flex gap-1.5">
+                  <input 
+                    type="text" 
+                    value={newDiocese} 
+                    onChange={e => setNewDiocese(e.target.value)} 
+                    placeholder="Nova" 
+                    className="input-modern w-20 rounded-xl py-3 px-3 text-[10px]"
+                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddDiocese())}
+                  />
+                  <button 
+                    onClick={handleAddDiocese}
+                    className="px-3 py-3 bg-slate-800 dark:bg-slate-700 text-white rounded-xl text-xs font-bold hover:bg-slate-700 transition-colors"
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
           </div>
           <div>
               <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1 mt-2">Novo Seminário *</label>

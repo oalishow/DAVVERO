@@ -15,6 +15,10 @@ import {
   X,
   Calendar,
   BookHeart,
+  MonitorPlay,
+  Facebook,
+  Instagram,
+  Youtube
 } from "lucide-react";
 import LiturgyPanel from "./components/LiturgyPanel";
 import { loginAnon, testConnection } from "./lib/firebase";
@@ -373,6 +377,83 @@ export default function App() {
 
         <div className="relative z-10 space-y-6 sm:space-y-8 print:space-y-4">
           <Header onOpenAdmin={() => setActiveTab("admin")} />
+
+          {settings.headerLogoEnabled && settings.headerLogoUrl && (
+            <div className="flex flex-col items-center justify-center gap-4 mb-4 mt-2 sm:mt-0 no-print print:hidden">
+              <a 
+                href={settings.liveBadgeEnabled && settings.liveBadgeUrl ? settings.liveBadgeUrl : (settings.headerLogoLink || "#")} 
+                target="_blank" 
+                rel="noopener noreferrer" 
+                className="relative block max-w-[200px] hover:opacity-90 transition-opacity"
+              >
+                {settings.liveBadgeEnabled && (
+                  <div className="absolute -top-3 -right-6 sm:-right-8 z-10 flex items-center gap-1.5 bg-red-600 outline outline-2 outline-white dark:outline-slate-900 text-white px-2 py-0.5 rounded-full shadow-lg shadow-red-500/30 animate-pulse">
+                    <span className="w-1.5 h-1.5 rounded-full bg-white animate-[ping_1.5s_cubic-bezier(0,0,0.2,1)_infinite]" />
+                    <span className="text-[10px] font-bold uppercase tracking-widest whitespace-nowrap">Ao Vivo</span>
+                  </div>
+                )}
+                <img src={settings.headerLogoUrl} alt="Logo" className="w-full h-auto object-contain drop-shadow-sm" />
+              </a>
+
+              {(settings.socialFacebookEnabled || settings.socialInstagramEnabled || settings.socialYoutubeEnabled) && (
+                <div className="flex flex-row items-center justify-center gap-3">
+                  {settings.socialFacebookEnabled && (
+                    <a href={settings.socialFacebookUrl} target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-white dark:bg-slate-800 text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-900/20 border border-slate-200 dark:border-slate-700 shadow-sm transition-colors" aria-label="Facebook">
+                      <Facebook className="w-5 h-5" />
+                    </a>
+                  )}
+                  {settings.socialInstagramEnabled && (
+                    <a href={settings.socialInstagramUrl} target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-white dark:bg-slate-800 text-pink-600 hover:bg-pink-50 dark:hover:bg-pink-900/20 border border-slate-200 dark:border-slate-700 shadow-sm transition-colors" aria-label="Instagram">
+                      <Instagram className="w-5 h-5" />
+                    </a>
+                  )}
+                  {settings.socialYoutubeEnabled && (
+                    <a href={settings.socialYoutubeUrl} target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-white dark:bg-slate-800 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 border border-slate-200 dark:border-slate-700 shadow-sm transition-colors" aria-label="YouTube">
+                      <Youtube className="w-5 h-5" />
+                    </a>
+                  )}
+                </div>
+              )}
+            </div>
+          )}
+
+          {(settings.sophiaEnabled || settings.libraryEnabled || settings.avaEnabled) && (
+            <div className="grid grid-cols-3 gap-2 no-print print:hidden mb-4 sm:-mt-2">
+              {settings.sophiaEnabled && (
+                <a 
+                  href={settings.sophiaLink} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 py-2.5 px-1 sm:px-3 bg-white dark:bg-slate-800/50 text-sky-600 dark:text-sky-400 rounded-xl text-[9px] sm:text-xs font-black uppercase tracking-tighter transition-all duration-300 hover:bg-sky-50 dark:hover:bg-sky-900/20 hover:-translate-y-1 hover:shadow-md active:scale-95 border border-slate-200 dark:border-slate-700/50 min-w-0 text-center group"
+                >
+                  <User className="w-4 h-4 shrink-0 group-hover:scale-110 transition-transform duration-300" />
+                  <span className="truncate w-full px-1">Portal do Aluno</span>
+                </a>
+              )}
+              {settings.libraryEnabled && (
+                <a 
+                  href={settings.libraryLink} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 py-2.5 px-1 sm:px-3 bg-white dark:bg-slate-800/50 text-sky-600 dark:text-sky-400 rounded-xl text-[9px] sm:text-xs font-black uppercase tracking-tighter transition-all duration-300 hover:bg-sky-50 dark:hover:bg-sky-900/20 hover:-translate-y-1 hover:shadow-md active:scale-95 border border-slate-200 dark:border-slate-700/50 min-w-0 text-center group"
+                >
+                  <BookHeart className="w-4 h-4 shrink-0 group-hover:scale-110 transition-transform duration-300" />
+                  <span className="truncate w-full px-1">Biblioteca</span>
+                </a>
+              )}
+              {settings.avaEnabled && (
+                <a 
+                  href={settings.avaLink} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 py-2.5 px-1 sm:px-3 bg-white dark:bg-slate-800/50 text-sky-600 dark:text-sky-400 rounded-xl text-[9px] sm:text-xs font-black uppercase tracking-tighter transition-all duration-300 hover:bg-sky-50 dark:hover:bg-sky-900/20 hover:-translate-y-1 hover:shadow-md active:scale-95 border border-slate-200 dark:border-slate-700/50 min-w-0 text-center group"
+                >
+                  <MonitorPlay className="w-4 h-4 shrink-0 group-hover:scale-110 transition-transform duration-300" />
+                  <span className="truncate w-full px-1">Ambiente Virtual</span>
+                </a>
+              )}
+            </div>
+          )}
 
           <div className="grid grid-cols-6 bg-slate-200/50 dark:bg-slate-900/60 rounded-xl p-1 shadow-inner border border-slate-200/50 dark:border-slate-700/50 no-print print:hidden gap-1">
             <button

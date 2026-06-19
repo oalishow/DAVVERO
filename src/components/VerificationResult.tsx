@@ -17,7 +17,8 @@ interface VerificationResultProps {
     | "NOT_FOUND"
     | "NOT_ENROLLED"
     | "ALREADY_PRESENT"
-    | "JUST_CHECKED_IN";
+    | "JUST_CHECKED_IN"
+    | "PENDING";
   onReset: () => void;
   onScanNext?: () => void;
   isMyID?: boolean;
@@ -98,6 +99,14 @@ export default function VerificationResult({
       descHtml = "O aluno foi inscrito no evento e o check-in realizado com sucesso.";
       dotColor = "bg-emerald-500";
       badgeText = "Sucesso";
+      break;
+    case "PENDING":
+      themeClass = "amber";
+      titleText = "Aguardando Aprovação";
+      subtitleText = "Acesso Pendente";
+      descHtml = "Seu pedido de primeiro acesso está sob análise da secretaria. Sua carteirinha ficará disponível assim que for validado e você será notificado.";
+      dotColor = "bg-amber-500 animate-[pulse_1.5s_infinite]";
+      badgeText = "Em Análise";
       break;
     default:
       themeClass = "rose";
@@ -350,7 +359,7 @@ export default function VerificationResult({
           className={`result-card w-full max-w-sm ${status === "VALID" || status === "JUST_CHECKED_IN" ? "animate-success-pop" : "animate-error-wobble"} bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-2 p-3 sm:p-8 rounded-2xl sm:rounded-[2rem] text-center relative overflow-hidden shadow-xl print:shadow-none print:bg-white print:text-black print:border-slate-300 ${
             status === "VALID" || status === "JUST_CHECKED_IN"
               ? "border-emerald-100 dark:border-emerald-500/50 shadow-emerald-500/10"
-              : status === "INACTIVE"
+              : status === "INACTIVE" || status === "ALREADY_PRESENT" || status === "PENDING"
                 ? "border-amber-100 dark:border-amber-500/50 shadow-amber-500/10"
                 : "border-rose-100 dark:border-rose-500/50 shadow-rose-500/10"
           }`}
@@ -365,7 +374,7 @@ export default function VerificationResult({
           </div>
 
           <h2
-            className={`text-base sm:text-xl font-black mb-0.5 sm:mb-1 uppercase tracking-widest flex items-center justify-center gap-1.5 ${status === "VALID" || status === "JUST_CHECKED_IN" ? "text-emerald-600 dark:text-emerald-400" : status === "INACTIVE" || status === "ALREADY_PRESENT" ? "text-amber-600 dark:text-amber-400" : "text-rose-600 dark:text-rose-400"}`}
+            className={`text-base sm:text-xl font-black mb-0.5 sm:mb-1 uppercase tracking-widest flex items-center justify-center gap-1.5 ${status === "VALID" || status === "JUST_CHECKED_IN" ? "text-emerald-600 dark:text-emerald-400" : status === "INACTIVE" || status === "ALREADY_PRESENT" || status === "PENDING" ? "text-amber-600 dark:text-amber-400" : "text-rose-600 dark:text-rose-400"}`}
           >
             {(status === "VALID" || status === "JUST_CHECKED_IN") && (
               <motion.div
@@ -379,7 +388,7 @@ export default function VerificationResult({
             {titleText}
           </h2>
           <p
-            className={`text-[10px] sm:text-xs font-semibold uppercase tracking-widest mb-3 sm:mb-5 ${status === "VALID" || status === "JUST_CHECKED_IN" ? "text-emerald-500" : status === "INACTIVE" || status === "ALREADY_PRESENT" ? "text-amber-500" : "text-rose-500"}`}
+            className={`text-[10px] sm:text-xs font-semibold uppercase tracking-widest mb-3 sm:mb-5 ${status === "VALID" || status === "JUST_CHECKED_IN" ? "text-emerald-500" : status === "INACTIVE" || status === "ALREADY_PRESENT" || status === "PENDING" ? "text-amber-500" : "text-rose-500"}`}
           >
             {subtitleText}
           </p>
@@ -455,14 +464,14 @@ export default function VerificationResult({
                   Status
                 </p>
                 <p
-                  className={`text-[10px] sm:text-xs font-bold flex items-center gap-1 ${status === "VALID" || status === "JUST_CHECKED_IN" ? "text-emerald-600" : status === "INACTIVE" || status === "ALREADY_PRESENT" ? "text-amber-600" : "text-rose-600"}`}
+                  className={`text-[10px] sm:text-xs font-bold flex items-center gap-1 ${status === "VALID" || status === "JUST_CHECKED_IN" ? "text-emerald-600 dark:text-emerald-400" : status === "INACTIVE" || status === "ALREADY_PRESENT" || status === "PENDING" ? "text-amber-600 dark:text-amber-400" : "text-rose-600 dark:text-rose-400"}`}
                 >
                   <span
                     className={`w-1.5 h-1.5 rounded-full ${dotColor}`}
                   ></span>{" "}
                   {badgeText}
                 </p>
-                {status !== "NOT_FOUND" && (
+                {status !== "NOT_FOUND" && status !== "PENDING" && (
                   <p className="text-[9px] text-slate-500 mt-0.5">
                     {status === "EXPIRED" ? "Venceu a:" : "Vence a:"}{" "}
                     <span className="text-slate-700 dark:text-slate-300 font-medium">

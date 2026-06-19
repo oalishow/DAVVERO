@@ -44,9 +44,13 @@ export default function Footer() {
       <div className="pt-3 sm:pt-4 flex flex-col md:flex-row items-center justify-between gap-3 sm:gap-4 text-slate-500 border-t border-slate-300 dark:border-slate-800/80">
         <div className="flex flex-col items-center md:items-start gap-1">
           <div className="flex items-center gap-2 sm:gap-3">
-            <span className="font-mono text-[9px] sm:text-[10px] bg-slate-200 dark:bg-slate-800 py-1 px-2 rounded border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300">
+            <button 
+              onClick={() => setShowChangelog(true)}
+              className="font-mono text-[9px] sm:text-[10px] bg-slate-200 hover:bg-slate-300 active:scale-95 dark:bg-slate-800 dark:hover:bg-slate-700 py-1 px-2 rounded border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 transition-all cursor-pointer"
+              title="Histórico de Atualizações"
+            >
               v{APP_VERSION}
-            </span>
+            </button>
             <button 
               onClick={() => setShowChangelog(true)}
               className="text-[10px] sm:text-[11px] text-sky-600 dark:text-sky-400 hover:text-sky-500 dark:hover:text-sky-300 underline underline-offset-2 transition-colors font-bold uppercase tracking-widest"

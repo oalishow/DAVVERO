@@ -80,6 +80,7 @@ export default function AdminAppointments() {
         const loadedAllStudents: Member[] = [];
         snap.forEach(d => {
           const m = { ...d.data(), id: d.id } as Member;
+          if (m.deletedAt || m.isApproved === false) return; // Ignore deleted or unapproved
           loadedAllStudents.push(m);
           if (m.roles?.some(r => ["REITOR", "VICE-REITOR", "PSICÓLOGA", "PSICÓLOGO", "DIRETOR ESPIRITUAL", "DIRETORA ESPIRITUAL", "PADRE"].includes(r.toUpperCase()))) {
             if (!membersList.some(pm => pm.name.toLowerCase() === m.name.toLowerCase())) {

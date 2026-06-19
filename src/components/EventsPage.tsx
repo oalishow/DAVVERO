@@ -15,7 +15,8 @@ import {
   ExternalLink,
   Share2,
   Edit,
-  Settings
+  Settings,
+  Pin
 } from "lucide-react";
 import {
   collection,
@@ -36,6 +37,8 @@ import {
 import type { Event, Attendance, Member } from "../types";
 import PublicAttendeesModal from "./PublicAttendeesModal";
 import Modal from "./Modal";
+import PublicRequestModal from "./PublicRequestModal";
+import RegistrationSuccessModal from "./RegistrationSuccessModal";
 import { useDialog } from "../context/DialogContext";
 import PublicAppointmentsList from "./PublicAppointmentsList";
 import EventManagement from "./EventManagement";
@@ -55,6 +58,8 @@ export default function EventsPage({ onNavigateToStudent, renderSeminary = false
     return false;
   });
   const [showAdminEventModal, setShowAdminEventModal] = useState(false);
+  const [showPublicReq, setShowPublicReq] = useState(false);
+  const [showRegistrationSuccessModal, setShowRegistrationSuccessModal] = useState(false);
   const [events, setEvents] = useState<Event[]>([]);
   const [eventTypeTab, setEventTypeTab] = useState<"general" | "seminary" | "appointments">(renderSeminary ? "seminary" : "general");
   const [subTab, setSubTab] = useState<"upcoming" | "past">("upcoming");
@@ -106,7 +111,7 @@ export default function EventsPage({ onNavigateToStudent, renderSeminary = false
         const now = new Date().getTime();
         if (e.status === "aberto") {
           const checkDate = e.endDate ? new Date(e.endDate).getTime() : new Date(e.startDate).getTime();
-          const GRACE_PERIOD = 24 * 60 * 60 * 1000; // 1 day
+          const GRACE_PERIOD = 2 * 60 * 60 * 1000; // 2 hours
           if (checkDate + GRACE_PERIOD < now) {
              return { ...e, status: "encerrado" as any };
           }
@@ -116,8 +121,24 @@ export default function EventsPage({ onNavigateToStudent, renderSeminary = false
       evts = evts.filter(e => e.status !== "deleted");
       const now = new Date().getTime();
       evts.sort((a, b) => {
+        // Compute states
         const timeA = new Date(a.startDate).getTime();
+        const endA = a.endDate ? new Date(a.endDate).getTime() : timeA + (2 * 60 * 60 * 1000); 
         const timeB = new Date(b.startDate).getTime();
+        const endB = b.endDate ? new Date(b.endDate).getTime() : timeB + (2 * 60 * 60 * 1000);
+        
+        const isAInProgress = timeA <= now && endA >= now;
+        const isBInProgress = timeB <= now && endB >= now;
+        
+        // 1. Pinned Events at very top
+        if (a.isPinned && !b.isPinned) return -1;
+        if (!a.isPinned && b.isPinned) return 1;
+
+        // 2. In progress events
+        if (isAInProgress && !isBInProgress) return -1;
+        if (!isAInProgress && isBInProgress) return 1;
+        
+        // 3. Chronological sorting
         const aIsFuture = timeA >= now;
         const bIsFuture = timeB >= now;
         if (aIsFuture && bIsFuture) return timeA - timeB;
@@ -454,12 +475,10 @@ END:VCALENDAR`;
             Você precisa vincular sua identidade na aba MINHA ID para visualizar e se inscrever.
           </p>
           <button 
-            onClick={() => {
-              if (onNavigateToStudent) onNavigateToStudent();
-            }}
+            onClick={() => setShowPublicReq(true)}
             className="px-4 py-2 bg-amber-100 dark:bg-amber-800/30 text-amber-700 dark:text-amber-300 rounded-lg text-xs font-bold uppercase hover:bg-amber-200 dark:hover:bg-amber-800/50 transition-colors"
           >
-            Ir para Minha ID
+            Primeiro Acesso
           </button>
         </div>
       )}
@@ -646,6 +665,11 @@ END:VCALENDAR`;
                         )}
                         {event.format === "hibrido" ? "Híbrido" : event.format}
                       </span>
+                      {event.isPinned && (
+                        <span className="inline-flex items-center gap-1 bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400 text-[10px] font-bold px-2 py-0.5 rounded-full uppercase tracking-wider">
+                          <Pin className="w-3 h-3" /> Fixado
+                        </span>
+                      )}
                     </div>
                     <h3 className="text-lg font-black text-slate-800 dark:text-slate-100 mb-2">
                       {event.title}
@@ -929,8 +953,8 @@ END:VCALENDAR`;
       <Modal
         isOpen={showLoginWarning}
         onClose={() => setShowLoginWarning(false)}
-        title="Ação Necessária"
-        confirmLabel="Ir para MINHA ID"
+        title="Inscrição Requer Cadastro"
+        confirmLabel="Já tenho cadastro (Minha ID)"
         onConfirm={() => {
           setShowLoginWarning(false);
           if (onNavigateToStudent) {
@@ -938,10 +962,44 @@ END:VCALENDAR`;
           }
         }}
       >
-        <p className="text-slate-600 dark:text-slate-400 py-4 font-medium text-center">
-          Para se inscrever em eventos, você precisa vincular sua identidade na aba <strong>MINHA ID</strong> primeiro.
-        </p>
+        <div className="text-center">
+          <p className="text-slate-600 dark:text-slate-400 py-3 font-medium">
+            Para se inscrever em eventos, você precisa estar cadastrado e com sua <strong>MINHA ID</strong> vinculada.
+          </p>
+          <div className="bg-sky-50 dark:bg-sky-500/10 border border-sky-100 dark:border-sky-500/30 rounded-xl p-3 mb-2 text-sm text-sky-700 dark:text-sky-300">
+            <strong>Já possui cadastro e código?</strong> Vincule sua identidade ou acompanhe seu pedido na aba Minha ID.
+          </div>
+          <div className="bg-amber-50 dark:bg-amber-500/10 border border-amber-100 dark:border-amber-500/30 rounded-xl p-3 text-sm text-amber-700 dark:text-amber-300">
+            <strong>Ainda não é cadastrado?</strong> Clique no botão abaixo para fazer o seu primeiro acesso. Mesmo que seu cadastro ainda aguarde aprovação da secretaria, você já conseguirá se inscrever neste evento após o pedido!
+            <button
+               onClick={() => {
+                 setShowLoginWarning(false);
+                 setShowPublicReq(true);
+               }}
+               className="mt-4 w-full py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-lg text-xs tracking-wider uppercase transition-colors"
+            >
+               Fazer Primeiro Acesso
+            </button>
+          </div>
+        </div>
       </Modal>
+
+      {showPublicReq && (
+        <PublicRequestModal
+          onClose={() => setShowPublicReq(false)}
+          onSubmitSuccess={() => {
+            setShowPublicReq(false);
+            setShowRegistrationSuccessModal(true);
+          }}
+        />
+      )}
+
+      {showRegistrationSuccessModal && (
+        <RegistrationSuccessModal 
+          isOpen={showRegistrationSuccessModal} 
+          onClose={() => setShowRegistrationSuccessModal(false)}
+        />
+      )}
     </div>
   );
 }

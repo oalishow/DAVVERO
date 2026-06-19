@@ -53,25 +53,14 @@ export default function PublicRequestModal({ onClose, onSubmitSuccess }: PublicR
   const handleAddRole = async () => {
     if (newRole.trim() && !availableRoles.includes(newRole.trim().toUpperCase())) {
       const formatted = newRole.trim().toUpperCase();
-      await updateSettings({ customRoles: [...settings.customRoles, formatted] });
       setRoles(prev => [...prev, formatted]);
       setNewRole('');
-    }
-  };
-
-  const handleAddCourse = async () => {
-    if (newCourse.trim() && !availableCourses.includes(newCourse.trim().toUpperCase())) {
-      const formatted = newCourse.trim().toUpperCase();
-      await updateSettings({ customCourses: [...settings.customCourses, formatted] });
-      setCourse(formatted);
-      setNewCourse('');
     }
   };
 
   const handleAddDiocese = async () => {
     if (newDiocese.trim() && !availableDioceses.includes(newDiocese.trim().toUpperCase())) {
       const formatted = newDiocese.trim().toUpperCase();
-      await updateSettings({ customDioceses: [...settings.customDioceses, formatted] });
       setDiocese(formatted);
       setNewDiocese('');
     }
@@ -239,7 +228,7 @@ export default function PublicRequestModal({ onClose, onSubmitSuccess }: PublicR
           </div>
 
           <div>
-              <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1 mt-2">Curso Académico</label>
+              <label className="block text-[10px] sm:text-xs font-semibold text-slate-500 uppercase mb-1 mt-2">Curso Acadêmico</label>
               <div className="flex gap-2">
                 <select value={course} onChange={e => setCourse(e.target.value)} className="input-modern flex-1 rounded-xl py-3 px-4 text-sm">
                     <option value="">Nenhum / Não aplicável</option>
@@ -247,22 +236,6 @@ export default function PublicRequestModal({ onClose, onSubmitSuccess }: PublicR
                       <option key={c} value={c}>{c}</option>
                     ))}
                 </select>
-                <div className="flex gap-1.5">
-                  <input 
-                    type="text" 
-                    value={newCourse} 
-                    onChange={e => setNewCourse(e.target.value)} 
-                    placeholder="Novo" 
-                    className="input-modern w-20 rounded-xl py-3 px-3 text-[10px]"
-                    onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleAddCourse())}
-                  />
-                  <button 
-                    onClick={handleAddCourse}
-                    className="px-3 py-3 bg-slate-800 dark:bg-slate-700 text-white rounded-xl text-xs font-bold hover:bg-slate-700 transition-colors"
-                  >
-                    +
-                  </button>
-                </div>
               </div>
           </div>
           <div>

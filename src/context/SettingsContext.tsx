@@ -41,6 +41,24 @@ interface AppSettings {
   }>;
   useGoogleScriptCertificate: boolean;
   googleScriptCertificateUrl: string;
+  headerLogoUrl: string | null;
+  headerLogoLink: string;
+  headerLogoEnabled: boolean;
+  liveBadgeEnabled: boolean;
+  liveBadgeUrl: string;
+  socialFacebookEnabled: boolean;
+  socialFacebookUrl: string;
+  socialInstagramEnabled: boolean;
+  socialInstagramUrl: string;
+  socialYoutubeEnabled: boolean;
+  socialYoutubeUrl: string;
+  sophiaLink: string;
+
+  sophiaEnabled: boolean;
+  libraryLink: string;
+  libraryEnabled: boolean;
+  avaLink: string;
+  avaEnabled: boolean;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -90,7 +108,24 @@ const DEFAULT_SETTINGS: AppSettings = {
   termsVersion: 1,
   seminariesConfig: {},
   useGoogleScriptCertificate: false,
-  googleScriptCertificateUrl: 'https://script.google.com/macros/s/AKfycbxNT2BgfK1y0c5N7JILcWaDhexhQqJ6UQv-dmOBFye7mbQNz8kfZ_9JolRzQ4BiTUsr/exec'
+  googleScriptCertificateUrl: 'https://script.google.com/macros/s/AKfycbxNT2BgfK1y0c5N7JILcWaDhexhQqJ6UQv-dmOBFye7mbQNz8kfZ_9JolRzQ4BiTUsr/exec',
+  headerLogoUrl: null,
+  headerLogoLink: 'https://fajopa.org',
+  headerLogoEnabled: true,
+  liveBadgeEnabled: false,
+  liveBadgeUrl: 'https://www.youtube.com/@fajopademarilia/streams',
+  socialFacebookEnabled: true,
+  socialFacebookUrl: 'https://www.facebook.com/fajopa.joaopauloii',
+  socialInstagramEnabled: true,
+  socialInstagramUrl: 'https://www.instagram.com/fajopamarilia/',
+  socialYoutubeEnabled: true,
+  socialYoutubeUrl: 'https://www.youtube.com/@fajopademarilia',
+  sophiaLink: 'https://portal.sophia.com.br/SophiA_107/Acesso.aspx?escola=9087',
+  sophiaEnabled: true,
+  libraryLink: 'https://biblioteca.sophia.com.br/1291/',
+  libraryEnabled: true,
+  avaLink: 'https://fajopa.net/ava/',
+  avaEnabled: true,
 };
 
 interface SettingsContextType {

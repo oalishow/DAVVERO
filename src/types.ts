@@ -89,6 +89,7 @@ export interface Event {
   price?: number;   // Pagamento: valor do evento
   googleFormsLink?: string; // Link externo para Forms
   hotmartLink?: string;     // Link externo para Hotmart
+  isPinned?: boolean; // Se o evento está fixado
   presenceConfig?: {
     enabled: boolean;
     openMode: "default_30min" | "custom";

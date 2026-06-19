@@ -5,6 +5,7 @@ import {
   Clock,
   FileText,
   CheckCircle,
+  XCircle,
   Edit,
   Search,
   Award,
@@ -14,6 +15,7 @@ import {
   Download,
   ExternalLink,
   MapPin,
+  Pin,
 } from "lucide-react";
 import ImageCropperModal from "./ImageCropperModal";
 import {
@@ -94,6 +96,7 @@ export default function EventManagement({ adminAccessLevel = "ADMIN" }: { adminA
   const [presenceCustomCloseTime, setPresenceCustomCloseTime] = useState("");
   const [cropImageSrc, setCropImageSrc] = useState<string | null>(null);
   const [eventSearchQuery, setEventSearchQuery] = useState("");
+  const [feedbackModal, setFeedbackModal] = useState<{ type: "success" | "error", title: string, msg: string } | null>(null);
   const [statusMsg, setStatusMsg] = useState<{
     msg: string;
     type: "success" | "error" | "loading";
@@ -269,8 +272,9 @@ export default function EventManagement({ adminAccessLevel = "ADMIN" }: { adminA
 
       if (editingEventId) {
         await updateEvent(editingEventId, payload);
-        setStatusMsg({
-          msg: "Evento atualizado com sucesso!",
+        setFeedbackModal({
+          title: "Evento Atualizado",
+          msg: "O evento foi atualizado com sucesso no sistema.",
           type: "success",
         });
       } else {
@@ -284,15 +288,21 @@ export default function EventManagement({ adminAccessLevel = "ADMIN" }: { adminA
           type: "evento"
         }).catch(console.error);
 
-        setStatusMsg({ msg: "Evento criado com sucesso!", type: "success" });
+        setFeedbackModal({ 
+          title: "Evento Criado!",
+          msg: "Seu evento foi criado com sucesso e já está disponível para inscrições.", 
+          type: "success" 
+        });
       }
 
       handleCancelEdit();
-      setTimeout(() => setStatusMsg(null), 4000);
     } catch (err) {
       console.error(err);
-      setStatusMsg({ msg: "Erro ao salvar evento.", type: "error" });
-      setTimeout(() => setStatusMsg(null), 4000);
+      setFeedbackModal({ 
+        title: "Ops! Ocorreu um erro",
+        msg: "Houve um erro ao tentar salvar o evento. Verifique sua conexão e tente novamente.", 
+        type: "error" 
+      });
     }
   };
 
@@ -943,6 +953,15 @@ export default function EventManagement({ adminAccessLevel = "ADMIN" }: { adminA
                       {adminAccessLevel !== "LEITOR" && (
                         <>
                           <button
+                            onClick={() => {
+                              updateEvent(event.id, { isPinned: !event.isPinned }).catch((e) => showAlert(e.message, { type: 'error' }));
+                            }}
+                            className={`flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 font-bold rounded-md transition-colors text-xs ${event.isPinned ? "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400 hover:bg-amber-200 dark:hover:bg-amber-500/30" : "hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400"}`}
+                          >
+                            <Pin className="w-3.5 h-3.5 shrink-0" />{" "}
+                            <span className="truncate">{event.isPinned ? "Desfixar" : "Fixar"}</span>
+                          </button>
+                          <button
                             onClick={() => setShowCertificateEditor({ event, type: "participant" })}
                             className={`flex items-center justify-center gap-1.5 px-3 py-2 sm:py-1.5 hover:bg-white dark:hover:bg-slate-700 text-xs font-bold rounded-md transition-colors ${
                               event.certificateTemplate?.isApproved 
@@ -1064,6 +1083,34 @@ export default function EventManagement({ adminAccessLevel = "ADMIN" }: { adminA
         <p className="text-slate-600 dark:text-slate-400">
           {confirmModal?.message}
         </p>
+      </Modal>
+
+      {/* FEEDBACK MODAL (Success/Error Animation) */}
+      <Modal
+        isOpen={!!feedbackModal}
+        onClose={() => setFeedbackModal(null)}
+        title=""
+      >
+        <div className="text-center p-6 flex flex-col items-center">
+          {feedbackModal?.type === "success" ? (
+            <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-500 mb-4 flex items-center justify-center relative">
+              <span className="absolute inset-0 rounded-full bg-emerald-400 animate-ping opacity-20"></span>
+              <CheckCircle className="w-8 h-8" />
+            </div>
+          ) : (
+            <div className="w-16 h-16 rounded-full bg-rose-100 dark:bg-rose-500/20 text-rose-500 mb-4 flex items-center justify-center">
+               <XCircle className="w-8 h-8" />
+            </div>
+          )}
+          <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">{feedbackModal?.title}</h3>
+          <p className="text-slate-500 dark:text-slate-400 text-sm mb-6">{feedbackModal?.msg}</p>
+          <button
+            onClick={() => setFeedbackModal(null)}
+            className="w-full py-3 bg-slate-800 hover:bg-slate-700 dark:bg-white dark:hover:bg-slate-100 dark:text-slate-800 text-white font-bold rounded-xl transition-all active:scale-95 shadow-md"
+          >
+            Fechar e Continuar
+          </button>
+        </div>
       </Modal>
     </div>
   );

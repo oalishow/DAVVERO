@@ -8,6 +8,18 @@ interface ChangelogModalProps {
 export default function ChangelogModal({ onClose }: ChangelogModalProps) {
   const versions = [
     {
+      version: 'v7.0b',
+      title: 'Melhorias de Solicitações e Design',
+      changes: [
+        'Adicionado Modal de confirmação visual para novo cadastro/primeiro acesso.',
+        'Ao entrar em evento, botões sugerem primeiro acesso se aplicável.',
+        'Membros excluídos ou pendentes não aparecem na listagem de profissionais/agendamentos ou lista de presença geral.',
+        'Design refinado do atalho da biblioteca.',
+        'Removida a opção de adicionar novos cursos durante a atualização de membros.'
+      ],
+      current: true,
+    },
+    {
       version: 'v6.9b',
       title: 'Integração da Biblioteca Pessoal',
       changes: [
@@ -15,7 +27,7 @@ export default function ChangelogModal({ onClose }: ChangelogModalProps) {
         'Melhorias de layout e visibilidade no painel de verificação de identidades.',
         'Os certificados agora podem ser consultados sem a necessidade de autenticação de administrador.'
       ],
-      current: true,
+      current: false,
     },
     {
       version: 'v6.8b',

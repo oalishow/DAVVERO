@@ -162,6 +162,24 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
   const [useGoogleScriptCertificate, setUseGoogleScriptCertificate] = useState(cloudSettings.useGoogleScriptCertificate || false);
   const [googleScriptCertificateUrl, setGoogleScriptCertificateUrl] = useState(cloudSettings.googleScriptCertificateUrl || 'https://script.google.com/macros/s/AKfycbxNT2BgfK1y0c5N7JILcWaDhexhQqJ6UQv-dmOBFye7mbQNz8kfZ_9JolRzQ4BiTUsr/exec');
 
+  const [headerLogoUrl, setHeaderLogoUrl] = useState(cloudSettings.headerLogoUrl);
+  const [headerLogoLink, setHeaderLogoLink] = useState(cloudSettings.headerLogoLink || 'https://fajopa.org');
+  const [headerLogoEnabled, setHeaderLogoEnabled] = useState(cloudSettings.headerLogoEnabled ?? true);
+  const [liveBadgeEnabled, setLiveBadgeEnabled] = useState(cloudSettings.liveBadgeEnabled ?? false);
+  const [liveBadgeUrl, setLiveBadgeUrl] = useState(cloudSettings.liveBadgeUrl || 'https://www.youtube.com/@fajopademarilia/streams');
+  const [socialFacebookEnabled, setSocialFacebookEnabled] = useState(cloudSettings.socialFacebookEnabled ?? true);
+  const [socialFacebookUrl, setSocialFacebookUrl] = useState(cloudSettings.socialFacebookUrl || 'https://www.facebook.com/fajopa.joaopauloii');
+  const [socialInstagramEnabled, setSocialInstagramEnabled] = useState(cloudSettings.socialInstagramEnabled ?? true);
+  const [socialInstagramUrl, setSocialInstagramUrl] = useState(cloudSettings.socialInstagramUrl || 'https://www.instagram.com/fajopamarilia/');
+  const [socialYoutubeEnabled, setSocialYoutubeEnabled] = useState(cloudSettings.socialYoutubeEnabled ?? true);
+  const [socialYoutubeUrl, setSocialYoutubeUrl] = useState(cloudSettings.socialYoutubeUrl || 'https://www.youtube.com/@fajopademarilia');
+  const [sophiaLink, setSophiaLink] = useState(cloudSettings.sophiaLink || 'https://portal.sophia.com.br/SophiA_107/Acesso.aspx?escola=9087');
+  const [sophiaEnabled, setSophiaEnabled] = useState(cloudSettings.sophiaEnabled ?? true);
+  const [libraryLink, setLibraryLink] = useState(cloudSettings.libraryLink || 'https://biblioteca.sophia.com.br/1291/');
+  const [libraryEnabled, setLibraryEnabled] = useState(cloudSettings.libraryEnabled ?? true);
+  const [avaLink, setAvaLink] = useState(cloudSettings.avaLink || 'https://fajopa.net/ava/');
+  const [avaEnabled, setAvaEnabled] = useState(cloudSettings.avaEnabled ?? true);
+
   const [activeTab, setActiveTab] = useState<"visual" | "content" | "database">(
     "visual",
   );
@@ -241,6 +259,23 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
         seminariesConfig,
         useGoogleScriptCertificate,
         googleScriptCertificateUrl,
+        headerLogoUrl,
+        headerLogoLink,
+        headerLogoEnabled,
+        liveBadgeEnabled,
+        liveBadgeUrl,
+        socialFacebookEnabled,
+        socialFacebookUrl,
+        socialInstagramEnabled,
+        socialInstagramUrl,
+        socialYoutubeEnabled,
+        socialYoutubeUrl,
+        sophiaLink,
+        sophiaEnabled,
+        libraryLink,
+        libraryEnabled,
+        avaLink,
+        avaEnabled,
       });
 
       // Legacy fallback
@@ -1402,6 +1437,261 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                     </div>
                   </div>
 
+                  <div className="bg-emerald-50/50 dark:bg-emerald-900/10 p-5 rounded-2xl border border-emerald-100 dark:border-emerald-500/20">
+                    <h3 className="text-sm font-bold flex items-center gap-2 mb-4 text-emerald-800 dark:text-emerald-300 uppercase tracking-widest text-[10px]">
+                      <Settings className="w-4 h-4" /> Header & Atalhos Rápidos
+                    </h3>
+                    
+                    <div className="space-y-6">
+                      <div className="col-span-1 space-y-4">
+                        <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                          <input
+                            type="checkbox"
+                            checked={headerLogoEnabled}
+                            onChange={(e) => setHeaderLogoEnabled(e.target.checked)}
+                            className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                          />
+                          Ativar Logo no Topo
+                        </label>
+                        {headerLogoEnabled && (
+                          <div className="pl-6 space-y-3">
+                            <div className="flex flex-col items-start gap-2">
+                              {headerLogoUrl ? (
+                                <div className="relative group">
+                                  <img
+                                    src={headerLogoUrl}
+                                    alt="Header Logo"
+                                    className="h-16 w-auto object-contain rounded bg-white p-2 border border-slate-200"
+                                  />
+                                  <button
+                                    onClick={() => setHeaderLogoUrl(null)}
+                                    className="absolute -top-2 -right-2 p-1 bg-rose-500 text-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    const input = document.createElement('input');
+                                    input.type = 'file';
+                                    input.accept = 'image/*';
+                                    input.onchange = (e: any) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        const reader = new FileReader();
+                                        reader.onload = (e) => setHeaderLogoUrl(e.target?.result as string);
+                                        reader.readAsDataURL(file);
+                                      }
+                                    };
+                                    input.click();
+                                  }}
+                                  className="px-3 py-1.5 bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400 rounded text-xs font-bold transition-all hover:bg-emerald-200"
+                                >
+                                  Fazer Upload de Logo do Topo
+                                </button>
+                              )}
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                                Link ao Clicar na Logo
+                              </label>
+                              <input
+                                type="text"
+                                value={headerLogoLink}
+                                onChange={(e) => setHeaderLogoLink(e.target.value)}
+                                className="input-modern w-full rounded-xl py-2 px-3 text-xs"
+                                placeholder="https://fajopa.org"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="border-t border-emerald-200 dark:border-emerald-700/50 pt-4 space-y-4">
+                        <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                          <input
+                            type="checkbox"
+                            checked={liveBadgeEnabled}
+                            onChange={(e) => setLiveBadgeEnabled(e.target.checked)}
+                            className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                          />
+                          Ativar Indicador "Ao Vivo" sobre a Logo
+                        </label>
+                        {liveBadgeEnabled && (
+                          <div className="pl-6">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                              Link da Transmissão (YouTube)
+                            </label>
+                            <input
+                              type="text"
+                              value={liveBadgeUrl}
+                              onChange={(e) => setLiveBadgeUrl(e.target.value)}
+                              className="input-modern w-full rounded-xl py-2 px-3 text-xs"
+                              placeholder="https://www.youtube.com/@fajopademarilia/streams"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="border-t border-emerald-200 dark:border-emerald-700/50 pt-4 space-y-4">
+                        <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                          <input
+                            type="checkbox"
+                            checked={socialFacebookEnabled}
+                            onChange={(e) => setSocialFacebookEnabled(e.target.checked)}
+                            className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                          />
+                          Ativar Ícone "Facebook" ao lado da Logo
+                        </label>
+                        {socialFacebookEnabled && (
+                          <div className="pl-6">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                              Link do Facebook
+                            </label>
+                            <input
+                              type="text"
+                              value={socialFacebookUrl}
+                              onChange={(e) => setSocialFacebookUrl(e.target.value)}
+                              className="input-modern w-full rounded-xl py-2 px-3 text-xs"
+                              placeholder="https://www.facebook.com/..."
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="border-t border-emerald-200 dark:border-emerald-700/50 pt-4 space-y-4">
+                        <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                          <input
+                            type="checkbox"
+                            checked={socialInstagramEnabled}
+                            onChange={(e) => setSocialInstagramEnabled(e.target.checked)}
+                            className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                          />
+                          Ativar Ícone "Instagram" ao lado da Logo
+                        </label>
+                        {socialInstagramEnabled && (
+                          <div className="pl-6">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                              Link do Instagram
+                            </label>
+                            <input
+                              type="text"
+                              value={socialInstagramUrl}
+                              onChange={(e) => setSocialInstagramUrl(e.target.value)}
+                              className="input-modern w-full rounded-xl py-2 px-3 text-xs"
+                              placeholder="https://www.instagram.com/..."
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="border-t border-emerald-200 dark:border-emerald-700/50 pt-4 space-y-4">
+                        <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                          <input
+                            type="checkbox"
+                            checked={socialYoutubeEnabled}
+                            onChange={(e) => setSocialYoutubeEnabled(e.target.checked)}
+                            className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                          />
+                          Ativar Ícone "YouTube" ao lado da Logo
+                        </label>
+                        {socialYoutubeEnabled && (
+                          <div className="pl-6">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                              Link do YouTube
+                            </label>
+                            <input
+                              type="text"
+                              value={socialYoutubeUrl}
+                              onChange={(e) => setSocialYoutubeUrl(e.target.value)}
+                              className="input-modern w-full rounded-xl py-2 px-3 text-xs"
+                              placeholder="https://www.youtube.com/..."
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="border-t border-emerald-200 dark:border-emerald-700/50 pt-4 space-y-4">
+                        <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                          <input
+                            type="checkbox"
+                            checked={sophiaEnabled}
+                            onChange={(e) => setSophiaEnabled(e.target.checked)}
+                            className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                          />
+                          Ativar Botão "Portal do Aluno"
+                        </label>
+                        {sophiaEnabled && (
+                          <div className="pl-6">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                              Link do Portal Sophia
+                            </label>
+                            <input
+                              type="text"
+                              value={sophiaLink}
+                              onChange={(e) => setSophiaLink(e.target.value)}
+                              className="input-modern w-full rounded-xl py-2 px-3 text-xs"
+                              placeholder="https://portal.sophia.com.br/..."
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="border-t border-emerald-200 dark:border-emerald-700/50 pt-4 space-y-4">
+                        <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                          <input
+                            type="checkbox"
+                            checked={libraryEnabled}
+                            onChange={(e) => setLibraryEnabled(e.target.checked)}
+                            className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                          />
+                          Ativar Botão "Biblioteca"
+                        </label>
+                        {libraryEnabled && (
+                          <div className="pl-6">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                              Link da Biblioteca
+                            </label>
+                            <input
+                              type="text"
+                              value={libraryLink}
+                              onChange={(e) => setLibraryLink(e.target.value)}
+                              className="input-modern w-full rounded-xl py-2 px-3 text-xs"
+                              placeholder="https://biblioteca.sophia.com.br/..."
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="border-t border-emerald-200 dark:border-emerald-700/50 pt-4 space-y-4">
+                        <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                          <input
+                            type="checkbox"
+                            checked={avaEnabled}
+                            onChange={(e) => setAvaEnabled(e.target.checked)}
+                            className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                          />
+                          Ativar Botão "AVA (Ambiente Virtual)"
+                        </label>
+                        {avaEnabled && (
+                          <div className="pl-6">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                              Link do AVA
+                            </label>
+                            <input
+                              type="text"
+                              value={avaLink}
+                              onChange={(e) => setAvaLink(e.target.value)}
+                              className="input-modern w-full rounded-xl py-2 px-3 text-xs"
+                              placeholder="https://fajopa.net/ava/..."
+                            />
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Gestão de Listas */}
                   <div className="bg-white dark:bg-slate-800/50 p-5 rounded-2xl border border-slate-200 dark:border-slate-700">
                     <h3 className="text-sm font-bold flex items-center gap-2 mb-4 text-slate-800 dark:text-slate-200 uppercase tracking-widest text-[10px]">
@@ -1727,6 +2017,265 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                           />
                         </div>
                       )}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeTab === "system" && (
+                <div className="space-y-8 animate-in fade-in transition-all duration-300">
+                  <div className="bg-indigo-50/50 dark:bg-indigo-900/10 p-5 rounded-2xl border border-indigo-100 dark:border-indigo-500/20">
+                    <h3 className="text-sm font-bold flex items-center gap-2 mb-4 text-indigo-800 dark:text-indigo-300 uppercase tracking-widest text-[10px]">
+                      <Settings className="w-4 h-4" /> Header & Atalhos Rápidos
+                    </h3>
+                    
+                    <div className="space-y-6">
+                      <div className="col-span-1 space-y-4">
+                        <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                          <input
+                            type="checkbox"
+                            checked={headerLogoEnabled}
+                            onChange={(e) => setHeaderLogoEnabled(e.target.checked)}
+                            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          Ativar Logo no Topo
+                        </label>
+                        {headerLogoEnabled && (
+                          <div className="pl-6 space-y-3">
+                            <div className="flex flex-col items-start gap-2">
+                              {headerLogoUrl ? (
+                                <div className="relative group">
+                                  <img
+                                    src={headerLogoUrl}
+                                    alt="Header Logo"
+                                    className="h-16 w-auto object-contain rounded bg-white p-2 border border-slate-200"
+                                  />
+                                  <button
+                                    onClick={() => setHeaderLogoUrl(null)}
+                                    className="absolute -top-2 -right-2 p-1 bg-rose-500 text-white rounded-full shadow-lg opacity-0 group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <button
+                                  onClick={() => {
+                                    const input = document.createElement('input');
+                                    input.type = 'file';
+                                    input.accept = 'image/*';
+                                    input.onchange = (e: any) => {
+                                      const file = e.target.files?.[0];
+                                      if (file) {
+                                        const reader = new FileReader();
+                                        reader.onload = (e) => setHeaderLogoUrl(e.target?.result as string);
+                                        reader.readAsDataURL(file);
+                                      }
+                                    };
+                                    input.click();
+                                  }}
+                                  className="px-3 py-1.5 bg-indigo-100 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-400 rounded text-xs font-bold transition-all hover:bg-indigo-200"
+                                >
+                                  Fazer Upload de Logo do Topo
+                                </button>
+                              )}
+                            </div>
+                            <div>
+                              <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                                Link ao Clicar na Logo
+                              </label>
+                              <input
+                                type="text"
+                                value={headerLogoLink}
+                                onChange={(e) => setHeaderLogoLink(e.target.value)}
+                                className="input-modern w-full rounded-xl py-2 px-3 text-xs"
+                                placeholder="https://fajopa.org"
+                              />
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="border-t border-slate-200 dark:border-slate-700/50 pt-4 space-y-4">
+                        <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                          <input
+                            type="checkbox"
+                            checked={liveBadgeEnabled}
+                            onChange={(e) => setLiveBadgeEnabled(e.target.checked)}
+                            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          Ativar Indicador "Ao Vivo" sobre a Logo
+                        </label>
+                        {liveBadgeEnabled && (
+                          <div className="pl-6">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                              Link da Transmissão (YouTube)
+                            </label>
+                            <input
+                              type="text"
+                              value={liveBadgeUrl}
+                              onChange={(e) => setLiveBadgeUrl(e.target.value)}
+                              className="input-modern w-full rounded-xl py-2 px-3 text-xs"
+                              placeholder="https://www.youtube.com/@fajopademarilia/streams"
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="border-t border-slate-200 dark:border-slate-700/50 pt-4 space-y-4">
+                        <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                          <input
+                            type="checkbox"
+                            checked={socialFacebookEnabled}
+                            onChange={(e) => setSocialFacebookEnabled(e.target.checked)}
+                            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          Ativar Ícone "Facebook" ao lado da Logo
+                        </label>
+                        {socialFacebookEnabled && (
+                          <div className="pl-6">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                              Link do Facebook
+                            </label>
+                            <input
+                              type="text"
+                              value={socialFacebookUrl}
+                              onChange={(e) => setSocialFacebookUrl(e.target.value)}
+                              className="input-modern w-full rounded-xl py-2 px-3 text-xs"
+                              placeholder="https://www.facebook.com/..."
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="border-t border-slate-200 dark:border-slate-700/50 pt-4 space-y-4">
+                        <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                          <input
+                            type="checkbox"
+                            checked={socialInstagramEnabled}
+                            onChange={(e) => setSocialInstagramEnabled(e.target.checked)}
+                            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          Ativar Ícone "Instagram" ao lado da Logo
+                        </label>
+                        {socialInstagramEnabled && (
+                          <div className="pl-6">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                              Link do Instagram
+                            </label>
+                            <input
+                              type="text"
+                              value={socialInstagramUrl}
+                              onChange={(e) => setSocialInstagramUrl(e.target.value)}
+                              className="input-modern w-full rounded-xl py-2 px-3 text-xs"
+                              placeholder="https://www.instagram.com/..."
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="border-t border-slate-200 dark:border-slate-700/50 pt-4 space-y-4">
+                        <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                          <input
+                            type="checkbox"
+                            checked={socialYoutubeEnabled}
+                            onChange={(e) => setSocialYoutubeEnabled(e.target.checked)}
+                            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          Ativar Ícone "YouTube" ao lado da Logo
+                        </label>
+                        {socialYoutubeEnabled && (
+                          <div className="pl-6">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                              Link do YouTube
+                            </label>
+                            <input
+                              type="text"
+                              value={socialYoutubeUrl}
+                              onChange={(e) => setSocialYoutubeUrl(e.target.value)}
+                              className="input-modern w-full rounded-xl py-2 px-3 text-xs"
+                              placeholder="https://www.youtube.com/..."
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="border-t border-slate-200 dark:border-slate-700/50 pt-4 space-y-4">
+                        <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                          <input
+                            type="checkbox"
+                            checked={sophiaEnabled}
+                            onChange={(e) => setSophiaEnabled(e.target.checked)}
+                            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          Ativar Botão "Portal do Aluno"
+                        </label>
+                        {sophiaEnabled && (
+                          <div className="pl-6">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                              Link do Portal Sophia
+                            </label>
+                            <input
+                              type="text"
+                              value={sophiaLink}
+                              onChange={(e) => setSophiaLink(e.target.value)}
+                              className="input-modern w-full rounded-xl py-2 px-3 text-xs"
+                              placeholder="https://portal.sophia.com.br/..."
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="border-t border-slate-200 dark:border-slate-700/50 pt-4 space-y-4">
+                        <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                          <input
+                            type="checkbox"
+                            checked={libraryEnabled}
+                            onChange={(e) => setLibraryEnabled(e.target.checked)}
+                            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          Ativar Botão "Biblioteca"
+                        </label>
+                        {libraryEnabled && (
+                          <div className="pl-6">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                              Link da Biblioteca
+                            </label>
+                            <input
+                              type="text"
+                              value={libraryLink}
+                              onChange={(e) => setLibraryLink(e.target.value)}
+                              className="input-modern w-full rounded-xl py-2 px-3 text-xs"
+                              placeholder="https://biblioteca.sophia.com.br/..."
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="border-t border-slate-200 dark:border-slate-700/50 pt-4 space-y-4">
+                        <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                          <input
+                            type="checkbox"
+                            checked={avaEnabled}
+                            onChange={(e) => setAvaEnabled(e.target.checked)}
+                            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          Ativar Botão "AVA (Ambiente Virtual)"
+                        </label>
+                        {avaEnabled && (
+                          <div className="pl-6">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                              Link do AVA
+                            </label>
+                            <input
+                              type="text"
+                              value={avaLink}
+                              onChange={(e) => setAvaLink(e.target.value)}
+                              className="input-modern w-full rounded-xl py-2 px-3 text-xs"
+                              placeholder="https://fajopa.net/ava/..."
+                            />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>

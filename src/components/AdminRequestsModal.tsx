@@ -6,10 +6,12 @@ import { db, appId, createNotification } from '../lib/firebase';
 import { logAdminAction } from '../lib/audit';
 import type { Member } from '../types';
 import Modal from './Modal';
+import { useSettings } from '../context/SettingsContext';
 
 export default function AdminRequestsModal({ onClose }: { onClose: () => void }) {
   const [requests, setRequests] = useState<Member[]>([]);
   const [loading, setLoading] = useState(true);
+  const { settings, updateSettings } = useSettings();
 
   // Modal State
   const [modalRejectOpen, setModalRejectOpen] = useState(false);
@@ -54,11 +56,22 @@ export default function AdminRequestsModal({ onClose }: { onClose: () => void })
     }
   };
 
-  const handleApproveNew = async (id: string, email: string) => {
+  const handleApproveNew = async (member: Member) => {
     try {
+      // Append non-existing custom items
+      if (member.roles && member.roles.length > 0) {
+        const newRoles = member.roles.filter(r => !settings.customRoles.includes(r));
+        if (newRoles.length > 0) {
+          await updateSettings({ customRoles: [...settings.customRoles, ...newRoles] });
+        }
+      }
+      if (member.diocese && !settings.customDioceses.includes(member.diocese)) {
+        await updateSettings({ customDioceses: [...settings.customDioceses, member.diocese] });
+      }
+
       // Cria um código nativo AlphaCode e ativa a identidade provisoriamente.
       const alphaCode = Array(6).fill(0).map(() => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[Math.floor(Math.random() * 36)]).join('');
-      await updateDoc(doc(db, `artifacts/${appId}/public/data/students`, id), {
+      await updateDoc(doc(db, `artifacts/${appId}/public/data/students`, member.id), {
         isApproved: true,
         isActive: true,
         alphaCode,
@@ -69,16 +82,16 @@ export default function AdminRequestsModal({ onClose }: { onClose: () => void })
 
       // App Notification
       await createNotification({
-        recipientId: id,
+        recipientId: member.id,
         title: "Carteirinha Aprovada",
         message: "Sua solicitação de identidade estudantil foi aprovada!",
         type: "carteirinha"
       });
 
-      await logAdminAction("MEMBER_APPROVED", `Aprovou a solicitação de carteirinha`, id);
+      await logAdminAction("MEMBER_APPROVED", `Aprovou a solicitação de carteirinha`, member.id);
 
       // Email Notification
-      await sendEmailNotification(email, "Sua Carteirinha de Estudante Foi Aprovada!", `<h3>Parabéns!</h3><p>Sua solicitação para a identidade estudantil DAVVERO System foi <b>Aprovada</b>.</p><p>O seu código de uso no aplicativo é: <b>${alphaCode}</b></p><p>Acesse o portal e valide a sua identidade.</p>`);
+      await sendEmailNotification(member.email || '', "Sua Carteirinha de Estudante Foi Aprovada!", `<h3>Parabéns!</h3><p>Sua solicitação para a identidade estudantil DAVVERO System foi <b>Aprovada</b>.</p><p>O seu código de uso no aplicativo é: <b>${alphaCode}</b></p><p>Acesse o portal e valide a sua identidade.</p>`);
     } catch (err) {
       console.error(err);
       setErrorMessage('Erro ao aprovar membro.');
@@ -89,6 +102,18 @@ export default function AdminRequestsModal({ onClose }: { onClose: () => void })
     try {
       const pc = member.pendingChanges;
       const updatePayload: any = { pendingChanges: null, hasPendingAction: false };
+      
+      // Append non-existing custom items
+      if (pc.roles && pc.roles.length > 0) {
+        const newRoles = pc.roles.filter((r: string) => !settings.customRoles.includes(r));
+        if (newRoles.length > 0) {
+          await updateSettings({ customRoles: [...settings.customRoles, ...newRoles] });
+        }
+      }
+      if (pc.diocese && !settings.customDioceses.includes(pc.diocese)) {
+        await updateSettings({ customDioceses: [...settings.customDioceses, pc.diocese] });
+      }
+
       if (pc.name) updatePayload.name = pc.name;
       if (pc.ra) updatePayload.ra = pc.ra;
       if (pc.roles) updatePayload.roles = pc.roles;
@@ -267,7 +292,7 @@ export default function AdminRequestsModal({ onClose }: { onClose: () => void })
                         </div>
                     </div>
                     <div className="flex gap-2 mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
-                        <button onClick={() => handleApproveNew(req.id, req.email || '')} className="flex-1 py-2 bg-emerald-100 text-emerald-700 hover:bg-emerald-500 hover:text-white rounded-lg text-xs font-semibold border border-emerald-300 transition-colors">Aprovar Identidade</button>
+                        <button onClick={() => handleApproveNew(req)} className="flex-1 py-2 bg-emerald-100 text-emerald-700 hover:bg-emerald-500 hover:text-white rounded-lg text-xs font-semibold border border-emerald-300 transition-colors">Aprovar Identidade</button>
                         <button onClick={() => handleReject(req.id, false)} className="flex-1 py-2 bg-rose-100 text-rose-700 hover:bg-rose-500 hover:text-white rounded-lg text-xs font-semibold border border-rose-300 transition-colors">Recusar</button>
                     </div>
                   </div>

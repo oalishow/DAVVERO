@@ -41,6 +41,8 @@ import { db, appId, enrollStudent } from "../lib/firebase";
 import type { Member, Event, Attendance } from "../types";
 import VerificationResult from "./VerificationResult";
 import Modal from "./Modal";
+import PublicRequestModal from "./PublicRequestModal";
+import RegistrationSuccessModal from "./RegistrationSuccessModal";
 import AppointmentsPanel from "./AppointmentsPanel";
 import EventsPage from "./EventsPage";
 import SuggestEditModal from "./SuggestEditModal";
@@ -193,6 +195,8 @@ export default function StudentPortal({
   const [modalDNEOpen, setModalDNEOpen] = useState(false);
   const [showAccountEditModal, setShowAccountEditModal] = useState(false);
   const [showDeletionConfirmModal, setShowDeletionConfirmModal] = useState(false);
+  const [showPublicReq, setShowPublicReq] = useState(false);
+  const [showRegistrationSuccessModal, setShowRegistrationSuccessModal] = useState(false);
 
   // Fallback PIN state
   const [pinMode, setPinMode] = useState<"create" | "verify" | "none">("none");
@@ -1256,7 +1260,7 @@ export default function StudentPortal({
                 activeTab === "events"
                   ? "bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-200 dark:border-sky-500/30 shadow-sm"
                   : "bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
-              }`}
+              } ${member?.isApproved === false ? "opacity-30 cursor-not-allowed pointer-events-none" : ""}`}
             >
               <QrCode className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>Eventos</span>
@@ -1267,7 +1271,7 @@ export default function StudentPortal({
                 activeTab === "certificates"
                   ? "bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-200 dark:border-sky-500/30 shadow-sm"
                   : "bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
-              }`}
+              } ${member?.isApproved === false ? "opacity-30 cursor-not-allowed pointer-events-none" : ""}`}
             >
               <ShieldCheck className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>Certificados</span>
@@ -1278,7 +1282,7 @@ export default function StudentPortal({
                 activeTab === "academic"
                   ? "bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-200 dark:border-sky-500/30 shadow-sm"
                   : "bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
-              }`}
+              } ${member?.isApproved === false ? "opacity-30 cursor-not-allowed pointer-events-none" : ""}`}
             >
               <GraduationCap className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span className="hidden sm:inline">Acadêmico</span>
@@ -1293,7 +1297,7 @@ export default function StudentPortal({
                     activeTab === "appointments"
                       ? "bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-500/30 shadow-sm"
                       : "bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
-                  }`}
+                  } ${member?.isApproved === false ? "opacity-30 cursor-not-allowed pointer-events-none" : ""}`}
                 >
                   <HeartHandshake className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   <span>Atendimento</span>
@@ -1304,7 +1308,7 @@ export default function StudentPortal({
                     activeTab === "seminary_events"
                       ? "bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/30 shadow-sm"
                       : "bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
-                  }`}
+                  } ${member?.isApproved === false ? "opacity-30 cursor-not-allowed pointer-events-none" : ""}`}
                 >
                   <CalendarHeart className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                   <span>Seminário</span>
@@ -1317,7 +1321,7 @@ export default function StudentPortal({
                 activeTab === "biblioteca"
                   ? "bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/30 shadow-sm"
                   : "bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
-              }`}
+              } ${member?.isApproved === false ? "opacity-30 cursor-not-allowed pointer-events-none" : ""}`}
             >
               <Library className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>Biblioteca</span>
@@ -1328,7 +1332,7 @@ export default function StudentPortal({
                 activeTab === "account"
                   ? "bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-500/30 shadow-sm"
                   : "bg-white dark:bg-slate-800 text-slate-500 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700"
-              }`}
+              } ${member?.isApproved === false ? "opacity-30 cursor-not-allowed pointer-events-none" : ""}`}
             >
               <User className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
               <span>Conta</span>
@@ -1344,7 +1348,7 @@ export default function StudentPortal({
               >
                 <VerificationResult
                   member={member}
-                  status={member.isActive ? "VALID" : "INACTIVE"}
+                  status={(!member.isApproved && member.isApproved !== undefined) || member.isApproved === false ? "PENDING" : (member.isActive ? "VALID" : "INACTIVE")}
                   onReset={() => {
                     playSound('logout');
                     localStorage.removeItem(STUDENT_BOND_KEY);
@@ -2220,9 +2224,19 @@ export default function StudentPortal({
               />
 
               {error && (
-                <p className="text-xs font-bold text-rose-500 uppercase mt-4 mb-2">
-                  {error}
-                </p>
+                <div className="flex flex-col items-center gap-3 mt-4 w-full px-2">
+                  <p className="text-xs font-bold text-rose-500 uppercase text-center w-full">
+                    {error}
+                  </p>
+                  {(error.includes("não encontrada") || error.includes("não encontrado")) && (
+                    <button
+                      onClick={() => setShowPublicReq(true)}
+                      className="w-full py-2.5 px-4 bg-sky-100 hover:bg-sky-500 hover:text-white text-sky-700 text-xs font-bold rounded-xl border border-sky-200 transition-colors uppercase tracking-wider shadow-sm"
+                    >
+                      Deseja fazer o primeiro acesso?
+                    </button>
+                  )}
+                </div>
               )}
 
               <div className="flex gap-3 w-full mt-6">
@@ -2246,6 +2260,24 @@ export default function StudentPortal({
             </motion.div>
           )}
         </AnimatePresence>
+      )}
+
+      {showPublicReq && (
+        <PublicRequestModal
+          onClose={() => setShowPublicReq(false)}
+          onSubmitSuccess={() => {
+            setShowPublicReq(false);
+            setShowRegistrationSuccessModal(true);
+            setAlphaCode(alphaCode); // Keep the input intact optionally
+          }}
+        />
+      )}
+
+      {showRegistrationSuccessModal && (
+        <RegistrationSuccessModal 
+          isOpen={showRegistrationSuccessModal} 
+          onClose={() => setShowRegistrationSuccessModal(false)}
+        />
       )}
     </div>
   );
