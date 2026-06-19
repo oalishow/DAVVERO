@@ -213,6 +213,12 @@ export default function StudentPortal({
     }, 100);
   };
 
+  // Fallback PIN state
+  const [pinMode, setPinMode] = useState<"create" | "verify" | "none">("none");
+  const [pinInput, setPinInput] = useState("");
+  const [pinConfirm, setPinConfirm] = useState("");
+  const [resetCodeStr, setResetCodeStr] = useState("");
+
   // Check for approval
   useEffect(() => {
     if (member && member.isApproved && member.isActive && isUnlocked && pinMode === "none" && !isPrePinAnimation) {
@@ -234,12 +240,6 @@ export default function StudentPortal({
     }
     setShowApprovalModal(false);
   };
-
-  // Fallback PIN state
-  const [pinMode, setPinMode] = useState<"create" | "verify" | "none">("none");
-  const [pinInput, setPinInput] = useState("");
-  const [pinConfirm, setPinConfirm] = useState("");
-  const [resetCodeStr, setResetCodeStr] = useState("");
 
   const [trackMode, setTrackMode] = useState(false);
   const [trackRa, setTrackRa] = useState("");
