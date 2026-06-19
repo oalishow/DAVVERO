@@ -18,7 +18,8 @@ import {
   MonitorPlay,
   Facebook,
   Instagram,
-  Youtube
+  Youtube,
+  BookOpen
 } from "lucide-react";
 import LiturgyPanel from "./components/LiturgyPanel";
 import { loginAnon, testConnection } from "./lib/firebase";
@@ -417,8 +418,16 @@ export default function App() {
             </div>
           )}
 
-          {(settings.sophiaEnabled || settings.libraryEnabled || settings.avaEnabled) && (
-            <div className="grid grid-cols-3 gap-2 no-print print:hidden mb-4 sm:-mt-2">
+          {(settings.sophiaEnabled || settings.libraryEnabled || settings.avaEnabled || settings.contemplacaoEnabled) && (
+            <div className={`grid gap-2 no-print print:hidden mb-4 sm:-mt-2 ${
+              [settings.sophiaEnabled, settings.libraryEnabled, settings.avaEnabled, settings.contemplacaoEnabled].filter(Boolean).length === 4 
+                ? "grid-cols-2 lg:grid-cols-4" 
+                : [settings.sophiaEnabled, settings.libraryEnabled, settings.avaEnabled, settings.contemplacaoEnabled].filter(Boolean).length === 3
+                ? "grid-cols-3"
+                : [settings.sophiaEnabled, settings.libraryEnabled, settings.avaEnabled, settings.contemplacaoEnabled].filter(Boolean).length === 2
+                ? "grid-cols-2"
+                : "grid-cols-1"
+            }`}>
               {settings.sophiaEnabled && (
                 <a 
                   href={settings.sophiaLink} 
@@ -450,6 +459,17 @@ export default function App() {
                 >
                   <MonitorPlay className="w-4 h-4 shrink-0 group-hover:scale-110 transition-transform duration-300" />
                   <span className="truncate w-full px-1">Ambiente Virtual</span>
+                </a>
+              )}
+              {settings.contemplacaoEnabled && (
+                <a 
+                  href={settings.contemplacaoLink} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex flex-col sm:flex-row items-center justify-center gap-1.5 sm:gap-2 py-2.5 px-1 sm:px-3 bg-white dark:bg-slate-800/50 text-sky-600 dark:text-sky-400 rounded-xl text-[9px] sm:text-xs font-black uppercase tracking-tighter transition-all duration-300 hover:bg-sky-50 dark:hover:bg-sky-900/20 hover:-translate-y-1 hover:shadow-md active:scale-95 border border-slate-200 dark:border-slate-700/50 min-w-0 text-center group"
+                >
+                  <BookOpen className="w-4 h-4 shrink-0 group-hover:scale-110 transition-transform duration-300" />
+                  <span className="truncate w-full px-1">Contemplação</span>
                 </a>
               )}
             </div>

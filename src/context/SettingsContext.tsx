@@ -59,6 +59,8 @@ interface AppSettings {
   libraryEnabled: boolean;
   avaLink: string;
   avaEnabled: boolean;
+  contemplacaoLink: string;
+  contemplacaoEnabled: boolean;
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -126,6 +128,8 @@ const DEFAULT_SETTINGS: AppSettings = {
   libraryEnabled: true,
   avaLink: 'https://fajopa.net/ava/',
   avaEnabled: true,
+  contemplacaoLink: 'https://revista.fajopa.com/index.php/contemplacao',
+  contemplacaoEnabled: true,
 };
 
 interface SettingsContextType {

@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { db, appId } from "../lib/firebase";
 import { logAdminAction } from "../lib/audit";
 import {
@@ -179,6 +180,8 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
   const [libraryEnabled, setLibraryEnabled] = useState(cloudSettings.libraryEnabled ?? true);
   const [avaLink, setAvaLink] = useState(cloudSettings.avaLink || 'https://fajopa.net/ava/');
   const [avaEnabled, setAvaEnabled] = useState(cloudSettings.avaEnabled ?? true);
+  const [contemplacaoLink, setContemplacaoLink] = useState(cloudSettings.contemplacaoLink || 'https://revista.fajopa.com/index.php/contemplacao');
+  const [contemplacaoEnabled, setContemplacaoEnabled] = useState(cloudSettings.contemplacaoEnabled ?? true);
 
   const [activeTab, setActiveTab] = useState<"visual" | "content" | "database">(
     "visual",
@@ -276,6 +279,8 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
         libraryEnabled,
         avaLink,
         avaEnabled,
+        contemplacaoLink,
+        contemplacaoEnabled,
       });
 
       // Legacy fallback
@@ -576,9 +581,15 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
             {isUnlocked && (
               <button
                 onClick={handleSaveGeneral}
-                className="btn-modern bg-sky-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2"
+                disabled={status?.type === "loading"}
+                className="btn-modern bg-sky-600 text-white px-4 py-1.5 rounded-lg text-xs font-bold flex items-center gap-2 disabled:opacity-75 disabled:cursor-not-allowed"
               >
-                <Save className="w-3 h-3" /> Salvar
+                {status?.type === "loading" ? (
+                  <RotateCw className="w-3 h-3 animate-spin" />
+                ) : (
+                  <Save className="w-3 h-3" />
+                )}
+                <span className="hidden sm:inline">{status?.type === "loading" ? "Salvando..." : "Salvar"}</span>
               </button>
             )}
             <button
@@ -590,13 +601,25 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
           </div>
         </div>
 
-        {status && (
-          <div
-            className={`m-4 p-3 text-center rounded-xl text-sm font-medium ${status.type === "success" ? "bg-emerald-50 text-emerald-600" : "bg-rose-50 text-rose-600"}`}
-          >
-            {status.msg}
-          </div>
-        )}
+        <AnimatePresence>
+          {status && (
+            <motion.div
+              initial={{ height: 0, opacity: 0, margin: 0 }}
+              animate={{ height: "auto", opacity: 1, margin: "16px" }}
+              exit={{ height: 0, opacity: 0, margin: 0 }}
+              className={`overflow-hidden p-3 text-center rounded-xl text-sm font-medium ${
+                status.type === "success" 
+                  ? "bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-500/20" 
+                  : status.type === "loading"
+                  ? "bg-sky-50 text-sky-600 dark:bg-sky-500/10 dark:text-sky-400 border border-sky-200 dark:border-sky-500/20 shadow-inner flex items-center justify-center gap-2"
+                  : "bg-rose-50 text-rose-600 dark:bg-rose-500/10 dark:text-rose-400 border border-rose-200 dark:border-rose-500/20"
+              }`}
+            >
+              {status.type === "loading" && <RotateCw className="w-4 h-4 animate-spin" />}
+              {status.msg}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {!isUnlocked ? (
           <div className="flex-1 flex flex-col items-center justify-center p-6 animated-scale-in">
@@ -1689,6 +1712,32 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                           </div>
                         )}
                       </div>
+
+                      <div className="border-t border-emerald-200 dark:border-emerald-700/50 pt-4 space-y-4">
+                        <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                          <input
+                            type="checkbox"
+                            checked={contemplacaoEnabled}
+                            onChange={(e) => setContemplacaoEnabled(e.target.checked)}
+                            className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                          />
+                          Ativar Botão "Revista Contemplação"
+                        </label>
+                        {contemplacaoEnabled && (
+                          <div className="pl-6">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                              Link da Revista Contemplação
+                            </label>
+                            <input
+                              type="text"
+                              value={contemplacaoLink}
+                              onChange={(e) => setContemplacaoLink(e.target.value)}
+                              className="input-modern w-full rounded-xl py-2 px-3 text-xs"
+                              placeholder="https://revista.fajopa.com/..."
+                            />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -2276,6 +2325,32 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                           </div>
                         )}
                       </div>
+
+                      <div className="border-t border-slate-200 dark:border-slate-700/50 pt-4 space-y-4">
+                        <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                          <input
+                            type="checkbox"
+                            checked={contemplacaoEnabled}
+                            onChange={(e) => setContemplacaoEnabled(e.target.checked)}
+                            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          Ativar Botão "Revista Contemplação"
+                        </label>
+                        {contemplacaoEnabled && (
+                          <div className="pl-6">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                              Link da Revista Contemplação
+                            </label>
+                            <input
+                              type="text"
+                              value={contemplacaoLink}
+                              onChange={(e) => setContemplacaoLink(e.target.value)}
+                              className="input-modern w-full rounded-xl py-2 px-3 text-xs"
+                              placeholder="https://revista.fajopa.com/..."
+                            />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -2286,9 +2361,15 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
               <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
                 <button
                   onClick={handleSaveGeneral}
-                  className="btn-modern w-full py-3 bg-sky-600 hover:bg-sky-500 text-white rounded-2xl text-sm font-bold shadow-lg shadow-sky-500/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+                  disabled={status?.type === "loading"}
+                  className="btn-modern w-full py-3 bg-sky-600 hover:bg-sky-500 text-white rounded-2xl text-sm font-bold shadow-lg shadow-sky-500/20 active:scale-95 transition-all flex items-center justify-center gap-2 disabled:opacity-75 disabled:active:scale-100 disabled:cursor-not-allowed"
                 >
-                  <Save className="w-4 h-4" /> Salvar Todas as Configurações
+                  {status?.type === "loading" ? (
+                    <RotateCw className="w-4 h-4 animate-spin" />
+                  ) : (
+                    <Save className="w-4 h-4" />
+                  )}
+                  {status?.type === "loading" ? "Salvando..." : "Salvar Todas as Configurações"}
                 </button>
               </div>
             </div>
