@@ -19,7 +19,9 @@ import {
   Facebook,
   Instagram,
   Youtube,
-  BookOpen
+  BookOpen,
+  MessageCircle,
+  Mail
 } from "lucide-react";
 import LiturgyPanel from "./components/LiturgyPanel";
 import { loginAnon, testConnection } from "./lib/firebase";
@@ -396,7 +398,7 @@ export default function App() {
                 <img src={settings.headerLogoUrl} alt="Logo" className="w-full h-auto object-contain drop-shadow-sm" />
               </a>
 
-              {(settings.socialFacebookEnabled || settings.socialInstagramEnabled || settings.socialYoutubeEnabled) && (
+              {(settings.socialFacebookEnabled || settings.socialInstagramEnabled || settings.socialYoutubeEnabled || settings.socialWhatsappEnabled || settings.socialEmailEnabled) && (
                 <div className="flex flex-row items-center justify-center gap-3">
                   {settings.socialFacebookEnabled && (
                     <a href={settings.socialFacebookUrl} target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-white dark:bg-slate-800 text-sky-600 hover:bg-sky-50 dark:hover:bg-sky-900/20 border border-slate-200 dark:border-slate-700 shadow-sm transition-colors" aria-label="Facebook">
@@ -411,6 +413,16 @@ export default function App() {
                   {settings.socialYoutubeEnabled && (
                     <a href={settings.socialYoutubeUrl} target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-white dark:bg-slate-800 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 border border-slate-200 dark:border-slate-700 shadow-sm transition-colors" aria-label="YouTube">
                       <Youtube className="w-5 h-5" />
+                    </a>
+                  )}
+                  {settings.socialWhatsappEnabled && (
+                    <a href={settings.socialWhatsappUrl} target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-white dark:bg-slate-800 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 border border-slate-200 dark:border-slate-700 shadow-sm transition-colors" aria-label="WhatsApp">
+                      <MessageCircle className="w-5 h-5" />
+                    </a>
+                  )}
+                  {settings.socialEmailEnabled && (
+                    <a href={settings.socialEmailUrl} target="_blank" rel="noopener noreferrer" className="p-2 rounded-full bg-white dark:bg-slate-800 text-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700/20 border border-slate-200 dark:border-slate-700 shadow-sm transition-colors" aria-label="Email">
+                      <Mail className="w-5 h-5" />
                     </a>
                   )}
                 </div>

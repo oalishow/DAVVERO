@@ -174,6 +174,10 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
   const [socialInstagramUrl, setSocialInstagramUrl] = useState(cloudSettings.socialInstagramUrl || 'https://www.instagram.com/fajopamarilia/');
   const [socialYoutubeEnabled, setSocialYoutubeEnabled] = useState(cloudSettings.socialYoutubeEnabled ?? true);
   const [socialYoutubeUrl, setSocialYoutubeUrl] = useState(cloudSettings.socialYoutubeUrl || 'https://www.youtube.com/@fajopademarilia');
+  const [socialWhatsappEnabled, setSocialWhatsappEnabled] = useState(cloudSettings.socialWhatsappEnabled ?? true);
+  const [socialWhatsappUrl, setSocialWhatsappUrl] = useState(cloudSettings.socialWhatsappUrl || 'https://wa.me/5514991329926');
+  const [socialEmailEnabled, setSocialEmailEnabled] = useState(cloudSettings.socialEmailEnabled ?? true);
+  const [socialEmailUrl, setSocialEmailUrl] = useState(cloudSettings.socialEmailUrl || 'mailto:secretaria@fajopa.edu.br');
   const [sophiaLink, setSophiaLink] = useState(cloudSettings.sophiaLink || 'https://portal.sophia.com.br/SophiA_107/Acesso.aspx?escola=9087');
   const [sophiaEnabled, setSophiaEnabled] = useState(cloudSettings.sophiaEnabled ?? true);
   const [libraryLink, setLibraryLink] = useState(cloudSettings.libraryLink || 'https://biblioteca.sophia.com.br/1291/');
@@ -273,6 +277,10 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
         socialInstagramUrl,
         socialYoutubeEnabled,
         socialYoutubeUrl,
+        socialWhatsappEnabled,
+        socialWhatsappUrl,
+        socialEmailEnabled,
+        socialEmailUrl,
         sophiaLink,
         sophiaEnabled,
         libraryLink,
@@ -1639,6 +1647,58 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                         <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
                           <input
                             type="checkbox"
+                            checked={socialWhatsappEnabled}
+                            onChange={(e) => setSocialWhatsappEnabled(e.target.checked)}
+                            className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                          />
+                          Ativar Ícone "WhatsApp" ao lado da Logo
+                        </label>
+                        {socialWhatsappEnabled && (
+                          <div className="pl-6">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                              Link do WhatsApp
+                            </label>
+                            <input
+                              type="text"
+                              value={socialWhatsappUrl}
+                              onChange={(e) => setSocialWhatsappUrl(e.target.value)}
+                              className="input-modern w-full rounded-xl py-2 px-3 text-xs"
+                              placeholder="https://wa.me/..."
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="border-t border-emerald-200 dark:border-emerald-700/50 pt-4 space-y-4">
+                        <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                          <input
+                            type="checkbox"
+                            checked={socialEmailEnabled}
+                            onChange={(e) => setSocialEmailEnabled(e.target.checked)}
+                            className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                          />
+                          Ativar Ícone "E-mail" ao lado da Logo
+                        </label>
+                        {socialEmailEnabled && (
+                          <div className="pl-6">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                              Link (mailto) do E-mail
+                            </label>
+                            <input
+                              type="text"
+                              value={socialEmailUrl}
+                              onChange={(e) => setSocialEmailUrl(e.target.value)}
+                              className="input-modern w-full rounded-xl py-2 px-3 text-xs"
+                              placeholder="mailto:..."
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="border-t border-emerald-200 dark:border-emerald-700/50 pt-4 space-y-4">
+                        <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                          <input
+                            type="checkbox"
                             checked={sophiaEnabled}
                             onChange={(e) => setSophiaEnabled(e.target.checked)}
                             className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
@@ -2243,6 +2303,58 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                               onChange={(e) => setSocialYoutubeUrl(e.target.value)}
                               className="input-modern w-full rounded-xl py-2 px-3 text-xs"
                               placeholder="https://www.youtube.com/..."
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="border-t border-slate-200 dark:border-slate-700/50 pt-4 space-y-4">
+                        <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                          <input
+                            type="checkbox"
+                            checked={socialWhatsappEnabled}
+                            onChange={(e) => setSocialWhatsappEnabled(e.target.checked)}
+                            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          Ativar Ícone "WhatsApp" ao lado da Logo
+                        </label>
+                        {socialWhatsappEnabled && (
+                          <div className="pl-6">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                              Link do WhatsApp
+                            </label>
+                            <input
+                              type="text"
+                              value={socialWhatsappUrl}
+                              onChange={(e) => setSocialWhatsappUrl(e.target.value)}
+                              className="input-modern w-full rounded-xl py-2 px-3 text-xs"
+                              placeholder="https://wa.me/..."
+                            />
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="border-t border-slate-200 dark:border-slate-700/50 pt-4 space-y-4">
+                        <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                          <input
+                            type="checkbox"
+                            checked={socialEmailEnabled}
+                            onChange={(e) => setSocialEmailEnabled(e.target.checked)}
+                            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          Ativar Ícone "E-mail" ao lado da Logo
+                        </label>
+                        {socialEmailEnabled && (
+                          <div className="pl-6">
+                            <label className="block text-[10px] font-bold text-slate-500 uppercase mb-1">
+                              Link (mailto) do E-mail
+                            </label>
+                            <input
+                              type="text"
+                              value={socialEmailUrl}
+                              onChange={(e) => setSocialEmailUrl(e.target.value)}
+                              className="input-modern w-full rounded-xl py-2 px-3 text-xs"
+                              placeholder="mailto:..."
                             />
                           </div>
                         )}

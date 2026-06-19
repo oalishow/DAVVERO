@@ -52,6 +52,10 @@ interface AppSettings {
   socialInstagramUrl: string;
   socialYoutubeEnabled: boolean;
   socialYoutubeUrl: string;
+  socialWhatsappEnabled: boolean;
+  socialWhatsappUrl: string;
+  socialEmailEnabled: boolean;
+  socialEmailUrl: string;
   sophiaLink: string;
 
   sophiaEnabled: boolean;
@@ -122,6 +126,10 @@ const DEFAULT_SETTINGS: AppSettings = {
   socialInstagramUrl: 'https://www.instagram.com/fajopamarilia/',
   socialYoutubeEnabled: true,
   socialYoutubeUrl: 'https://www.youtube.com/@fajopademarilia',
+  socialWhatsappEnabled: true,
+  socialWhatsappUrl: 'https://wa.me/5514991329926',
+  socialEmailEnabled: true,
+  socialEmailUrl: 'mailto:secretaria@fajopa.edu.br',
   sophiaLink: 'https://portal.sophia.com.br/SophiA_107/Acesso.aspx?escola=9087',
   sophiaEnabled: true,
   libraryLink: 'https://biblioteca.sophia.com.br/1291/',
