@@ -112,6 +112,10 @@
   100% { transform: scale(1) rotate(0deg); opacity: 1; }
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   @apply bg-slate-50 dark:bg-slate-950 font-sans antialiased text-slate-800 dark:text-slate-100 transition-colors duration-500;
   background: radial-gradient(at top, #f0f9ff 0%, #e0f2fe 50%, #f8fafc 100%);

@@ -256,7 +256,7 @@ export default function App() {
   }, []);
 
   return (
-    <div className="min-h-screen relative flex items-center justify-center p-0 sm:p-4 print:block print:p-0">
+    <div className="min-h-screen relative flex flex-col items-center p-0 sm:p-4 print:block print:p-0">
       <AnimatePresence>
         {isUpdating && (
           <motion.div 
@@ -292,7 +292,7 @@ export default function App() {
       </AnimatePresence>
       <DynamicPWA />
       <NotificationObserver />
-      <div className="w-full max-w-3xl glass-panel rounded-none sm:rounded-3xl p-3 sm:p-5 md:p-10 animated-fade-in relative overflow-hidden print:max-w-none print:p-0 print:shadow-none print:bg-white print:dark:bg-white min-h-[100dvh] sm:min-h-0 print:min-h-0 print:border-none print:block">
+      <div className="my-auto w-full max-w-3xl glass-panel rounded-none sm:rounded-3xl p-3 sm:p-5 md:p-10 animated-fade-in relative overflow-hidden print:max-w-none print:p-0 print:shadow-none print:bg-white print:dark:bg-white min-h-[100dvh] sm:min-h-0 print:min-h-0 print:border-none print:block">
         {/* Glows Decorativos de Fundo */}
         <div className="absolute -top-32 -left-32 w-64 h-64 bg-sky-300 dark:bg-sky-600 rounded-full mix-blend-multiply dark:mix-blend-screen blur-[90px] opacity-30 pointer-events-none print:hidden" />
         <div className="absolute -bottom-32 -right-32 w-64 h-64 bg-emerald-300 dark:bg-emerald-600 rounded-full mix-blend-multiply dark:mix-blend-screen blur-[90px] opacity-30 pointer-events-none print:hidden" />

@@ -103,11 +103,13 @@ export default function PublicRequestModal({ onClose, onSubmitSuccess }: PublicR
         return;
       }
 
+      const alphaCode = Array(6).fill(0).map(() => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[Math.floor(Math.random() * 36)]).join('');
+
       const payload: Partial<Member> = {
         name: name.trim(),
         ra: formattedRa,
         email: email.trim(),
-        cpf: cpf.trim(),
+        cpf: cpf.trim().replace(/\D/g, ""), // Keep it numeric
         birthdate,
         roles,
         course,
@@ -116,6 +118,7 @@ export default function PublicRequestModal({ onClose, onSubmitSuccess }: PublicR
         photoUrl: photoBase64,
         isApproved: false, // Pedido pendente  
         hasPendingAction: true,
+        alphaCode,
         acceptedTermsVersion: settings.termsVersion || 1,
         createdAt: new Date().toISOString()
       };

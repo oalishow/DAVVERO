@@ -69,8 +69,8 @@ export default function AdminRequestsModal({ onClose }: { onClose: () => void })
         await updateSettings({ customDioceses: [...settings.customDioceses, member.diocese] });
       }
 
-      // Cria um código nativo AlphaCode e ativa a identidade provisoriamente.
-      const alphaCode = Array(6).fill(0).map(() => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[Math.floor(Math.random() * 36)]).join('');
+      // Reusa o código AlphaCode existente ou cria um novo nativo AlphaCode
+      const alphaCode = member.alphaCode || Array(6).fill(0).map(() => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789'[Math.floor(Math.random() * 36)]).join('');
       await updateDoc(doc(db, `artifacts/${appId}/public/data/students`, member.id), {
         isApproved: true,
         isActive: true,

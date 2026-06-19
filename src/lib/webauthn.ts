@@ -2,8 +2,17 @@ export const isWebAuthnSupported = () => {
     return window.PublicKeyCredential !== undefined;
 };
 
+const isIframe = () => {
+    try {
+        return window.self !== window.top;
+    } catch (e) {
+        return true;
+    }
+};
+
 export const registerBiometric = async (userEmail: string, userName: string) => {
     if (!isWebAuthnSupported()) throw new Error("Biometria não suportada neste dispositivo");
+    if (isIframe()) throw new Error("Recurso de biometria indisponível dentro de iframes (abra o portal em uma nova guia para validar)");
     
     const challenge = new Uint8Array(32);
     crypto.getRandomValues(challenge);
@@ -40,6 +49,7 @@ export const registerBiometric = async (userEmail: string, userName: string) => 
 
 export const verifyBiometric = async (credentialIdBase64: string) => {
     if (!isWebAuthnSupported()) throw new Error("Biometria não suportada neste dispositivo");
+    if (isIframe()) throw new Error("Recurso de biometria indisponível dentro de iframes (abra o portal em uma nova guia para validar)");
 
     const challenge = new Uint8Array(32);
     crypto.getRandomValues(challenge);

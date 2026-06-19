@@ -356,7 +356,7 @@ export default function VerificationResult({
       ) : (
         <div
           id={!isMyID ? "validation-card-capture" : undefined}
-          className={`result-card w-full max-w-sm ${status === "VALID" || status === "JUST_CHECKED_IN" ? "animate-success-pop" : "animate-error-wobble"} bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-2 p-3 sm:p-8 rounded-2xl sm:rounded-[2rem] text-center relative overflow-hidden shadow-xl print:shadow-none print:bg-white print:text-black print:border-slate-300 ${
+          className={`result-card w-full max-w-sm ${status === "VALID" || status === "JUST_CHECKED_IN" || status === "PENDING" ? "animate-success-pop" : "animate-error-wobble"} bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl border-2 p-3 sm:p-8 rounded-2xl sm:rounded-[2rem] text-center relative overflow-hidden shadow-xl print:shadow-none print:bg-white print:text-black print:border-slate-300 ${
             status === "VALID" || status === "JUST_CHECKED_IN"
               ? "border-emerald-100 dark:border-emerald-500/50 shadow-emerald-500/10"
               : status === "INACTIVE" || status === "ALREADY_PRESENT" || status === "PENDING"
@@ -539,7 +539,7 @@ export default function VerificationResult({
             </span>
           </div>
 
-          {member?.alphaCode && (
+          {(status === "VALID" || status === "JUST_CHECKED_IN" || status === "PENDING") && member?.alphaCode && (
             <div
               className={`mt-3 flex flex-col items-center gap-1 bg-white p-2 rounded-xl w-fit mx-auto border-2 border-slate-200 shadow-sm cursor-pointer hover:scale-105 transition-transform active:scale-95`}
               onClick={() => setShowLargeQR(true)}

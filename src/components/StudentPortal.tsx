@@ -43,6 +43,7 @@ import VerificationResult from "./VerificationResult";
 import Modal from "./Modal";
 import PublicRequestModal from "./PublicRequestModal";
 import RegistrationSuccessModal from "./RegistrationSuccessModal";
+import ApprovalSuccessModal from "./ApprovalSuccessModal";
 import AppointmentsPanel from "./AppointmentsPanel";
 import EventsPage from "./EventsPage";
 import SuggestEditModal from "./SuggestEditModal";
@@ -196,7 +197,13 @@ export default function StudentPortal({
   const [showAccountEditModal, setShowAccountEditModal] = useState(false);
   const [showDeletionConfirmModal, setShowDeletionConfirmModal] = useState(false);
   const [showPublicReq, setShowPublicReq] = useState(false);
+  const [showRegisterTypeSelection, setShowRegisterTypeSelection] = useState(false);
+  const [showVisitorRegisterModal, setShowVisitorRegisterModal] = useState(false);
+  const [visitorName, setVisitorName] = useState("");
+  const [visitorCPF, setVisitorCPF] = useState("");
+  const [visitorRegistering, setVisitorRegistering] = useState(false);
   const [showRegistrationSuccessModal, setShowRegistrationSuccessModal] = useState(false);
+  const [showApprovalModal, setShowApprovalModal] = useState(false);
 
   const portalContainerRef = useRef<HTMLDivElement>(null);
 
@@ -204,6 +211,28 @@ export default function StudentPortal({
     setTimeout(() => {
       portalContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
+  };
+
+  // Check for approval
+  useEffect(() => {
+    if (member && member.isApproved && member.isActive && isUnlocked && pinMode === "none" && !isPrePinAnimation) {
+      const notifiedKey = `davvero_approval_notified_${member.id}`;
+      // Basic check to see if another primary modal (WelcomeModal) isn't overlapping
+      const hasSeenWelcome = localStorage.getItem("has_seen_welcome") === "true";
+      if (localStorage.getItem(notifiedKey) !== "true" && hasSeenWelcome) {
+         // Also verify they aren't looking at terms of use or changelog
+         if (!document.querySelector('.modal-overlay')) {
+            setShowApprovalModal(true);
+         }
+      }
+    }
+  }, [member, isUnlocked, pinMode, isPrePinAnimation]);
+
+  const handleApprovalModalClose = () => {
+    if (member?.id) {
+       localStorage.setItem(`davvero_approval_notified_${member.id}`, "true");
+    }
+    setShowApprovalModal(false);
   };
 
   // Fallback PIN state
@@ -492,15 +521,36 @@ export default function StudentPortal({
   const loadBondedMember = async (id: string, isOverride = false) => {
     setIsLoading(true);
     try {
-      const q = query(
-        collection(db, `artifacts/${appId}/public/data/students`),
-        where("alphaCode", "==", id),
-        limit(1),
-      );
-      const snapshot = await getDocs(q);
-      if (!snapshot.empty) {
-        const docSnap = snapshot.docs[0];
-        setMember({ ...docSnap.data(), id: docSnap.id } as Member);
+      const dbRef = collection(db, `artifacts/${appId}/public/data/students`);
+      
+      // Try to fetch by doc.id first
+      let foundMemberLocal: any = null;
+      let foundDocId = "";
+      
+      try {
+        const docRef = doc(db, `artifacts/${appId}/public/data/students`, id);
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+           foundMemberLocal = docSnap.data();
+           foundDocId = docSnap.id;
+        }
+      } catch (e) {
+         // Ignore potential invalid doc id errors
+      }
+
+      if (!foundMemberLocal) {
+        // Fallback to alphaCode search
+        const q = query(dbRef, where("alphaCode", "==", id), limit(1));
+        const snapshot = await getDocs(q);
+        if (!snapshot.empty) {
+          const docSnap = snapshot.docs[0];
+          foundMemberLocal = docSnap.data();
+          foundDocId = docSnap.id;
+        }
+      }
+
+      if (foundMemberLocal) {
+        setMember({ ...foundMemberLocal, id: foundDocId } as Member);
         if (isOverride) {
           setIsOverrideMode(true);
           setBondedId(id);
@@ -532,22 +582,37 @@ export default function StudentPortal({
 
   useEffect(() => {
     if (!bondedId) return;
-    const q = query(
-      collection(db, `artifacts/${appId}/public/data/students`),
-      where("alphaCode", "==", bondedId),
-      limit(1)
-    );
-    const unsub = onSnapshot(q, (snap) => {
-      if (!snap.empty) {
-        const docSnap = snap.docs[0];
-        setMember(prev => {
-          const m = { ...prev, ...docSnap.data(), id: docSnap.id } as Member;
-          localStorage.setItem("davveroId_cached_member", JSON.stringify(m));
-          return m;
-        });
-      }
-    });
-    return () => unsub();
+    
+    // First figure out if bondedId is a doc id or alphaCode
+    const listenToMember = async () => {
+       let realDocId = bondedId;
+       try {
+         const dSnap = await getDoc(doc(db, `artifacts/${appId}/public/data/students`, bondedId));
+         if (!dSnap.exists()) {
+             // Must be alphaCode, find the doc
+             const sm = await getDocs(query(collection(db, `artifacts/${appId}/public/data/students`), where("alphaCode", "==", bondedId), limit(1)));
+             if (!sm.empty) {
+                realDocId = sm.docs[0].id;
+             }
+         }
+       } catch(e) {}
+
+       const unsub = onSnapshot(doc(db, `artifacts/${appId}/public/data/students`, realDocId), (docSnap) => {
+         if (docSnap.exists()) {
+           setMember(prev => {
+             const m = { ...prev, ...docSnap.data(), id: docSnap.id } as Member;
+             localStorage.setItem("davveroId_cached_member", JSON.stringify(m));
+             return m;
+           });
+         }
+       });
+       return unsub;
+    };
+    
+    let unsubscribe: any = null;
+    listenToMember().then(u => { unsubscribe = u; });
+
+    return () => { if (unsubscribe) unsubscribe(); };
   }, [bondedId]);
 
   const linkIdentity = async () => {
@@ -563,54 +628,54 @@ export default function StudentPortal({
       let foundMember = null;
       let usedField = "";
 
-      if (isCPF) {
-        const formattedCPF = onlyNumbers.replace(
-          /(\d{3})(\d{3})(\d{3})(\d{2})/,
-          "$1.$2.$3-$4",
-        );
+      const formattedCPF = onlyNumbers.length === 11 
+        ? onlyNumbers.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, "$1.$2.$3-$4")
+        : "";
+      const formattedRA = onlyNumbers.length === 10
+        ? onlyNumbers.replace(/(\d{4})(\d{5})(\d{1})/, "$1-$2.$3")
+        : "";
 
-        // Try searching in CPF and RA fields concurrently for faster lookup
-        const searchValues = Array.from(new Set([cleanInput, onlyNumbers, formattedCPF])).filter(Boolean);
-        const qCpf = query(
-          collection(db, `artifacts/${appId}/public/data/students`),
-          where("cpf", "in", searchValues),
-        );
-        const qRa = query(
-          collection(db, `artifacts/${appId}/public/data/students`),
-          where("ra", "in", searchValues),
-        );
+      // Try searching in CPF, RA and alphaCode concurrently for faster lookup
+      const searchValues = Array.from(new Set([cleanInput, cleanInput.toUpperCase(), onlyNumbers, formattedCPF, formattedRA])).filter(Boolean);
+      
+      const qCpf = query(
+        collection(db, `artifacts/${appId}/public/data/students`),
+        where("cpf", "in", searchValues),
+      );
+      const qRa = query(
+        collection(db, `artifacts/${appId}/public/data/students`),
+        where("ra", "in", searchValues),
+      );
+      const qAlpha = query(
+        collection(db, `artifacts/${appId}/public/data/students`),
+        where("alphaCode", "in", searchValues),
+      );
 
-        const [snapCpf, snapRa] = await Promise.all([
-          getDocs(qCpf),
-          getDocs(qRa),
-        ]);
+      const [snapCpf, snapRa, snapAlpha] = await Promise.all([
+        getDocs(qCpf),
+        getDocs(qRa),
+        getDocs(qAlpha)
+      ]);
 
-        if (!snapCpf.empty) {
-          // find active / non-deleted first
-          const docs = snapCpf.docs;
-          const active = docs.find((d) => !d.data().deletedAt) || docs[0];
-          foundMember = { id: active.id, ...active.data() };
-        } else if (!snapRa.empty) {
-          const docs = snapRa.docs;
-          const active = docs.find((d) => !d.data().deletedAt) || docs[0];
-          foundMember = { id: active.id, ...active.data() };
-        }
-      } else {
-        const qAlpha = query(
-          collection(db, `artifacts/${appId}/public/data/students`),
-          where("alphaCode", "==", cleanInput.toUpperCase()),
-        );
-        const snapAlpha = await getDocs(qAlpha);
-        if (!snapAlpha.empty) {
-          const docs = snapAlpha.docs;
-          const active = docs.find((d) => !d.data().deletedAt) || docs[0];
-          foundMember = { id: active.id, ...active.data() };
-        }
+      if (!snapCpf.empty) {
+        // find active / non-deleted first
+        const docs = snapCpf.docs;
+        const active = docs.find((d) => !d.data().deletedAt) || docs[0];
+        foundMember = { id: active.id, ...active.data() };
+      } else if (!snapRa.empty) {
+        const docs = snapRa.docs;
+        const active = docs.find((d) => !d.data().deletedAt) || docs[0];
+        foundMember = { id: active.id, ...active.data() };
+      } else if (!snapAlpha.empty) {
+        const docs = snapAlpha.docs;
+        const active = docs.find((d) => !d.data().deletedAt) || docs[0];
+        foundMember = { id: active.id, ...active.data() };
       }
 
       if (foundMember) {
         setMember(foundMember as Member);
-        setBondedId(foundMember.alphaCode || null);
+        const idToStore = foundMember.alphaCode || foundMember.id;
+        setBondedId(idToStore);
 
         setIsLoading(false); // Make sure the Acessando dados loading screen disappears
 
@@ -622,18 +687,37 @@ export default function StudentPortal({
         await new Promise((resolve) => setTimeout(resolve, 3000));
         setIsPrePinAnimation(false);
 
-        localStorage.setItem(STUDENT_BOND_KEY, foundMember.alphaCode || "");
+        localStorage.setItem(STUDENT_BOND_KEY, idToStore);
       } else {
-        setError(
-          isCPF
-            ? "Identificação não encontrada. Verifique se o CPF ou RA estão corretos."
-            : "Código não encontrado na base de dados.",
-        );
+        setError("Identificação não encontrada. Verifique se o Código de Segurança, CPF ou RA estão corretos.");
       }
     } catch (err) {
       setError("Erro ao vincular identidade.");
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleRegisterVisitor = async () => {
+    if (!visitorName.trim() || !visitorCPF.trim()) {
+      showAlert("Preencha o nome e o CPF.", { type: 'warning' });
+      return;
+    }
+    setVisitorRegistering(true);
+    try {
+      const { registerVisitor } = await import("../lib/firebase");
+      const newMember = await registerVisitor(visitorName.trim(), visitorCPF.trim());
+      if (newMember?.alphaCode) {
+         setAlphaCode(newMember.alphaCode);
+      }
+      showAlert(`Visitante cadastrado com sucesso! Seu CPF já pode ser usado para login.`, { type: 'success' });
+      setVisitorName("");
+      setVisitorCPF("");
+      setShowVisitorRegisterModal(false);
+    } catch (e: any) {
+      showAlert("Erro ao cadastrar visitante: " + e.message, { type: 'error' });
+    } finally {
+      setVisitorRegistering(false);
     }
   };
 
@@ -810,7 +894,8 @@ export default function StudentPortal({
         e.name === "NotAllowedError" ||
         errorMsg.includes("publickey-credentials") || 
         errorMsg.includes("feature is not enabled") ||
-        errorMsg.includes("Permissions Policy");
+        errorMsg.includes("Permissions Policy") ||
+        errorMsg.includes("iframes");
 
       if (isFrameError) {
         setError("BIOMETRIA RESTRITA NO IFRAME. CLIQUE EM 'ABRIR PORTAL' OU COPIE O LINK DE COMPARTILHAMENTO, OU USE SEU PIN NUMÉRICO.");
@@ -1219,7 +1304,7 @@ export default function StudentPortal({
           })}
         </div>
 
-        <div ref={portalContainerRef} className="w-full flex flex-col items-center animate-fade-in mt-10 max-w-sm sm:max-w-[600px] mx-auto">
+        <div ref={portalContainerRef} className="w-full flex flex-col items-center animate-fade-in mt-10 max-w-sm sm:max-w-[600px] mx-auto scroll-mt-[350px] sm:scroll-mt-32">
           <div className="w-full flex justify-between items-center mb-6 px-2 no-print print:hidden">
             <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-1">
               <ShieldCheck className="w-3 h-3" /> Acesso Seguro Ativo
@@ -2065,7 +2150,7 @@ export default function StudentPortal({
   }
 
   return (
-    <div className="flex flex-col items-center py-8 space-y-8 w-full max-w-2xl mx-auto">
+    <div className="flex flex-col items-center py-8 pb-32 sm:pb-40 space-y-8 w-full max-w-2xl mx-auto">
       <Modal
         isOpen={modalHelpOpen}
         onClose={() => setModalHelpOpen(false)}
@@ -2110,8 +2195,14 @@ export default function StudentPortal({
               <Clock className="w-5 h-5 text-indigo-500/70 group-hover:text-indigo-500 group-hover:scale-110 group-hover:-rotate-12 transition-all duration-300" />
               <span className="relative z-10 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">Acompanhar Pedido</span>
             </button>
+            <button
+              onClick={() => setShowRegisterTypeSelection(true)}
+              className="w-full btn-modern py-4 rounded-xl border-2 border-sky-300 dark:border-sky-500/30 text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-500/10 hover:bg-sky-100 dark:hover:bg-sky-500/20 font-bold transition-all flex items-center justify-center gap-2"
+            >
+              Criar Conta / Solicitar Nova ID
+            </button>
             <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium text-center leading-relaxed px-2 mt-4">
-              Para solicitar o seu <strong className="text-slate-700 dark:text-slate-200">Primeiro Acesso</strong>, clique em <strong>Solicitar Nova ID</strong> acima e preencha os seus dados.
+              Para solicitar o seu <strong className="text-slate-700 dark:text-slate-200">Primeiro Acesso</strong>, clique no botão acima e preencha os seus dados.
             </p>
             <button
               onClick={() => setModalHelpOpen(true)}
@@ -2242,7 +2333,7 @@ export default function StudentPortal({
                   </p>
                   {(error.includes("não encontrada") || error.includes("não encontrado")) && (
                     <button
-                      onClick={() => setShowPublicReq(true)}
+                      onClick={() => setShowRegisterTypeSelection(true)}
                       className="w-full py-2.5 px-4 bg-sky-100 hover:bg-sky-500 hover:text-white text-sky-700 text-xs font-bold rounded-xl border border-sky-200 transition-colors uppercase tracking-wider shadow-sm"
                     >
                       Deseja fazer o primeiro acesso?
@@ -2274,6 +2365,79 @@ export default function StudentPortal({
         </AnimatePresence>
       )}
 
+      {showRegisterTypeSelection && (
+        <Modal
+          isOpen={showRegisterTypeSelection}
+          onClose={() => setShowRegisterTypeSelection(false)}
+          title="Tipo de Cadastro"
+          hideFooter
+        >
+          <div className="flex flex-col gap-4 py-4">
+            <button
+              onClick={() => {
+                setShowRegisterTypeSelection(false);
+                setShowPublicReq(true);
+              }}
+              className="p-4 rounded-2xl border-2 border-sky-100 dark:border-sky-500/30 bg-white dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-sky-500/10 text-left transition-all group"
+            >
+              <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 group-hover:text-sky-600 dark:group-hover:text-sky-400">Sou Aluno/Colaborador</h3>
+              <p className="text-xs text-slate-500 mt-1">Solicitar identidade digital institucional e carteirinha da FAJOPA.</p>
+            </button>
+            <button
+              onClick={() => {
+                setShowRegisterTypeSelection(false);
+                setShowVisitorRegisterModal(true);
+              }}
+              className="p-4 rounded-2xl border-2 border-emerald-100 dark:border-emerald-500/30 bg-white dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-left transition-all group"
+            >
+              <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 group-hover:text-emerald-600 dark:group-hover:text-emerald-400">Sou Visitante</h3>
+              <p className="text-xs text-slate-500 mt-1">Cadastrar para entrada em eventos. (Não gera carteirinha física).</p>
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {showVisitorRegisterModal && (
+        <Modal
+          isOpen={showVisitorRegisterModal}
+          onClose={() => setShowVisitorRegisterModal(false)}
+          title="Cadastro de Visitante"
+          confirmLabel="Cadastrar"
+          onConfirm={handleRegisterVisitor}
+          isConfirmValid={!visitorRegistering}
+        >
+          <div className="space-y-4 py-4 w-full">
+            <p className="text-[10px] text-slate-500 text-center uppercase tracking-wider font-bold mb-4">Nota: Visitantes não geram a carteirinha.</p>
+            <div className="w-full text-left">
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5 ml-1">
+                Nome Completo
+              </label>
+              <input
+                type="text"
+                placeholder="Seu nome"
+                value={visitorName}
+                onChange={(e) => setVisitorName(e.target.value.toUpperCase())}
+                className="w-full rounded-xl py-2.5 px-4 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 outline-none focus:border-sky-500"
+              />
+            </div>
+            
+            <div className="w-full text-left">
+              <label className="block text-xs font-bold text-slate-500 uppercase tracking-widest mb-1.5 ml-1">
+                CPF
+              </label>
+              <input
+                type="text"
+                placeholder="Apenas números"
+                value={visitorCPF}
+                onChange={(e) => setVisitorCPF(e.target.value.replace(/\D/g, ""))}
+                maxLength={11}
+                className="w-full rounded-xl py-2.5 px-4 text-sm bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 outline-none focus:border-sky-500"
+              />
+            </div>
+          </div>
+        </Modal>
+      )}
+
       {showPublicReq && (
         <PublicRequestModal
           onClose={() => setShowPublicReq(false)}
@@ -2289,6 +2453,14 @@ export default function StudentPortal({
         <RegistrationSuccessModal 
           isOpen={showRegistrationSuccessModal} 
           onClose={() => setShowRegistrationSuccessModal(false)}
+        />
+      )}
+
+      {showApprovalModal && member && (
+        <ApprovalSuccessModal
+          isOpen={showApprovalModal}
+          onClose={handleApprovalModalClose}
+          memberName={member.name}
         />
       )}
     </div>
