@@ -1,4 +1,4 @@
-import { useState, useEffect, memo } from "react";
+import { useState, useEffect, memo, useRef } from "react";
 import {
   User,
   CreditCard,
@@ -197,6 +197,16 @@ export default function StudentPortal({
   const [showDeletionConfirmModal, setShowDeletionConfirmModal] = useState(false);
   const [showPublicReq, setShowPublicReq] = useState(false);
   const [showRegistrationSuccessModal, setShowRegistrationSuccessModal] = useState(false);
+
+  const portalContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isUnlocked && !isGenerating && portalContainerRef.current) {
+      setTimeout(() => {
+        portalContainerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 100);
+    }
+  }, [isUnlocked, isGenerating]);
 
   // Fallback PIN state
   const [pinMode, setPinMode] = useState<"create" | "verify" | "none">("none");
@@ -1207,7 +1217,7 @@ export default function StudentPortal({
           })}
         </div>
 
-        <div className="w-full flex flex-col items-center animate-fade-in mt-10 max-w-sm sm:max-w-[600px] mx-auto">
+        <div ref={portalContainerRef} className="w-full flex flex-col items-center animate-fade-in mt-10 max-w-sm sm:max-w-[600px] mx-auto">
           <div className="w-full flex justify-between items-center mb-6 px-2 no-print print:hidden">
             <span className="text-[10px] font-black text-emerald-500 uppercase tracking-widest flex items-center gap-1">
               <ShieldCheck className="w-3 h-3" /> Acesso Seguro Ativo

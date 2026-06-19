@@ -92,7 +92,30 @@ self.addEventListener("push", (event: any) => {
 
 self.addEventListener("notificationclick", (event: any) => {
   event.notification.close();
+  
+  const targetUrl = new URL(event.notification.data?.url || '/', self.location.origin).href;
+
   event.waitUntil(
-    self.clients.openWindow(event.notification.data.url)
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients: any[]) => {
+      for (let i = 0; i < windowClients.length; i++) {
+        const client = windowClients[i];
+        if (client.url === targetUrl && 'focus' in client) {
+          return client.focus();
+        }
+      }
+      
+      if (windowClients.length > 0 && 'focus' in windowClients[0]) {
+        return windowClients[0].focus().then((client: any) => {
+          if ('navigate' in client) {
+            return client.navigate(targetUrl);
+          }
+          return client;
+        });
+      }
+
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(targetUrl);
+      }
+    })
   );
 });
