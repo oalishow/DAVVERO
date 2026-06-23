@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, ChangeEvent } from "react";
 import { createPortal } from "react-dom";
-import { X, Database, Download, Lock } from "lucide-react";
+import { X, Database, Download, Lock, HardDrive, Clock } from "lucide-react";
 import {
   collection,
   query,
@@ -12,6 +12,7 @@ import {
 import { db, appId, createNotification } from "../lib/firebase";
 import type { Member } from "../types";
 import { PASSWORD_STORAGE_KEY, DEFAULT_ADMIN_PASSWORD } from "../lib/constants";
+import { fetchFullBackup, getAutoBackupsList, downloadAutoBackup } from "../lib/autoBackup";
 
 export default function BackupModal({ onClose }: { onClose: () => void }) {
   const [loading, setLoading] = useState(false);
@@ -22,24 +23,25 @@ export default function BackupModal({ onClose }: { onClose: () => void }) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUnlocked, setIsUnlocked] = useState(false);
   const [passwordInput, setPasswordInput] = useState("");
+  const [autoBackupsList, setAutoBackupsList] = useState<any[]>([]);
 
-  const fetchAllForBackup = async () => {
-    const q = query(collection(db, `artifacts/${appId}/public/data/students`));
-    const snapshot = await getDocs(q);
-    return snapshot.docs.map((d) => ({ id: d.id, ...d.data() }));
-  };
+  useEffect(() => {
+    if (isUnlocked) {
+      getAutoBackupsList().then(setAutoBackupsList).catch(console.error);
+    }
+  }, [isUnlocked]);
 
   const handleExport = async () => {
     setLoading(true);
     try {
-      const data = await fetchAllForBackup();
+      const data = await fetchFullBackup();
       const blob = new Blob([JSON.stringify(data, null, 2)], {
         type: "application/json",
       });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
-      link.download = `DAVVERO System_DB_Backup_${new Date().toISOString().split("T")[0]}.json`;
+      link.download = `DAVVERO System_Full_Backup_${new Date().toISOString().split("T")[0]}.json`;
       link.click();
       URL.revokeObjectURL(url);
 
@@ -68,26 +70,62 @@ export default function BackupModal({ onClose }: { onClose: () => void }) {
     reader.onload = async (ev) => {
       try {
         const importedData = JSON.parse(ev.target?.result as string);
-        if (!Array.isArray(importedData))
-          throw new Error("Estrutura JSON inválida.");
+        if (!importedData) throw new Error("Estrutura JSON inválida.");
 
-        const batchPromises = importedData.map((member) => {
-          if (member.id) {
-            const { id, ...data } = member;
-            return setDoc(
-              doc(db, `artifacts/${appId}/public/data/students`, id),
-              data,
-            );
-          } else {
-            return addDoc(
-              collection(db, `artifacts/${appId}/public/data/students`),
-              member,
-            );
+        const batchPromises: Promise<any>[] = [];
+
+        // Legacy Array format (only students)
+        if (Array.isArray(importedData)) {
+          importedData.forEach((member) => {
+            if (member.id) {
+              const { id, ...data } = member;
+              batchPromises.push(setDoc(doc(db, `artifacts/${appId}/public/data/students`, id), data));
+            } else {
+              batchPromises.push(addDoc(collection(db, `artifacts/${appId}/public/data/students`), member));
+            }
+          });
+        } 
+        // New Full Backup format Map
+        else if (importedData.firebase) {
+          // Restore system info
+          if (importedData.system) {
+            for (const key of Object.keys(importedData.system)) {
+              if (key && !key.includes('admin') && !key.includes('password') && importedData.system[key]) {
+                localStorage.setItem(key, importedData.system[key]);
+              }
+            }
           }
-        });
+
+          for (const colName of Object.keys(importedData.firebase)) {
+            const records = importedData.firebase[colName];
+            if (Array.isArray(records)) {
+              for (const record of records) {
+                const { id, comments_backup, ...data } = record;
+                if (id) {
+                  batchPromises.push(setDoc(doc(db, `artifacts/${appId}/public/data/${colName}`, id), data));
+                } else {
+                  batchPromises.push(addDoc(collection(db, `artifacts/${appId}/public/data/${colName}`), data));
+                }
+
+                // Restore comments for mural posts
+                if (colName === 'mural_posts' && comments_backup && Array.isArray(comments_backup)) {
+                  for (const comment of comments_backup) {
+                    const cid = comment.id;
+                    const cdata = { ...comment };
+                    delete cdata.id;
+                    if (cid) {
+                      batchPromises.push(setDoc(doc(db, `artifacts/${appId}/public/data/mural_posts/${id}/comments`, cid), cdata));
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
 
         await Promise.all(batchPromises);
-        showStatus("Base de dados restaurada!", "success");
+        showStatus("Base de dados restaurada! Recarregando sistema...", "success");
+        setTimeout(() => window.location.reload(), 2000);
       } catch (err) {
         console.error(err);
         showStatus("Incompatibilidade: Arquivo JSON inválido.", "error");
@@ -211,6 +249,36 @@ export default function BackupModal({ onClose }: { onClose: () => void }) {
                 {loading ? "A processar..." : "Selecionar e Importar"}
               </button>
             </div>
+
+            {autoBackupsList.length > 0 && (
+              <div className="bg-slate-50 dark:bg-slate-800/50 p-4 rounded-xl border border-slate-200 dark:border-slate-700/50">
+                <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 flex items-center justify-between">
+                  <span className="flex items-center gap-1.5"><Clock className="w-4 h-4" /> Backups Automáticos</span>
+                </h4>
+                <p className="text-[10px] sm:text-xs text-slate-500 dark:text-slate-400 mb-4">
+                  O sistema extrai bases semanais automaticamente e armazena localmente.
+                </p>
+                <div className="space-y-2 max-h-[150px] overflow-y-auto custom-scrollbar pr-1">
+                  {autoBackupsList.map(b => (
+                    <div key={b.id} className="flex items-center justify-between bg-white dark:bg-slate-800 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700">
+                      <div>
+                        <p className="text-xs font-bold text-slate-700 dark:text-slate-300">{b.id}</p>
+                        <p className="text-[10px] text-slate-500">
+                          {new Date(b.timestamp).toLocaleString()} • {(b.size / 1024).toFixed(1)} KB
+                        </p>
+                      </div>
+                      <button 
+                        onClick={() => downloadAutoBackup(b.id)}
+                        className="p-2 bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 rounded-lg hover:bg-sky-100 dark:hover:bg-sky-500/20 transition-colors"
+                        title="Descarregar ZIP/JSON"
+                      >
+                        <HardDrive className="w-4 h-4" />
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

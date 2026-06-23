@@ -1,3 +1,5 @@
+import { triggerHaptic } from './haptics';
+
 const DAVVERO_SOUND_VOLUME = 'davveroId_sound_volume';
 
 export const getSoundVolume = (): number => {
@@ -13,6 +15,19 @@ export const setSoundVolume = (vol: number) => {
 let sharedAudioContext: AudioContext | any = null;
 
 export const playSound = (type: 'click' | 'success' | 'error' | 'notification' | 'pop' | 'flip' | 'scan' | 'generating' | 'login' | 'logout' | 'enroll') => {
+  // Trigger haptic feedback based on sound type
+  if (type === 'error') {
+    triggerHaptic('error');
+  } else if (type === 'success' || type === 'login' || type === 'enroll') {
+    triggerHaptic('success');
+  } else if (type === 'notification' || type === 'scan') {
+    triggerHaptic('medium');
+  } else if (type === 'click' || type === 'pop' || type === 'flip') {
+    triggerHaptic('light');
+  } else if (type === 'generating') {
+    triggerHaptic('heavy');
+  }
+
   try {
     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
     if (!AudioContextClass) return;

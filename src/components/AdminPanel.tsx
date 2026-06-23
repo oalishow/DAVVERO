@@ -57,6 +57,7 @@ import NotificationsManager from "./NotificationsManager";
 import AdminAppointments from "./AdminAppointments";
 import DashboardPanel from "./DashboardPanel";
 import PrintAppointmentsModal from "./PrintAppointmentsModal";
+import { performAutoBackupIfDue } from "../lib/autoBackup";
 import { Calendar, BriefcaseMedical, LayoutDashboard, CalendarDays, ShieldPlus } from "lucide-react";
 
 export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
@@ -117,6 +118,9 @@ export default function AdminPanel({ onLogout }: { onLogout: () => void }) {
       let currentRole: "ADMIN" | "GERENTE" | "LEITOR" = "ADMIN";
       
       setAdminAccessLevel(currentRole);
+      
+      // Auto Backup background check
+      performAutoBackupIfDue();
 
       if (auth.currentUser && !auth.currentUser.isAnonymous && auth.currentUser.email) {
         try {

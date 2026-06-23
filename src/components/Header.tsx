@@ -1,5 +1,5 @@
 import { motion, AnimatePresence } from 'motion/react';
-import { ShieldCheck, Download, Sun, Moon, Bell, Trash2, Lock, Share2, Copy, Volume2, VolumeX, Volume1, RefreshCw } from 'lucide-react';
+import { ShieldCheck, Download, Sun, Moon, Bell, Trash2, Lock, Share2, Copy, Volume2, VolumeX, Volume1, RefreshCw, Vibrate, VibrateOff } from 'lucide-react';
 import { APP_VERSION, APP_BUILD } from '../lib/constants';
 import { useSettings } from '../context/SettingsContext';
 import { useDialog } from '../context/DialogContext';
@@ -7,6 +7,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNotifications } from '../hooks/useNotifications';
 import { markAllNotificationsAsRead, markNotificationAsRead, clearAllNotifications, clearNotification } from '../lib/firebase';
 import { getSoundVolume, setSoundVolume, playSound } from '../lib/sounds';
+import { getHapticsEnabled, setHapticsEnabled, triggerHaptic } from '../lib/haptics';
 import ChangelogModal from './ChangelogModal';
 
 const STUDENT_BOND_KEY = 'davveroId_student_identity';
@@ -26,6 +27,8 @@ export default function Header({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
   const [showVolumeDropdown, setShowVolumeDropdown] = useState(false);
   const [showChangelog, setShowChangelog] = useState(false);
   const [currentVolume, setCurrentVolume] = useState(() => getSoundVolume());
+  const [haptics, setHaptics] = useState(() => getHapticsEnabled());
+  const [isMobileDevice, setIsMobileDevice] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const volumeDropdownRef = useRef<HTMLDivElement>(null);
 
@@ -33,6 +36,13 @@ export default function Header({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
     const newVol = parseFloat(e.target.value);
     setCurrentVolume(newVol);
     setSoundVolume(newVol);
+  };
+
+  const toggleHaptics = () => {
+    const newVal = !haptics;
+    setHaptics(newVal);
+    setHapticsEnabled(newVal);
+    if (newVal) triggerHaptic('success');
   };
 
   const isMasterLogged = localStorage.getItem('adminMasterLogged') === 'true';
@@ -44,6 +54,9 @@ export default function Header({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
   useEffect(() => {
     if (typeof window !== 'undefined' && 'Notification' in window) {
       setNotiPermission(Notification.permission);
+    }
+    if (typeof navigator !== 'undefined') {
+      setIsMobileDevice(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
     }
   }, []);
 
@@ -241,30 +254,52 @@ export default function Header({ onOpenAdmin }: { onOpenAdmin?: () => void }) {
                 exit={{ opacity: 0, y: 10, scale: 0.95 }}
                 className="absolute right-0 top-full mt-2 w-48 bg-white dark:bg-slate-900 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-4 z-50 text-left"
               >
-                <div className="flex items-center gap-3">
-                  {currentVolume === 0 ? (
-                    <VolumeX 
-                      className="w-4 h-4 text-rose-500 hover:opacity-75 cursor-pointer" 
-                      onClick={() => handleVolumeChange({ target: { value: '0.05' } } as any)}
+                <div className="flex flex-col gap-3">
+                  <div className="flex items-center gap-3">
+                    {currentVolume === 0 ? (
+                      <VolumeX 
+                        className="w-4 h-4 text-rose-500 hover:opacity-75 cursor-pointer" 
+                        onClick={() => handleVolumeChange({ target: { value: '0.05' } } as any)}
+                      />
+                    ) : (
+                      <Volume2 
+                        className="w-4 h-4 text-sky-500 hover:opacity-75 cursor-pointer" 
+                        onClick={() => handleVolumeChange({ target: { value: '0' } } as any)}
+                      />
+                    )}
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="0.5" 
+                      step="0.01" 
+                      value={currentVolume}
+                      onChange={(e) => {
+                        handleVolumeChange(e);
+                        if (parseFloat(e.target.value) > 0) playSound('click');
+                      }}
+                      className="w-full accent-sky-500 outline-none h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full appearance-none cursor-pointer"
                     />
-                  ) : (
-                    <Volume2 
-                      className="w-4 h-4 text-sky-500 hover:opacity-75 cursor-pointer" 
-                      onClick={() => handleVolumeChange({ target: { value: '0' } } as any)}
-                    />
+                  </div>
+                  {isMobileDevice && (
+                    <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-3">
+                      <div className="flex items-center gap-2">
+                        {haptics ? (
+                          <Vibrate className="w-4 h-4 text-sky-500" />
+                        ) : (
+                          <VibrateOff className="w-4 h-4 text-slate-400" />
+                        )}
+                        <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                          Vibração
+                        </span>
+                      </div>
+                      <button
+                        onClick={toggleHaptics}
+                        className={`w-8 h-4 rounded-full transition-colors relative ${haptics ? 'bg-sky-500' : 'bg-slate-300 dark:bg-slate-600'}`}
+                      >
+                        <div className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform ${haptics ? 'translate-x-4' : 'translate-x-0'}`} />
+                      </button>
+                    </div>
                   )}
-                  <input 
-                    type="range" 
-                    min="0" 
-                    max="0.5" 
-                    step="0.01" 
-                    value={currentVolume}
-                    onChange={(e) => {
-                      handleVolumeChange(e);
-                      if (parseFloat(e.target.value) > 0) playSound('click');
-                    }}
-                    className="w-full accent-sky-500 outline-none h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full appearance-none cursor-pointer"
-                  />
                 </div>
               </motion.div>
             )}
