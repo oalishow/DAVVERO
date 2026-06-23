@@ -65,6 +65,9 @@ interface AppSettings {
   avaEnabled: boolean;
   contemplacaoLink: string;
   contemplacaoEnabled: boolean;
+  useWhatsappMural: boolean;
+  whatsappGroups: { id: string; name: string; url: string; description?: string; visibleToRoles?: string[]; category?: string; type?: 'academico' | 'seminario'; requiredPassword?: string; imageUrl?: string; }[];
+  whatsappCategories: string[];
 }
 
 const DEFAULT_SETTINGS: AppSettings = {
@@ -138,6 +141,9 @@ const DEFAULT_SETTINGS: AppSettings = {
   avaEnabled: true,
   contemplacaoLink: 'https://revista.fajopa.com/index.php/contemplacao',
   contemplacaoEnabled: true,
+  useWhatsappMural: true,
+  whatsappGroups: [],
+  whatsappCategories: ["Turmas", "Comissões", "Eventos", "Geral"],
 };
 
 interface SettingsContextType {

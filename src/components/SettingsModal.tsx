@@ -28,10 +28,12 @@ import {
   Plus,
   Database,
   Sparkles,
+  MessageCircle,
 } from "lucide-react";
 import { GoogleGenAI } from "@google/genai";
 import FajopaIDCard from "./FajopaIDCard";
 import BackupModal from "./BackupModal";
+import WhatsappMuralView from "./WhatsappMuralView";
 import { useSettings } from "../context/SettingsContext";
 import { AVAILABLE_SEMINARIES } from "../types";
 import {
@@ -186,8 +188,9 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
   const [avaEnabled, setAvaEnabled] = useState(cloudSettings.avaEnabled ?? true);
   const [contemplacaoLink, setContemplacaoLink] = useState(cloudSettings.contemplacaoLink || 'https://revista.fajopa.com/index.php/contemplacao');
   const [contemplacaoEnabled, setContemplacaoEnabled] = useState(cloudSettings.contemplacaoEnabled ?? true);
+  const [useWhatsappMural, setUseWhatsappMural] = useState(cloudSettings.useWhatsappMural ?? true);
 
-  const [activeTab, setActiveTab] = useState<"visual" | "content" | "database">(
+  const [activeTab, setActiveTab] = useState<"visual" | "content" | "database" | "system" | "mural">(
     "visual",
   );
 
@@ -289,6 +292,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
         avaEnabled,
         contemplacaoLink,
         contemplacaoEnabled,
+        useWhatsappMural,
       });
 
       // Legacy fallback
@@ -723,6 +727,7 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                 { id: "content", label: "Campos/Textos", icon: FileText },
                 { id: "database", label: "Banco de Dados", icon: Link },
                 { id: "system", label: "Sistema", icon: Settings },
+                { id: "mural", label: "Mural", icon: MessageCircle },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -2143,6 +2148,21 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                         <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
                           <input
                             type="checkbox"
+                            checked={useWhatsappMural}
+                            onChange={(e) => setUseWhatsappMural(e.target.checked)}
+                            className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
+                          />
+                          Usar Mural de Grupos do WhatsApp (Padrão)
+                        </label>
+                        <p className="text-[10px] text-slate-500 max-w-sm mt-1 mb-4">
+                          Se ativado, a aba Mural mostrará uma lista de grupos do WhatsApp oficiais ao invés do feed interativo de posts.
+                        </p>
+                      </div>
+
+                      <div className="col-span-1 space-y-4 border-t border-indigo-100 dark:border-indigo-500/20 pt-4">
+                        <label className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-200">
+                          <input
+                            type="checkbox"
                             checked={headerLogoEnabled}
                             onChange={(e) => setHeaderLogoEnabled(e.target.checked)}
                             className="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500"
@@ -2465,6 +2485,19 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
                       </div>
                     </div>
                   </div>
+                </div>
+              )}
+
+              {activeTab === "mural" && (
+                <div className="space-y-8 animate-in fade-in transition-all duration-300">
+                  <WhatsappMuralView 
+                    isAdmin={true} 
+                    userRoles={[]} 
+                    whatsappGroups={cloudSettings.whatsappGroups || []} 
+                    whatsappCategories={cloudSettings.whatsappCategories || []}
+                    customRoles={cloudSettings.customRoles || []}
+                    updateSettings={updateSettings as any} 
+                  />
                 </div>
               )}
 

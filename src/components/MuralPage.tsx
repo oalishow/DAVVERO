@@ -7,9 +7,12 @@ import { ref, uploadBytes, getDownloadURL } from "firebase/storage";
 import { signInAnonymously } from "firebase/auth";
 import { db, storage, auth, appId, handleFirestoreError, OperationType } from "../lib/firebase";
 import { MuralPost, Member, MuralComment } from "../types";
+import { useSettings } from "../context/SettingsContext";
+import WhatsappMuralView from "./WhatsappMuralView";
 
 export default function MuralPage() {
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const { settings, updateSettings } = useSettings();
   
   useEffect(() => {
     const handleOnline = () => setIsOffline(false);
@@ -23,6 +26,7 @@ export default function MuralPage() {
   }, []);
 
   const [activeTab, setActiveTab] = useState<"academico" | "seminario">("academico");
+  // Form states...
   const [posts, setPosts] = useState<MuralPost[]>([]);
   const [isAdmin, setIsAdmin] = useState<boolean>(() => {
     const cachedMemberStr = localStorage.getItem("davveroId_cached_member");
@@ -530,6 +534,10 @@ export default function MuralPage() {
       handleFirestoreError(err, OperationType.DELETE, `artifacts/${appId}/public/data/mural_posts`);
     }
   };
+
+  if (settings.useWhatsappMural) {
+    return <WhatsappMuralView isAdmin={isAdmin} userRoles={currentUserData?.roles || []} whatsappGroups={settings.whatsappGroups || []} whatsappCategories={settings.whatsappCategories || []} customRoles={settings.customRoles || []} updateSettings={updateSettings as any} />;
+  }
 
   // Identify visible posts
 

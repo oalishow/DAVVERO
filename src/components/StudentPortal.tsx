@@ -234,6 +234,17 @@ export default function StudentPortal({
     }
   }, [member, isUnlocked, pinMode, isPrePinAnimation]);
 
+  const hasAutoScrolled = useRef(false);
+
+  useEffect(() => {
+    if (isUnlocked && !isLoading && !isPrePinAnimation && bondedId && pinMode === "none") {
+      if (window.innerWidth < 768 && !hasAutoScrolled.current) {
+        scrollToCard();
+        hasAutoScrolled.current = true;
+      }
+    }
+  }, [isUnlocked, isLoading, isPrePinAnimation, bondedId, pinMode]);
+
   const handleApprovalModalClose = () => {
     if (member?.id) {
        localStorage.setItem(`davvero_approval_notified_${member.id}`, "true");
@@ -1113,12 +1124,18 @@ export default function StudentPortal({
               {title}
             </h2>
             <input
-              type="password"
+              type="tel"
               inputMode="numeric"
               maxLength={4}
               value={pinInput}
-              autoComplete="new-password"
+              autoComplete="off"
+              data-lpignore="true"
+              data-form-type="other"
+              style={{ WebkitTextSecurity: "disc" } as React.CSSProperties}
               onChange={(e) => setPinInput(e.target.value.replace(/\D/g, ""))}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handlePinSubmit();
+              }}
               className="text-center text-4xl tracking-[1em] font-black w-full py-4 rounded-xl bg-slate-100 dark:bg-slate-800 border-none outline-none text-slate-900 dark:text-white placeholder-slate-300 ml-[0.5em]"
               placeholder="••••"
             />
@@ -1341,7 +1358,10 @@ export default function StudentPortal({
           {/* TAB NAVIGATION */}
           <div className="w-full mt-2 flex flex-wrap justify-center gap-1.5 sm:gap-2 no-print print:hidden mb-4">
             <button
-              onClick={() => setActiveTab("id")}
+              onClick={() => {
+                setActiveTab("id");
+                if (window.innerWidth < 768) scrollToCard();
+              }}
               className={`flex items-center gap-1.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-full text-[10px] sm:text-xs font-bold uppercase tracking-wider transition-all border ${
                 activeTab === "id"
                   ? "bg-sky-50 dark:bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-200 dark:border-sky-500/30 shadow-sm"
