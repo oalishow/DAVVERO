@@ -30,7 +30,6 @@ import {
   Sparkles,
   MessageCircle,
 } from "lucide-react";
-import { GoogleGenAI } from "@google/genai";
 import FajopaIDCard from "./FajopaIDCard";
 import BackupModal from "./BackupModal";
 import WhatsappMuralView from "./WhatsappMuralView";
@@ -352,66 +351,74 @@ export default function SettingsModal({ onClose }: { onClose: () => void }) {
 
     try {
       setIsAnalyzing(true);
-      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
       const base64Data = instLogo.split(",")[1];
       const mimeType = instLogo.split(";")[0].split(":")[1];
 
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: {
-          parts: [
-            {
-              inlineData: {
-                data: base64Data,
-                mimeType: mimeType,
+      const res = await fetch("/api/gemini/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "gemini-3-flash-preview",
+          contents: {
+            parts: [
+              {
+                inlineData: {
+                  data: base64Data,
+                  mimeType: mimeType,
+                },
               },
-            },
-            {
-              text: `Analyze this corporate logo and generate 3 distinct, professional color palettes (Modern, Classic, Vibrant) that would work well for a physical ID card and a web application theme. 
-              Each palette must include:
-              - A name
-              - A primary color (derived from the logo)
-              - A complementary secondary color
-              - An accent color
-              - A short description of the vibe.`,
-            },
-          ],
-        },
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                name: { type: Type.STRING },
-                primary: {
-                  type: Type.STRING,
-                  description: "Hex code including #",
-                },
-                secondary: {
-                  type: Type.STRING,
-                  description: "Hex code including #",
-                },
-                accent: {
-                  type: Type.STRING,
-                  description: "Hex code including #",
-                },
-                description: { type: Type.STRING },
+              {
+                text: `Analyze this corporate logo and generate 3 distinct, professional color palettes (Modern, Classic, Vibrant) that would work well for a physical ID card and a web application theme. 
+                Each palette must include:
+                - A name
+                - A primary color (derived from the logo)
+                - A complementary secondary color
+                - An accent color
+                - A short description of the vibe.`,
               },
-              required: [
-                "name",
-                "primary",
-                "secondary",
-                "accent",
-                "description",
-              ],
+            ],
+          },
+          config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: "array",
+              items: {
+                type: "object",
+                properties: {
+                  name: { type: "string" },
+                  primary: {
+                    type: "string",
+                    description: "Hex code including #",
+                  },
+                  secondary: {
+                    type: "string",
+                    description: "Hex code including #",
+                  },
+                  accent: {
+                    type: "string",
+                    description: "Hex code including #",
+                  },
+                  description: { type: "string" },
+                },
+                required: [
+                  "name",
+                  "primary",
+                  "secondary",
+                  "accent",
+                  "description",
+                ],
+              },
             },
           },
-        },
+        }),
       });
 
+      if (!res.ok) {
+        throw new Error(await res.text());
+      }
+
+      const response = await res.json();
       const palettes = JSON.parse(response.text || "[]");
       if (palettes.length > 0) {
         setAiPalettes(palettes);

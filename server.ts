@@ -96,6 +96,32 @@ async function startServer() {
     }
   });
 
+  // Gemini Proxy Endpoint
+  app.post("/api/gemini/generate", async (req, res) => {
+    try {
+      const { model, contents, config } = req.body;
+      
+      const apiKey = process.env.GEMINI_API_KEY;
+      if (!apiKey) {
+        return res.status(500).json({ error: "Server missing GEMINI_API_KEY" });
+      }
+
+      const { GoogleGenAI } = await import("@google/genai");
+      const ai = new GoogleGenAI({ apiKey });
+
+      const response = await ai.models.generateContent({
+        model: model || "gemini-3-flash-preview",
+        contents,
+        config
+      });
+
+      res.json({ text: response.text });
+    } catch (error: any) {
+      console.error("Gemini proxy error:", error);
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Vite middleware for development
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({

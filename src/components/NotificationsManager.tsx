@@ -4,7 +4,6 @@ import { Send, Sparkles, AlertCircle, RefreshCw, Wand2, X, Bell, BellOff, Users,
 import { createNotification, db, appId } from "../lib/firebase";
 import { collection, getDocs } from "firebase/firestore";
 import { useDialog } from "../context/DialogContext";
-import { GoogleGenAI, Type } from "@google/genai";
 import { usePushNotifications } from "../hooks/usePushNotifications";
 import type { Member } from "../types";
 
@@ -203,10 +202,6 @@ export default function NotificationsManager() {
 
     setGenerating(true);
     try {
-      const gKey = process.env.GEMINI_API_KEY;
-      if (!gKey) throw new Error("A chave GEMINI_API_KEY não foi configurada.");
-
-      const ai = new GoogleGenAI({ apiKey: gKey });
       const prompt = `Você é um excelente comunicador responsável por avisos para alunos de um instituto de teologia.
 Escreva um título curto (até 50 caracteres, podendo ter um emoji no final) e uma mensagem clara, objetiva, engajadora e diversificada (evite clichês e use vocabulário rico, variando o tom, até 250 caracteres) para a seguinte ideia de notificação:
 
@@ -214,22 +209,29 @@ IDEIA DO AVISO: "${promptAi}"
 
 Retorne o resultado estritamente em um JSON com os campos 'title' (o título) e 'message' (a mensagem completa). Crie algo amigável, caloroso e com linguagem diversificada.`;
 
-      const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
-        contents: prompt,
-        config: {
-          responseMimeType: "application/json",
-          responseSchema: {
-            type: Type.OBJECT,
-            properties: {
-              title: { type: Type.STRING },
-              message: { type: Type.STRING }
-            },
-            required: ["title", "message"]
+      const res = await fetch("/api/gemini/generate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          model: "gemini-1.5-flash",
+          contents: prompt,
+          config: {
+            responseMimeType: "application/json",
+            responseSchema: {
+              type: "object",
+              properties: {
+                title: { type: "string" },
+                message: { type: "string" }
+              },
+              required: ["title", "message"]
+            }
           }
-        }
+        })
       });
 
+      if (!res.ok) throw new Error(await res.text());
+
+      const response = await res.json();
       const responseText = response.text;
       if (responseText) {
         const jsonContent = JSON.parse(responseText);
